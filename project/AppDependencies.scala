@@ -10,13 +10,15 @@ object AppDependencies {
     "uk.gov.hmrc"             %% "play-ui"                  % "7.27.0-play-25"
   )
 
+  private lazy val scope = "test, it"
+
   val test = Seq(
-    "org.scalatest"           %% "scalatest"                % "3.0.4"                 % "test",
-    "org.jsoup"               %  "jsoup"                    % "1.10.2"                % "test",
-    "com.typesafe.play"       %% "play-test"                % current                 % "test",
-    "org.pegdown"             %  "pegdown"                  % "1.6.0"                 % "test, it",
-    "uk.gov.hmrc"             %% "service-integration-test" % "0.2.0"                 % "test, it",
-    "org.scalatestplus.play"  %% "scalatestplus-play"       % "2.0.0"                 % "test, it"
+    "org.pegdown"             %  "pegdown"                  % "1.6.0"                 % scope,
+    "org.scalatest"           %% "scalatest"                % "3.0.4"                 % scope,
+    "com.typesafe.play"       %% "play-test"                % current                 % scope,
+    "org.scalatestplus.play"  %% "scalatestplus-play"       % "2.0.1"                 % scope,
+    "uk.gov.hmrc"             %% "hmrctest"                 % "3.3.0"                 % scope,
+    "uk.gov.hmrc"             %% "service-integration-test" % "0.2.0"                 % scope
   )
 
 }

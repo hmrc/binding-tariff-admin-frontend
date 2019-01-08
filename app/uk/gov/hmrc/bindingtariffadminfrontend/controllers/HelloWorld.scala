@@ -18,19 +18,20 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
 
-import play.api.mvc._
-
-import scala.concurrent.Future
 import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 
-@Singleton
-class HelloWorld @Inject()(val messagesApi: MessagesApi, implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
+import scala.concurrent.Future.successful
 
-  val helloWorld = Action.async { implicit request =>
-    Future.successful(Ok(views.html.hello_world()))
+@Singleton
+class HelloWorld @Inject()(val messagesApi: MessagesApi,
+                           implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
+
+  def helloWorld: Action[AnyContent] = Action.async { implicit request =>
+    successful(Ok(views.html.hello_world()))
   }
 
 }

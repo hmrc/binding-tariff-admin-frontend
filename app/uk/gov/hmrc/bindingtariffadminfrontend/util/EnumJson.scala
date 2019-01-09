@@ -1,4 +1,4 @@
-@*
+/*
  * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +12,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *@
+ */
 
-@import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-@()(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
+package uk.gov.hmrc.bindingtariffadminfrontend.util
 
-@main_template(title = "Hello from binding-tariff-admin-frontend", bodyClasses = None) {
-    <h1>Hello from binding-tariff-admin-frontend !</h1>
+import play.api.libs.json._
+
+object EnumJson {
+
+  implicit def format[E <: Enumeration](enum: E): Format[E#Value] = {
+    Format(Reads.enumNameReads(enum), Writes.enumNameWrites)
+  }
+
 }

@@ -32,10 +32,13 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: 
   private val contactHost = runModeConfiguration.getString("contact-frontend.host").getOrElse("")
   private val contactFormServiceIdentifier = "MyService"
 
-  lazy val assetsPrefix = loadConfig("assets.url") + loadConfig("assets.version")
-  lazy val analyticsToken = loadConfig("google-analytics.token")
-  lazy val analyticsHost = loadConfig("google-analytics.host")
-  lazy val reportAProblemPartialUrl = s"$contactHost/contact/problem_reports_ajax?service=$contactFormServiceIdentifier"
-  lazy val reportAProblemNonJSUrl = s"$contactHost/contact/problem_reports_nonjs?service=$contactFormServiceIdentifier"
+  lazy val assetsPrefix: String = loadConfig("assets.url") + loadConfig("assets.version")
+  lazy val analyticsToken: String = loadConfig("google-analytics.token")
+  lazy val analyticsHost: String = loadConfig("google-analytics.host")
+  lazy val reportAProblemPartialUrl: String = s"$contactHost/contact/problem_reports_ajax?service=$contactFormServiceIdentifier"
+  lazy val reportAProblemNonJSUrl: String = s"$contactHost/contact/problem_reports_nonjs?service=$contactFormServiceIdentifier"
+
+  lazy val filestoreUrl: String = baseUrl("binding-tariff-filestore")
+  lazy val classificationBackendUrl: String = baseUrl("binding-tariff-classification")
 
 }

@@ -23,7 +23,7 @@ import reactivemongo.api.Cursor
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.CaseMigration
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{CaseMigration, MigrationStatus}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MongoIndexCreator._
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -33,6 +33,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[CaseMigrationMongoRepository])
 trait CaseMigrationRepository {
+
+  def containsUnprocessedEntities: Future[Boolean]
 
   def get(id: String): Future[Option[CaseMigration]]
 
@@ -87,6 +89,10 @@ class CaseMigrationMongoRepository @Inject()(config: AppConfig,
   override def insert(c: Seq[CaseMigration]): Future[Boolean] = {
     val producers = c.map(implicitly[collection.ImplicitlyDocumentProducer](_))
     collection.bulkInsert(ordered = false)(producers: _*).map(_.ok)
+  }
+
+  def containsUnprocessedEntities: Future[Boolean] = {
+    collection.count(Some(Json.obj("status" -> MigrationStatus.UNPROCESSED))).map(_ > 0)
   }
 
   private def byReference(id: String): JsObject = {

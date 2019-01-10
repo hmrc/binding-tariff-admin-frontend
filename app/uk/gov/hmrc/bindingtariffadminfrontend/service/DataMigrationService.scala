@@ -51,7 +51,7 @@ class DataMigrationService @Inject()(repository: CaseMigrationRepository, connec
         case t: Throwable => Logger.error(s"Case Migration with reference [${c.`case`.reference}] failed", t)
           c.copy(status = MigrationStatus.FAILED, message = Some(t.getMessage))
       })
-      .flatMap(repository.update)
+      .flatMap(repository.update(_).map(_.getOrElse(throw new RuntimeException("Update failed"))))
   }
 
 }

@@ -22,7 +22,7 @@
 @(migrations: Seq[CaseMigration])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Hello from binding-tariff-admin-frontend", bodyClasses = None) {
- <h1>Data Migration Successful</h1>
+ <h1 class="heading-xlarge">Data Migration Successful</h1>
 
  <a class="button" href="@routes.DataMigrationUploadController.get()">Upload Another</a>
 

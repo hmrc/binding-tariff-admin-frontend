@@ -33,7 +33,7 @@ class DataMigrationStateController @Inject()(service: DataMigrationService,
     for {
       counts <- service.counts
       state <- service.getState
-      view = if(counts.hasUnprocessed) data_migration_processing(state) else data_migration_confirm(state)
+      view = if(counts.hasUnprocessed) data_migration_processing(state, counts) else data_migration_confirm(state)
     } yield Ok(view)
   }
 }

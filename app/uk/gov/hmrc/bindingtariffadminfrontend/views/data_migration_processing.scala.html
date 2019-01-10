@@ -15,13 +15,30 @@
  *@
 
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.CaseMigration
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.{CaseMigration, MigrationCounts, MigrationStatus}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
-
-@(migrations: Seq[CaseMigration])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
+@(migrations: Seq[CaseMigration], counts: MigrationCounts)(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Hello from binding-tariff-admin-frontend", bodyClasses = None) {
- <h1>Data Migration In Progress</h1>
+ <h1 class="heading-xlarge">Data Migration In Progress</h1>
+
+ <div class="grid-row">
+  <div class="column-one-third">
+   <div class="bold-xlarge">@{counts.processed}/@{counts.total}</div>
+   <div class="bold-xsmall">Processed</div>
+  </div>
+
+  <div class="column-one-third">
+   <div class="bold-xlarge">@{counts.get(MigrationStatus.SUCCESS)}/@{counts.total}</div>
+   <div class="bold-xsmall">Successful</div>
+  </div>
+
+  <div class="column-one-third">
+   <div class="bold-xlarge">@{counts.get(MigrationStatus.FAILED)}/@{counts.total}</div>
+   <div class="bold-xsmall">Failed</div>
+  </div>
+ </div>
+
 
  <table style="width: 960px">
   <thead>

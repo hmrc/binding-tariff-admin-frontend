@@ -17,19 +17,19 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.service
 
 import javax.inject.Inject
+import play.api.Logger
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.BindingTariffClassificationConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Case, CaseMigration, MigrationCounts, MigrationStatus}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.CaseMigrationRepository
+import uk.gov.hmrc.http.HeaderCarrier
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class DataMigrationService @Inject()(repository: CaseMigrationRepository){
+class DataMigrationService @Inject()(repository: CaseMigrationRepository, connector: BindingTariffClassificationConnector) {
 
   def getState: Future[Seq[CaseMigration]] = {
     repository.get()
-  }
-
-  def getUnprocessed: Future[Seq[CaseMigration]] = {
-    repository.get(Some(MigrationStatus.UNPROCESSED))
   }
 
   def counts: Future[MigrationCounts] = {
@@ -40,8 +40,18 @@ class DataMigrationService @Inject()(repository: CaseMigrationRepository){
     repository.insert(migrations.map(CaseMigration(_)))
   }
 
-  def process(c: CaseMigration): Future[CaseMigration] = {
-    Future.successful(c)
+  def getUnprocessedMigrations: Future[Seq[CaseMigration]] = {
+    repository.get(Some(MigrationStatus.UNPROCESSED))
+  }
+
+  def process(c: CaseMigration)(implicit hc: HeaderCarrier): Future[CaseMigration] = {
+    connector.upsertCase(c.`case`)
+      .map(_ => c.copy(status = MigrationStatus.SUCCESS))
+      .recover({
+        case t: Throwable => Logger.error(s"Case Migration with reference [${c.`case`.reference}] failed", t)
+          c.copy(status = MigrationStatus.FAILED, message = Some(t.getMessage))
+      })
+      .flatMap(repository.update)
   }
 
 }

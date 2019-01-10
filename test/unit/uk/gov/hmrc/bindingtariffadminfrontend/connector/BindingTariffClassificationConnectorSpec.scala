@@ -65,7 +65,7 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
         )
       )
 
-      await(connector.createCase(request)) shouldBe response
+      await(connector.upsertCase(request)) shouldBe response
     }
 
     "propagate errors" in {
@@ -76,7 +76,7 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
       )
 
       intercept[Upstream5xxResponse] {
-        await(connector.createCase(request))
+        await(connector.upsertCase(request))
       }
     }
   }

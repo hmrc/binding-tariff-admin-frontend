@@ -57,7 +57,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar {
 
     "Delegate to Repository" in {
       given(repository.get(Some(MigrationStatus.UNPROCESSED))) willReturn Future.successful(migrations)
-      await(service.getUnprocessed) shouldBe migrations
+      await(service.getUnprocessedMigrations) shouldBe migrations
     }
   }
 
@@ -74,6 +74,8 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar {
       )
     }
   }
+
+  "Service 'Process'"
 
 
   private def theMigrationsCreated: Seq[CaseMigration] = {

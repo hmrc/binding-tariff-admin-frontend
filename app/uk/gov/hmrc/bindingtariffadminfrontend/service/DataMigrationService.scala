@@ -23,8 +23,12 @@ import scala.concurrent.Future
 
 class DataMigrationService @Inject()(/*repository: CaseMigrationRepository*/){
 
+  def getState: Future[Seq[Case]] = {
+    Future.successful(Seq.empty)
+  }
+
   def isProcessing: Future[Boolean] = {
-    Future.successful(true)
+    Future.successful(false)
   }
 
   def prepareMigration(cases: Seq[Case]): Future[Boolean] = {

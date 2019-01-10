@@ -41,10 +41,7 @@ class DataMigrationUploadController @Inject()(service: DataMigrationService,
   private def form = Form("file" -> Forms.text)
 
   def get: Action[AnyContent] = Action.async { implicit request =>
-    service.isProcessing map {
-      case true => Ok(views.html.data_migration_processing())
-      case false => Ok(views.html.data_migration_upload(form))
-    }
+    successful(Ok(views.html.data_migration_upload(form)))
   }
 
   def post: Action[MultipartFormData[TemporaryFile]] = Action.async(parse.multipartFormData) { implicit request =>
@@ -53,11 +50,10 @@ class DataMigrationUploadController @Inject()(service: DataMigrationService,
         val result = toJson(file)
         result match {
           case JsSuccess(cases, _) =>
-            successful(Ok(views.html.data_migration_confirm(cases)))
+            successful(Redirect(routes.DataMigrationStateController.get()))
           case JsError(errs) =>
             successful(Ok(views.html.data_migration_file_error(errs)))
         }
-      // call service to store all files in Mongo
       case None =>
         successful(Ok(views.html.data_migration_upload(form)))
     }

@@ -19,6 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 import java.io.{BufferedWriter, File, FileWriter}
 
 import akka.stream.Materializer
+import org.mockito.BDDMockito.given
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -33,6 +34,8 @@ import play.api.{Configuration, Environment}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.play.test.UnitSpec
+
+import scala.concurrent.Future
 
 class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers with UnitSpec with MockitoSugar with GuiceOneAppPerSuite {
 
@@ -49,12 +52,14 @@ class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers
     "return 200" in {
       val result: Result = await(controller.get()(fakeRequest))
       status(result) shouldBe OK
-      bodyOf(result) should include("Upload")
+      bodyOf(result) should include("Data Migration Upload")
     }
   }
 
   "POST /" should {
-    "return 200 for empty array" in {
+    "Prepare Upload and Redirect To Migration State Controller" in {
+      given(migrationService.prepareMigration(Seq.empty)) willReturn Future.successful(true)
+
       val file = TemporaryFile(withJson("[]"))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(filePart), badParts = Seq.empty)
@@ -63,6 +68,17 @@ class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers
       val result: Result = await(controller.post(postRequest))
       status(result) shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin-frontend/state")
+    }
+
+    "return 200 with Json Errors" in {
+      val file = TemporaryFile(withJson("[{}]"))
+      val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
+      val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(filePart), badParts = Seq.empty)
+      val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
+
+      val result: Result = await(controller.post(postRequest))
+      status(result) shouldBe OK
+      bodyOf(result) should include("Data Migration Failed")
     }
 
   }

@@ -21,4 +21,29 @@
 
 @main_template(title = "Hello from binding-tariff-admin-frontend", bodyClasses = None) {
  <h1>Data Migration In Progress</h1>
+
+ <table style="width: 960px">
+  <thead>
+   <tr>
+    <th>Case Reference</th>
+    <th>Status</th>
+    <th>Message</th>
+   </tr>
+  </thead>
+  <tbody>
+   @for(migration: CaseMigration <- migrations.sortBy(_.status)) {
+    <tr>
+     <td>@{migration.`case`.reference}</td>
+     <td>@{migration.status}</td>
+     <td>@{migration.message.getOrElse("-")}</td>
+    </tr>
+   }
+  </tbody>
+ </table>
+
+ <script>
+  setTimeout(function(){
+   location.reload();
+  }, 5000)
+ </script>
 }

@@ -50,7 +50,8 @@ class DataMigrationUploadController @Inject()(service: DataMigrationService,
         val result = toJson(file)
         result match {
           case JsSuccess(cases, _) =>
-            successful(Redirect(routes.DataMigrationStateController.get()))
+            service.prepareMigration(cases)
+              .map(_ => Redirect(routes.DataMigrationStateController.get()))
           case JsError(errs) =>
             successful(Ok(views.html.data_migration_file_error(errs)))
         }

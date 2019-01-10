@@ -51,6 +51,16 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar {
     }
   }
 
+  "Service 'Get Unprocessed'" should {
+    val migration = mock[CaseMigration]
+    val migrations = Seq(migration)
+
+    "Delegate to Repository" in {
+      given(repository.get(Some(MigrationStatus.UNPROCESSED))) willReturn Future.successful(migrations)
+      await(service.getUnprocessed) shouldBe migrations
+    }
+  }
+
   "Service 'Prepare Migration'" should {
     val `case` = mock[Case]
 

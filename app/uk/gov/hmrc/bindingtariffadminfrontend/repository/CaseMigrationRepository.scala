@@ -38,7 +38,7 @@ trait CaseMigrationRepository {
 
   def get(reference: String): Future[Option[CaseMigration]]
 
-  def get(): Future[Seq[CaseMigration]]
+  def get(status: Option[MigrationStatus] = None): Future[Seq[CaseMigration]]
 
   def update(c: CaseMigration): Future[Option[CaseMigration]]
 
@@ -63,8 +63,12 @@ class CaseMigrationMongoRepository @Inject()(config: AppConfig,
     Future.sequence(indexes.map(collection.indexesManager.ensure(_)))
   }
 
-  override def get(): Future[Seq[CaseMigration]] = {
-    collection.find(Json.obj())
+  override def get(status: Option[MigrationStatus] = None): Future[Seq[CaseMigration]] = {
+    val query = status
+      .map(s => Json.obj("status" -> s))
+      .getOrElse(Json.obj())
+
+    collection.find(query)
       .cursor[CaseMigration]()
       .collect[Seq](-1, Cursor.FailOnError[Seq[CaseMigration]]())
   }

@@ -76,6 +76,15 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
       await(repository.get()) shouldBe Seq.empty
     }
 
+    "retrieve the expected documents from the collection by status" in {
+
+      await(repository.insert(migration))
+      collectionSize shouldBe 1
+
+      await(repository.get(Some(MigrationStatus.SUCCESS))) contains Seq(migration)
+      await(repository.get(Some(MigrationStatus.FAILED))) contains Seq.empty
+    }
+
   }
 
   "get by id" should {

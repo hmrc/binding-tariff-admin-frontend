@@ -20,8 +20,11 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import reactivemongo.api.DB
+import reactivemongo.play.json.ImplicitBSONHandlers._
 import reactivemongo.bson._
+import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{CaseMigration, Cases, MigrationStatus}
 import uk.gov.hmrc.mongo.MongoSpecSupport
 
@@ -59,7 +62,7 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
 
   "getAll" should {
     val aCase = Cases.btiCaseExample
-    val migration = CaseMigration(aCase, MigrationStatus.SUCCESS)
+    val migration = CaseMigration(aCase)
 
     "retrieve the expected documents from the collection" in {
 
@@ -73,6 +76,80 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
       await(repository.get()) shouldBe Seq.empty
     }
 
+  }
+
+  "get by id" should {
+    val aCase = Cases.btiCaseExample
+    val migration = CaseMigration(aCase)
+
+    "retrieves the expected document" in {
+      await(repository.insert(migration))
+      collectionSize shouldBe 1
+
+      await(repository.get(aCase.reference)) shouldBe Some(migration)
+    }
+
+    "retrieves None when the case reference is not found" in {
+      await(repository.insert(migration))
+      collectionSize shouldBe 1
+
+      await(repository.get("WRONG_REFERENCE")) shouldBe None
+    }
+  }
+
+  "update" should {
+    val aCase = Cases.btiCaseExample
+    val migration = CaseMigration(aCase)
+
+    "modify an existing document in the collection" in {
+      await(repository.insert(migration))
+      collectionSize shouldBe 1
+
+      val updated: CaseMigration = migration.copy(status = MigrationStatus.SUCCESS)
+      await(repository.update(updated)) shouldBe Some(updated)
+
+      collectionSize shouldBe 1
+      await(repository.collection.find(selectorByReference(updated)).one[CaseMigration]) shouldBe Some(updated)
+    }
+
+    "do nothing when trying to update a non existing document in the collection" in {
+      val size = collectionSize
+
+      await(repository.update(migration)) shouldBe None
+
+      collectionSize shouldBe size
+    }
+  }
+
+  "insert" should {
+    val migrations = Seq(CaseMigration(Cases.btiCaseExample),
+                         CaseMigration(Cases.btiCaseExample.copy(reference = "2")))
+
+    "insert a list of new documents into the collection" in {
+      val size = collectionSize
+
+      await(repository.insert(migrations)) shouldBe true
+
+      collectionSize shouldBe size + 2
+      await(repository.collection.find(selectorByReference(migrations.head)).one[CaseMigration]) shouldBe Some(migrations.head)
+      await(repository.collection.find(selectorByReference(migrations(1))).one[CaseMigration]) shouldBe Some(migrations(1))
+    }
+  }
+
+  "delete" should {
+    val migrations = Seq(CaseMigration(Cases.btiCaseExample),
+      CaseMigration(Cases.btiCaseExample.copy(reference = "2")))
+
+    "removes document from the collection" in {
+      await(repository.insert(migrations)) shouldBe true
+      val size = collectionSize
+
+      await(repository.delete(migrations.head))
+
+      collectionSize shouldBe size - 1
+      await(repository.collection.find(selectorByReference(migrations.head)).one[CaseMigration]) shouldBe None
+      await(repository.collection.find(selectorByReference(migrations(1))).one[CaseMigration]) shouldBe Some(migrations(1))
+    }
   }
 
   "countByStatus" should {
@@ -94,8 +171,8 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
     }
   }
 
-  private def selectorById(migration: CaseMigration) = {
-    BSONDocument("id" -> migration.`case`.reference)
+  private def selectorByReference(caseMigration: CaseMigration) = {
+    BSONDocument("case.reference" -> caseMigration.`case`.reference)
   }
 
 }

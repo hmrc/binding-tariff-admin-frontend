@@ -36,11 +36,11 @@ trait CaseMigrationRepository {
 
   def countByStatus: Future[MigrationCounts]
 
-  def get(id: String): Future[Option[CaseMigration]]
+  def get(reference: String): Future[Option[CaseMigration]]
 
   def get(): Future[Seq[CaseMigration]]
 
-  def update(c: CaseMigration): Future[CaseMigration]
+  def update(c: CaseMigration): Future[Option[CaseMigration]]
 
   def insert(c: Seq[CaseMigration]): Future[Boolean]
 
@@ -69,15 +69,16 @@ class CaseMigrationMongoRepository @Inject()(config: AppConfig,
       .collect[Seq](-1, Cursor.FailOnError[Seq[CaseMigration]]())
   }
 
-  override def get(id: String): Future[Option[CaseMigration]] = {
-    collection.find(byReference(id)).one[CaseMigration]
+  override def get(reference: String): Future[Option[CaseMigration]] = {
+    collection.find(byReference(reference)).one[CaseMigration]
   }
 
-  override def update(c: CaseMigration): Future[CaseMigration] = {
-    collection.update(
+  override def update(c: CaseMigration): Future[Option[CaseMigration]] = {
+    collection.findAndUpdate(
       selector = byReference(c.`case`.reference),
-      update = c
-    ).map(_ => c)
+      update = c,
+      fetchNewObject = true
+    ).map(_.value.map(_.as[CaseMigration]))
   }
 
   override def delete(c: CaseMigration): Future[Boolean] = {
@@ -99,7 +100,7 @@ class CaseMigrationMongoRepository @Inject()(config: AppConfig,
     })).map(list => new MigrationCounts(list.toMap))
   }
 
-  private def byReference(id: String): JsObject = {
-    Json.obj("reference" -> id)
+  private def byReference(reference: String): JsObject = {
+    Json.obj("case.reference" -> reference)
   }
 }

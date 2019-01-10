@@ -56,7 +56,7 @@ class DataMigrationUploadController @Inject()(service: DataMigrationService,
             successful(Ok(views.html.data_migration_file_error(errs)))
         }
       case None =>
-        successful(Ok(views.html.data_migration_upload(form)))
+        successful(Redirect(routes.DataMigrationUploadController.get()))
     }
   }
 

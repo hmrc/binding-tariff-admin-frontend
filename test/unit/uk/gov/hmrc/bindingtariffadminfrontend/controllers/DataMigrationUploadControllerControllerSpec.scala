@@ -81,6 +81,15 @@ class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers
       bodyOf(result) should include("Data Migration Failed")
     }
 
+    "Redirect to GET given no file" in {
+      val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(), badParts = Seq.empty)
+      val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
+
+      val result: Result = await(controller.post(postRequest))
+      status(result) shouldBe SEE_OTHER
+      locationOf(result) shouldBe Some("/binding-tariff-admin-frontend")
+    }
+
   }
 
   private def withJson(json: String): File = {

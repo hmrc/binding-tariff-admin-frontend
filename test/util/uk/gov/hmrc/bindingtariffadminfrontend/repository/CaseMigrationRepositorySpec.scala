@@ -75,6 +75,25 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
 
   }
 
+  "countByStatus" should {
+    val aCase = Cases.btiCaseExample
+    val migration1 = CaseMigration(aCase, MigrationStatus.SUCCESS)
+    val migration2 = CaseMigration(aCase, MigrationStatus.SUCCESS)
+    val migration3 = CaseMigration(aCase, MigrationStatus.FAILED)
+
+    "collect counts" in {
+      await(repository.insert(migration1))
+      await(repository.insert(migration2))
+      await(repository.insert(migration3))
+      collectionSize shouldBe 3
+
+      val value = await(repository.countByStatus)
+      value.get(MigrationStatus.SUCCESS) shouldBe 2
+      value.get(MigrationStatus.FAILED) shouldBe 1
+      value.total shouldBe 3
+    }
+  }
+
   private def selectorById(migration: CaseMigration) = {
     BSONDocument("id" -> migration.`case`.reference)
   }

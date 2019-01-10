@@ -31,9 +31,9 @@ class DataMigrationStateController @Inject()(service: DataMigrationService,
 
   def get: Action[AnyContent] = Action.async { implicit request =>
     for {
-      processing <- service.isProcessing
+      counts <- service.counts
       state <- service.getState
-      view = if(processing) data_migration_processing(state) else data_migration_confirm(state)
+      view = if(counts.hasUnprocessed) data_migration_processing(state) else data_migration_confirm(state)
     } yield Ok(view)
   }
 }

@@ -23,8 +23,8 @@ import reactivemongo.api.Cursor
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{CaseMigration, MigrationStatus}
-import uk.gov.hmrc.bindingtariffadminfrontend.repository.MongoIndexCreator._
+import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{CaseMigration, MigrationCounts}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
@@ -34,7 +34,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @ImplementedBy(classOf[CaseMigrationMongoRepository])
 trait CaseMigrationRepository {
 
-  def containsUnprocessedEntities: Future[Boolean]
+  def countByStatus: Future[MigrationCounts]
 
   def get(id: String): Future[Option[CaseMigration]]
 
@@ -57,9 +57,7 @@ class CaseMigrationMongoRepository @Inject()(config: AppConfig,
     domainFormat = CaseMigration.format,
     idFormat = ReactiveMongoFormats.objectIdFormats) with CaseMigrationRepository {
 
-  override lazy val indexes = Seq(
-    createSingleFieldAscendingIndex("id", isUnique = true)
-  )
+  override lazy val indexes = Seq()
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
     Future.sequence(indexes.map(collection.indexesManager.ensure(_)))
@@ -91,8 +89,14 @@ class CaseMigrationMongoRepository @Inject()(config: AppConfig,
     collection.bulkInsert(ordered = false)(producers: _*).map(_.ok)
   }
 
-  def containsUnprocessedEntities: Future[Boolean] = {
-    collection.count(Some(Json.obj("status" -> MigrationStatus.UNPROCESSED))).map(_ > 0)
+  def countByStatus: Future[MigrationCounts] = {
+    import collection.BatchCommands.AggregationFramework._
+    val group = GroupField("status")("count" -> SumValue(1))
+    collection.aggregate(group).map(_.firstBatch.map(json => {
+      val status = json.value("_id").as[MigrationStatus]
+      val count = json.value("count").as[Int]
+      (status, count)
+    })).map(list => new MigrationCounts(list.toMap))
   }
 
   private def byReference(id: String): JsObject = {

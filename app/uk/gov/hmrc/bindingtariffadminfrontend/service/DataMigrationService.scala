@@ -17,7 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.service
 
 import javax.inject.Inject
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{Case, CaseMigration}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{Case, CaseMigration, MigrationCounts}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.CaseMigrationRepository
 
 import scala.concurrent.Future
@@ -28,8 +28,8 @@ class DataMigrationService @Inject()(repository: CaseMigrationRepository){
     repository.get()
   }
 
-  def isProcessing: Future[Boolean] = {
-    repository.containsUnprocessedEntities
+  def counts: Future[MigrationCounts] = {
+    repository.countByStatus
   }
 
   def prepareMigration(migrations: Seq[Case]): Future[Boolean] = {

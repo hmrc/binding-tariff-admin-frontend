@@ -1,5 +1,7 @@
 # microservice specific routes
 
-GET        /             @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.get
-POST       /             @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.post
-GET        /state        @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.get
+GET        /assets/*file        controllers.Assets.at(path="/public", file)
+
+GET        /                    @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.get
+POST       /                    @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.post
+GET        /state               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.get

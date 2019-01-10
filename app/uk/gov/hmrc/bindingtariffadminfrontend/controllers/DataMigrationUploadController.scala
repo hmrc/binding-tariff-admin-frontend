@@ -23,7 +23,7 @@ import org.apache.commons.io.FileUtils
 import play.api.data.{Form, Forms}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
-import play.api.libs.json.{JsResult, JsValue, Json}
+import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Case
@@ -45,17 +45,20 @@ class DataMigrationUploadController @Inject()(val messagesApi: MessagesApi,
   def post: Action[MultipartFormData[TemporaryFile]] = Action.async(parse.multipartFormData) { implicit request =>
     request.body.file("file").filter(_.filename.nonEmpty).map(_.ref.file) match {
       case Some(file: File) =>
-        val cases = toJson(file)
-        successful(Ok(views.html.data_migration_confirm(cases)))
+        val result = toJson(file)
+        result match {
+          case JsSuccess(cases, _) => successful(Ok(views.html.data_migration_confirm(cases)))
+          case JsError(errs) => successful(Ok(views.html.data_migration_file_error(errs)))
+        }
+        // call service to store all files in Mongo
       case None =>
         successful(Ok(views.html.data_migration_upload(form)))
     }
   }
 
-  private def toJson(file: File): Seq[Case] = {
+  private def toJson(file: File): JsResult[Seq[Case]] = {
     val jsonValue: JsValue = Json.parse(FileUtils.readFileToString(file))
-    val value: JsResult[Seq[Case]] = Json.fromJson[Seq[Case]](jsonValue)
-    value.get
+    Json.fromJson[Seq[Case]](jsonValue)
   }
 
 }

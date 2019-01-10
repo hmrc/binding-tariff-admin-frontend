@@ -14,6 +14,8 @@ object AppDependencies {
   private lazy val scope = "test, it"
 
   val test: Seq[ModuleID] = Seq(
+    "com.github.tomakehurst"  %  "wiremock"                 % "2.20.0"                % scope,
+    "org.mockito"             %  "mockito-core"             % "2.23.4"                % scope,
     "org.pegdown"             %  "pegdown"                  % "1.6.0"                 % scope,
     "org.scalatest"           %% "scalatest"                % "3.0.4"                 % scope,
     "com.typesafe.play"       %% "play-test"                % current                 % scope,

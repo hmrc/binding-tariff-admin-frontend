@@ -18,7 +18,6 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import java.io.{BufferedWriter, File, FileWriter}
 
-import akka.stream.Materializer
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status.OK
@@ -37,8 +36,6 @@ class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers
 
   private val env = Environment.simple()
   private val configuration = Configuration.load(env)
-
-  private implicit val mtrlzr = fakeApplication().injector.instanceOf[Materializer]
 
   private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
   private val appConfig = new AppConfig(configuration, env)

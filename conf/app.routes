@@ -1,3 +1,4 @@
 # microservice specific routes
 
-GET        /             @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HelloWorld.helloWorld
+GET        /             @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.get
+POST       /             @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.post

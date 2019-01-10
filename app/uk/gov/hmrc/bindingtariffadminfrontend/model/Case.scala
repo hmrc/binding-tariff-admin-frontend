@@ -38,7 +38,7 @@ case class Case
 )
 
 object Case {
-  implicit val outboundFormat: OFormat[Case] = Json.format[Case]
+  implicit val format: OFormat[Case] = Json.format[Case]
 }
 
 object CaseStatus extends Enumeration {

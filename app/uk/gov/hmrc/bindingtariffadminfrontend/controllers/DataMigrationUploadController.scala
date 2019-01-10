@@ -27,19 +27,24 @@ import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Case
+import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 import scala.concurrent.Future.successful
 
 @Singleton
-class DataMigrationUploadController @Inject()(val messagesApi: MessagesApi,
+class DataMigrationUploadController @Inject()(service: DataMigrationService,
+                                              val messagesApi: MessagesApi,
                                               implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
 
   private def form = Form("file" -> Forms.text)
 
   def get: Action[AnyContent] = Action.async { implicit request =>
-    successful(Ok(views.html.data_migration_upload(form)))
+    service.isProcessing map {
+      case true => Ok(views.html.data_migration_processing())
+      case false => Ok(views.html.data_migration_upload(form))
+    }
   }
 
   def post: Action[MultipartFormData[TemporaryFile]] = Action.async(parse.multipartFormData) { implicit request =>
@@ -47,10 +52,12 @@ class DataMigrationUploadController @Inject()(val messagesApi: MessagesApi,
       case Some(file: File) =>
         val result = toJson(file)
         result match {
-          case JsSuccess(cases, _) => successful(Ok(views.html.data_migration_confirm(cases)))
-          case JsError(errs) => successful(Ok(views.html.data_migration_file_error(errs)))
+          case JsSuccess(cases, _) =>
+            successful(Ok(views.html.data_migration_confirm(cases)))
+          case JsError(errs) =>
+            successful(Ok(views.html.data_migration_file_error(errs)))
         }
-        // call service to store all files in Mongo
+      // call service to store all files in Mongo
       case None =>
         successful(Ok(views.html.data_migration_upload(form)))
     }

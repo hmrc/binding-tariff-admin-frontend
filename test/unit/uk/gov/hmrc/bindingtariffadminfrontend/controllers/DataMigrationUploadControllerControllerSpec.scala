@@ -18,6 +18,9 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import java.io.{BufferedWriter, File, FileWriter}
 
+import akka.stream.Materializer
+import org.mockito.BDDMockito.given
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.Status.OK
@@ -28,31 +31,39 @@ import play.api.mvc.{MultipartFormData, Result}
 import play.api.test.FakeRequest
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.play.test.UnitSpec
 
-class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers with UnitSpec with GuiceOneAppPerSuite {
+import scala.concurrent.Future
+
+class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers with UnitSpec with MockitoSugar with GuiceOneAppPerSuite {
 
   private val fakeRequest = FakeRequest()
-
   private val env = Environment.simple()
   private val configuration = Configuration.load(env)
-
+  private val migrationService = mock[DataMigrationService]
   private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
   private val appConfig = new AppConfig(configuration, env)
-
-  private val controller = new DataMigrationUploadController(messageApi, appConfig)
+  private implicit val mat: Materializer = app.materializer
+  private val controller = new DataMigrationUploadController(migrationService, messageApi, appConfig)
 
   "GET /" should {
-
-    "return 200" in {
+    "return 200 when not in progress" in {
+      given(migrationService.isProcessing) willReturn Future.successful(false)
       val result: Result = await(controller.get()(fakeRequest))
       status(result) shouldBe OK
+      bodyOf(result) should include("Upload")
     }
 
+    "return 200 when in progress" in {
+      given(migrationService.isProcessing) willReturn Future.successful(true)
+      val result: Result = await(controller.get()(fakeRequest))
+      status(result) shouldBe OK
+      bodyOf(result) should include("In Progress")
+    }
   }
 
   "POST /" should {
-
     "return 200 for empty array" in {
       val file = TemporaryFile(withJson("[]"))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
@@ -61,6 +72,7 @@ class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers
 
       val result: Result = await(controller.post(postRequest))
       status(result) shouldBe OK
+      bodyOf(result) should include("Successful")
     }
 
   }

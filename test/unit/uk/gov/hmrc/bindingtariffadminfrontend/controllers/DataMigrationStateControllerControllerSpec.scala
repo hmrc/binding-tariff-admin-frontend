@@ -27,6 +27,7 @@ import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationCounts, MigrationStatus}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -45,7 +46,7 @@ class DataMigrationStateControllerControllerSpec extends WordSpec with Matchers 
 
   "GET /" should {
     "return 200 when not in progress" in {
-      given(migrationService.isProcessing) willReturn Future.successful(false)
+      given(migrationService.counts) willReturn Future.successful(new MigrationCounts(Map()))
       given(migrationService.getState) willReturn Future.successful(Seq.empty)
       val result: Result = await(controller.get()(fakeRequest))
       status(result) shouldBe OK
@@ -53,7 +54,7 @@ class DataMigrationStateControllerControllerSpec extends WordSpec with Matchers 
     }
 
     "return 200 when in progress" in {
-      given(migrationService.isProcessing) willReturn Future.successful(true)
+      given(migrationService.counts) willReturn Future.successful(new MigrationCounts(Map(MigrationStatus.UNPROCESSED -> 1)))
       given(migrationService.getState) willReturn Future.successful(Seq.empty)
       val result: Result = await(controller.get()(fakeRequest))
       status(result) shouldBe OK

@@ -39,6 +39,12 @@ class MigrationCountsTest extends UnitSpec {
       counts.total shouldBe 6
     }
 
+    "retrieve processed" in {
+      new MigrationCounts(Map(SUCCESS -> 1, FAILED -> 1)).processed shouldBe 2
+      new MigrationCounts(Map(UNPROCESSED -> 1)).processed shouldBe 0
+
+    }
+
     "has Unprocessed" in {
       new MigrationCounts(Map(UNPROCESSED -> 1)).hasUnprocessed shouldBe true
       new MigrationCounts(Map()).hasUnprocessed shouldBe false

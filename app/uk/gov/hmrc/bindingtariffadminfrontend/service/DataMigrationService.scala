@@ -45,13 +45,19 @@ class DataMigrationService @Inject()(repository: CaseMigrationRepository, connec
   }
 
   def process(c: CaseMigration)(implicit hc: HeaderCarrier): Future[CaseMigration] = {
+    Logger.info(s"Case Migration with reference [${c.`case`.reference}]: Starting")
     connector.upsertCase(c.`case`)
       .map(_ => c.copy(status = MigrationStatus.SUCCESS))
       .recover({
-        case t: Throwable => Logger.error(s"Case Migration with reference [${c.`case`.reference}] failed", t)
+        case t: Throwable =>
+          Logger.error(s"Case Migration with reference [${c.`case`.reference}]: Failed", t)
           c.copy(status = MigrationStatus.FAILED, message = Some(t.getMessage))
       })
-      .flatMap(repository.update(_).map(_.getOrElse(throw new RuntimeException("Update failed"))))
+      .flatMap {
+        repository
+          .update(_)
+          .map(_.getOrElse(throw new RuntimeException("Update failed")))
+      }
   }
 
 }

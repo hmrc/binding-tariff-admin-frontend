@@ -35,9 +35,9 @@ class MigrationJob @Inject()(service: DataMigrationService, override val lockRep
   private implicit val headers: HeaderCarrier = HeaderCarrier()
 
   override def name: String = "DataMigration"
-  override val releaseLockAfter: Duration = Duration.standardSeconds(100)
+  override val releaseLockAfter: Duration = Duration.standardMinutes(10)
   override def initialDelay: FiniteDuration = FiniteDuration(10, TimeUnit.SECONDS)
-  override def interval: FiniteDuration = FiniteDuration(10, TimeUnit.SECONDS)
+  override def interval: FiniteDuration = FiniteDuration(1, TimeUnit.MINUTES)
 
   override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
     Logger.info(s"Running Job [$name]")

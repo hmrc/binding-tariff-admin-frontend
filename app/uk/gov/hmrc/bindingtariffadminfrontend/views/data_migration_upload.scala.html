@@ -24,7 +24,11 @@
 @main_template(title = "Hello from binding-tariff-admin-frontend", bodyClasses = None) {
  <h1 class="heading-xlarge">Data Migration Upload</h1>
 
+ <hr/>
+
  <p class="font-xsmall mb-30">Alternately, <a href="@DataMigrationStateController.get()">view the current state of migrations</a></p>
+
+ <hr/>
 
  @helpers.form(action = DataMigrationUploadController.post(), 'enctype -> "multipart/form-data", 'autoComplete -> "off") {
   @error_summary(form.errors)

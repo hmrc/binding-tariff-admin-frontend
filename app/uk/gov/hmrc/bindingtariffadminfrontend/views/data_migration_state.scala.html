@@ -27,10 +27,12 @@
   <h1 class="heading-xlarge">Data Migration In Progress</h1>
  } else {
   <h1 class="heading-xlarge">Data Migration Complete</h1>
-  <a class="button" class="mt-30" href="@DataMigrationUploadController.get()">Upload Another</a>
+  <a class="button" href="@DataMigrationUploadController.get()">Upload Another</a>
  }
 
- <div class="grid-row">
+ <hr/>
+
+ <div class="grid-row mt-30 mb-15 align-center">
   <div class="column-one-third">
    <div class="bold-xlarge">@{counts.processed}/@{counts.total}</div>
    <div class="bold-xsmall">Processed</div>
@@ -46,7 +48,6 @@
    <div class="bold-xsmall">Failed</div>
   </div>
  </div>
-
 
  @migration_status_table(migrations)
 

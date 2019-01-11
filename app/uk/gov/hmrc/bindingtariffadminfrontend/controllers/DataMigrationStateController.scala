@@ -45,4 +45,5 @@ class DataMigrationStateController @Inject()(service: DataMigrationService,
     service.clear(statusFilter)
       .map(_ => Redirect(routes.DataMigrationStateController.get()))
   }
+
 }

@@ -31,6 +31,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
 @Singleton
@@ -38,7 +39,7 @@ class DataMigrationUploadController @Inject()(service: DataMigrationService,
                                               val messagesApi: MessagesApi,
                                               implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
 
-  private def form = Form("file" -> Forms.text)
+  private lazy val form = Form("file" -> Forms.text)
 
   def get: Action[AnyContent] = Action.async { implicit request =>
     successful(Ok(views.html.data_migration_upload(form)))

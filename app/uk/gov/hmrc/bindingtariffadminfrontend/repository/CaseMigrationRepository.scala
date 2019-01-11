@@ -113,12 +113,10 @@ class CaseMigrationMongoRepository @Inject()(config: AppConfig,
   }
 
   override def delete(status: Option[MigrationStatus]): Future[Boolean] = {
-    val query = status
-      .map(s => Json.obj("status" -> s))
-    if(query.isDefined) {
-      collection.remove(query.get).map(_.ok)
-    } else {
-      removeAll().map(_.ok)
+    val query = status.map(s => Json.obj("status" -> s))
+    query match {
+      case Some(_) => collection.remove(query.get).map(_.ok)
+      case _ => removeAll().map(_.ok)
     }
   }
 

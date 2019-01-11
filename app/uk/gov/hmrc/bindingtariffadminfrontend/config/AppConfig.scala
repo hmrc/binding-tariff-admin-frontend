@@ -21,6 +21,8 @@ import play.api.Mode.Mode
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.play.config.ServicesConfig
 
+import scala.concurrent.duration.FiniteDuration
+
 @Singleton
 class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: Environment) extends ServicesConfig {
 
@@ -38,5 +40,9 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: 
   lazy val reportAProblemNonJSUrl: String = s"$contactHost/contact/problem_reports_nonjs?service=$contactFormServiceIdentifier"
   lazy val filestoreUrl: String = baseUrl("binding-tariff-filestore")
   lazy val classificationBackendUrl: String = baseUrl("binding-tariff-classification")
+  lazy val dataMigrationLockLifetime: FiniteDuration = getDuration("scheduler.data-migration.lock-lifetime").asInstanceOf[FiniteDuration]
+  lazy val dataMigrationInterval: FiniteDuration = getDuration("scheduler.data-migration.interval").asInstanceOf[FiniteDuration]
+
 
 }
+

@@ -32,7 +32,7 @@
 
    <div>
     <div class="inline-block">
-      @form_button(call = DataMigrationStateController.delete(None), label = "Clear All")
+      @form_button(call = DataMigrationStateController.delete(None), label = "Clear All", disabled = counts.isEmpty)
     </div>
     <div class="inline-block">
       <a class="button inline-block" href="@DataMigrationUploadController.get()">Upload Another</a>
@@ -58,6 +58,8 @@
    <div class="bold-xsmall">Failed</div>
   </div>
  </div>
+
+ <hr/>
 
  @migration_status_table(migrations)
 

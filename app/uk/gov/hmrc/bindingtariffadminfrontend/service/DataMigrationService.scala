@@ -40,8 +40,8 @@ class DataMigrationService @Inject()(repository: CaseMigrationRepository, connec
     repository.insert(migrations.map(CaseMigration(_)))
   }
 
-  def getUnprocessedMigrations: Future[Seq[CaseMigration]] = {
-    repository.get(Some(MigrationStatus.UNPROCESSED))
+  def getNextMigration: Future[Option[CaseMigration]] = {
+    repository.get(MigrationStatus.UNPROCESSED)
   }
 
   def process(c: CaseMigration)(implicit hc: HeaderCarrier): Future[CaseMigration] = {

@@ -16,26 +16,22 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.scheduler
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.ActorSystem
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.FiniteDuration
 
 @Singleton
 class Scheduler @Inject()(actorSystem: ActorSystem, job: MigrationJob) {
 
   Logger.info("Starting Scheduler")
   actorSystem.scheduler.schedule(
-    initialDelay = FiniteDuration(0, TimeUnit.SECONDS),
-    interval = FiniteDuration(10, TimeUnit.SECONDS),
+    initialDelay = job.initialDelay,
+    interval = job.interval,
     new Runnable {
       override def run(): Unit = {
-        Logger.info(s"Running Job [${job.name}]")
-        job.execute()
+        job.execute
       }
     }
   )

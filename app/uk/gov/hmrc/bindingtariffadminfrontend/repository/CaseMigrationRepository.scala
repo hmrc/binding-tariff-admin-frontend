@@ -38,7 +38,9 @@ trait CaseMigrationRepository {
 
   def get(reference: String): Future[Option[CaseMigration]]
 
-  def get(status: Option[MigrationStatus] = None): Future[Seq[CaseMigration]]
+  def get(status: MigrationStatus): Future[Option[CaseMigration]]
+
+  def get(): Future[Seq[CaseMigration]]
 
   def update(c: CaseMigration): Future[Option[CaseMigration]]
 
@@ -63,18 +65,18 @@ class CaseMigrationMongoRepository @Inject()(config: AppConfig,
     Future.sequence(indexes.map(collection.indexesManager.ensure(_)))
   }
 
-  override def get(status: Option[MigrationStatus] = None): Future[Seq[CaseMigration]] = {
-    val query = status
-      .map(s => Json.obj("status" -> s))
-      .getOrElse(Json.obj())
-
-    collection.find(query)
+  override def get(): Future[Seq[CaseMigration]] = {
+    collection.find(Json.obj())
       .cursor[CaseMigration]()
       .collect[Seq](-1, Cursor.FailOnError[Seq[CaseMigration]]())
   }
 
   override def get(reference: String): Future[Option[CaseMigration]] = {
     collection.find(byReference(reference)).one[CaseMigration]
+  }
+
+  override def get(status: MigrationStatus): Future[Option[CaseMigration]] = {
+    collection.find(byStatus(status)).one[CaseMigration]
   }
 
   override def update(c: CaseMigration): Future[Option[CaseMigration]] = {
@@ -106,5 +108,9 @@ class CaseMigrationMongoRepository @Inject()(config: AppConfig,
 
   private def byReference(reference: String): JsObject = {
     Json.obj("case.reference" -> reference)
+  }
+
+  private def byStatus(status: MigrationStatus): JsObject = {
+    Json.obj("status" -> status)
   }
 }

@@ -16,14 +16,25 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend
 
+import javax.inject.{Inject, Provider}
 import play.api.inject.{Binding, Module}
 import play.api.{Configuration, Environment}
+import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.DefaultDB
 import uk.gov.hmrc.bindingtariffadminfrontend.scheduler.Scheduler
+import uk.gov.hmrc.lock.LockRepository
 
 class BindingTariffModule extends Module {
 
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = Seq(
+    bind[LockRepository].toProvider[LockRepositoryProvider],
     bind[Scheduler].toSelf.eagerly()
   )
 
+}
+
+class LockRepositoryProvider @Inject()(component: ReactiveMongoComponent) extends Provider[LockRepository] {
+  private implicit val db: () => DefaultDB = component.mongoConnector.db
+
+  override def get(): LockRepository = new LockRepository
 }

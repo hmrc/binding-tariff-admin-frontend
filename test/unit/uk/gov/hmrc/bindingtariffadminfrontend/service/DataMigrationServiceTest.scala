@@ -21,6 +21,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito.verify
 import org.scalatest.mockito.MockitoSugar
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.BindingTariffClassificationConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Case, CaseMigration, MigrationCounts, MigrationStatus}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.CaseMigrationRepository
 import uk.gov.hmrc.play.test.UnitSpec
@@ -30,7 +31,8 @@ import scala.concurrent.Future
 class DataMigrationServiceTest extends UnitSpec with MockitoSugar {
 
   private val repository = mock[CaseMigrationRepository]
-  private val service = new DataMigrationService(repository)
+  private val connector = mock[BindingTariffClassificationConnector]
+  private val service = new DataMigrationService(repository, connector)
 
   "Service 'Counts'" should {
 
@@ -51,13 +53,12 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar {
     }
   }
 
-  "Service 'Get Unprocessed'" should {
+  "Service 'Get Next Unprocessed'" should {
     val migration = mock[CaseMigration]
-    val migrations = Seq(migration)
 
     "Delegate to Repository" in {
-      given(repository.get(Some(MigrationStatus.UNPROCESSED))) willReturn Future.successful(migrations)
-      await(service.getUnprocessedMigrations) shouldBe migrations
+      given(repository.get(MigrationStatus.UNPROCESSED)) willReturn Future.successful(Some(migration))
+      await(service.getNextMigration) shouldBe Some(migration)
     }
   }
 
@@ -75,7 +76,9 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar {
     }
   }
 
-  "Service 'Process'"
+  "Service 'Process'" should {
+
+  }
 
 
   private def theMigrationsCreated: Seq[CaseMigration] = {

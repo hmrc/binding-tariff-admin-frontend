@@ -16,29 +16,45 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.scheduler
 
+import java.util.concurrent.TimeUnit
+
 import javax.inject.Inject
+import org.joda.time.Duration
 import play.api.Logger
+import uk.gov.hmrc.bindingtariffadminfrontend.model.CaseMigration
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.lock.LockRepository
+import uk.gov.hmrc.play.scheduling.LockedScheduledJob
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.Success
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
 
-class MigrationJob @Inject()(service: DataMigrationService) extends Job {
+class MigrationJob @Inject()(service: DataMigrationService, override val lockRepository: LockRepository) extends LockedScheduledJob {
+
+  private implicit val headers: HeaderCarrier = HeaderCarrier()
+
   override def name: String = "DataMigration"
+  override val releaseLockAfter: Duration = Duration.standardSeconds(100)
+  override def initialDelay: FiniteDuration = FiniteDuration(10, TimeUnit.SECONDS)
+  override def interval: FiniteDuration = FiniteDuration(10, TimeUnit.SECONDS)
 
-  override def execute(): Future[Unit] = {
-    service.getUnprocessedMigrations.map {
-      _.foreach(migration => {
-        service.process(migration)(HeaderCarrier())
-          .onComplete {
-            case Success(_) =>
-              Logger.info(s"Migration with reference [${migration.`case`.reference}] Succeeded")
-            case _ =>
-              Logger.info(s"Migration with reference [${migration.`case`.reference}] Failed with message [${migration.message.getOrElse("n/a")}]")
-          }
-      })
+  override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
+    Logger.info(s"Running Job [$name]")
+    service.getNextMigration flatMap {
+      _
+        .map(process)
+        .getOrElse(Future.successful(Result(s"[There was no migrations]")))
     }
+  }
+
+  private def process(migration: CaseMigration)(implicit ctx: ExecutionContext): Future[Result] = {
+    service.process(migration)
+      .map { processed =>
+        Result(s"[Migration with reference [${processed.`case`.reference}] Succeeded]")
+      }
+      .recover {
+        case t => Result(s"[Migration with reference [${migration.`case`.reference}] Failed [${t.getMessage}]]")
+      }
   }
 }

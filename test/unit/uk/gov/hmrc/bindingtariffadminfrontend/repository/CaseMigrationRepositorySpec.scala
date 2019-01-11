@@ -20,11 +20,9 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import reactivemongo.api.DB
-import reactivemongo.play.json.ImplicitBSONHandlers._
 import reactivemongo.bson._
-import reactivemongo.core.errors.DatabaseException
+import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{CaseMigration, Cases, MigrationStatus}
 import uk.gov.hmrc.mongo.MongoSpecSupport
 
@@ -76,15 +74,6 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
       await(repository.get()) shouldBe Seq.empty
     }
 
-    "retrieve the expected documents from the collection by status" in {
-
-      await(repository.insert(migration))
-      collectionSize shouldBe 1
-
-      await(repository.get(Some(MigrationStatus.SUCCESS))) contains Seq(migration)
-      await(repository.get(Some(MigrationStatus.FAILED))) contains Seq.empty
-    }
-
   }
 
   "get by id" should {
@@ -103,6 +92,25 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
       collectionSize shouldBe 1
 
       await(repository.get("WRONG_REFERENCE")) shouldBe None
+    }
+  }
+
+  "get by status" should {
+    val aCase = Cases.btiCaseExample
+    val migration = CaseMigration(aCase, status = MigrationStatus.UNPROCESSED)
+
+    "retrieves the expected document" in {
+      await(repository.insert(migration))
+      collectionSize shouldBe 1
+
+      await(repository.get(migration.status)) shouldBe Some(migration)
+    }
+
+    "retrieves None when the status is not found" in {
+      await(repository.insert(migration))
+      collectionSize shouldBe 1
+
+      await(repository.get(MigrationStatus.SUCCESS)) shouldBe None
     }
   }
 

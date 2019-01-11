@@ -31,7 +31,7 @@ class Scheduler @Inject()(actorSystem: ActorSystem, job: MigrationJob) {
     interval = job.interval,
     new Runnable {
       override def run(): Unit = {
-        job.execute
+        job.execute.map(r => Logger.info(r.message))
       }
     }
   )

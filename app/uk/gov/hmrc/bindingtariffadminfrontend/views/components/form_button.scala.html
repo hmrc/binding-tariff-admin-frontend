@@ -15,11 +15,11 @@
  *@
 
 @import views.html.helper.{CSRF, form}
-@(call: Call, label: String = "Submit")(implicit request: Request[_])
+@(call: Call, label: String = "Submit", disabled: Boolean = false)(implicit request: Request[_])
 
 @form(action = call) {
   @CSRF.formField
-  <input type="submit" id="label" class="button" value="@label"/>
+  <input type="submit" id="label" class="button" value="@label"@if(disabled){ disabled="disabled"}/>
 }
 
 

@@ -35,4 +35,8 @@ class MigrationCounts(counts: Map[MigrationStatus, Int]) {
   def processed: Int = {
     counts.filter(_._1 != MigrationStatus.UNPROCESSED).foldLeft(0)(_ + _._2)
   }
+
+  def isEmpty: Boolean = {
+    counts.isEmpty
+  }
 }

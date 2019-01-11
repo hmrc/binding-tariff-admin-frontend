@@ -49,5 +49,10 @@ class MigrationCountsTest extends UnitSpec {
       new MigrationCounts(Map(UNPROCESSED -> 1)).hasUnprocessed shouldBe true
       new MigrationCounts(Map()).hasUnprocessed shouldBe false
     }
+
+    "is Empty" in {
+      new MigrationCounts(Map(UNPROCESSED -> 1)).isEmpty shouldBe false
+      new MigrationCounts(Map()).isEmpty shouldBe true
+    }
   }
 }

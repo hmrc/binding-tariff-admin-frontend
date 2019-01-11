@@ -57,7 +57,7 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
       val response = Cases.btiCaseExample
       val responseJSON = Json.toJson(response).toString()
 
-      stubFor(put(urlEqualTo("/cases"))
+      stubFor(put(urlEqualTo(s"/cases/${request.reference}"))
         .withRequestBody(equalToJson(requestJSON))
         .willReturn(aResponse()
           .withStatus(HttpStatus.SC_OK)
@@ -69,7 +69,7 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
     }
 
     "propagate errors" in {
-      stubFor(put(urlEqualTo("/cases"))
+      stubFor(put(urlEqualTo(s"/cases/${request.reference}"))
         .willReturn(aResponse()
           .withStatus(HttpStatus.SC_BAD_GATEWAY)
         )

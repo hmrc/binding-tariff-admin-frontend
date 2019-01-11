@@ -53,8 +53,5 @@ class MigrationJob @Inject()(service: DataMigrationService, override val lockRep
       .map { processed =>
         Result(s"[Migration with reference [${processed.`case`.reference}] Succeeded]")
       }
-      .recover {
-        case t => Result(s"[Migration with reference [${migration.`case`.reference}] Failed [${t.getMessage}]]")
-      }
   }
 }

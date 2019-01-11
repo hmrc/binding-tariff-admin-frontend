@@ -1,4 +1,4 @@
-/*
+@*
  * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,18 +12,26 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *@
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model
+@@import uk.gov.hmrc.bindingtariffadminfrontend.model.CaseMigration
+@(migrations: Seq[CaseMigration])
 
-import play.api.libs.json.{Json, OFormat}
-
-case class AgentDetails
-(
-  eoriDetails: EORIDetails,
-  letterOfAuthorisation: Attachment
-)
-
-object AgentDetails {
-  implicit val outboundFormat: OFormat[AgentDetails] = Json.format[AgentDetails]
-}
+<table class="width-960">
+ <thead>
+  <tr>
+   <th>Case Reference</th>
+   <th>Status</th>
+   <th>Message</th>
+  </tr>
+ </thead>
+ <tbody>
+  @for(migration: CaseMigration <- migrations.sortBy(_.status)) {
+   <tr>
+    <td>@{migration.`case`.reference}</td>
+    <td>@{migration.status}</td>
+    <td>@{migration.message.getOrElse("-")}</td>
+   </tr>
+  }
+ </tbody>
+</table>

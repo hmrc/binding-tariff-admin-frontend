@@ -14,10 +14,10 @@
  * limitations under the License.
  *@
 
-@import play.api.libs.json.Json
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.CaseMigration
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.migration_status_table
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
 @(migrations: Seq[CaseMigration])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
@@ -26,6 +26,6 @@
 
  <a class="button" href="@routes.DataMigrationUploadController.get()">Upload Another</a>
 
- <pre style="width:940px; margin-top: 30px;">@{Json.prettyPrint(Json.toJson(migrations))}</pre>
+ @migration_status_table(migrations)
 
 }

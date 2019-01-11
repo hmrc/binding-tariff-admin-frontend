@@ -16,14 +16,18 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
+import java.time.ZonedDateTime
+
 import play.api.libs.json.{Json, OFormat}
 
-case class AgentDetails
+case class Attachment
 (
-  eoriDetails: EORIDetails,
-  letterOfAuthorisation: Attachment
+  id: String,
+  application: Boolean,
+  public: Boolean,
+  timestamp: ZonedDateTime = ZonedDateTime.now()
 )
 
-object AgentDetails {
-  implicit val outboundFormat: OFormat[AgentDetails] = Json.format[AgentDetails]
+object Attachment {
+  implicit val outboundFormat: OFormat[Attachment] = Json.format[Attachment]
 }

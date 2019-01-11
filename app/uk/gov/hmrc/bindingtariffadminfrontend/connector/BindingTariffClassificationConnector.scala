@@ -30,7 +30,7 @@ import scala.concurrent.Future
 class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, client: HttpClient) {
 
   def upsertCase(c: Case)(implicit hc: HeaderCarrier): Future[Case] = {
-    val url = s"${configuration.classificationBackendUrl}/cases"
+    val url = s"${configuration.classificationBackendUrl}/cases/${c.reference}"
     client.PUT[Case, Case](url = url, body = c)
   }
 

@@ -21,7 +21,7 @@ import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
-import uk.gov.hmrc.bindingtariffadminfrontend.views.html.{data_migration_confirm, data_migration_processing}
+import uk.gov.hmrc.bindingtariffadminfrontend.views.html.data_migration_state
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 @Singleton
@@ -33,7 +33,7 @@ class DataMigrationStateController @Inject()(service: DataMigrationService,
     for {
       counts <- service.counts
       state <- service.getState
-      view = if(counts.hasUnprocessed) data_migration_processing(state, counts) else data_migration_confirm(state)
+      view = data_migration_state(state, counts)
     } yield Ok(view)
   }
 }

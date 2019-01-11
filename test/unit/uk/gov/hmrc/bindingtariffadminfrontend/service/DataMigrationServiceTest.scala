@@ -101,15 +101,36 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar {
       await(service.process(anUnprocessedMigration)).status shouldBe MigrationStatus.FAILED
     }
 
+    "throw exception on update failure" in {
+      given(connector.upsertCase(any[Case])(any[HeaderCarrier])) willReturn Future.successful(aCase)
+      given(repository.update(any[CaseMigration])) willReturn Future.successful(None)
+
+      intercept[RuntimeException] {
+        await(service.process(anUnprocessedMigration))
+      }.getMessage shouldBe "Update failed"
+    }
+
   }
 
-  private def theMigrationToBeUpdated = {
+  "Service clear" should {
+    "Delegate to repository" in {
+      given(service.clear()) willReturn Future.successful(true)
+      await(service.clear()) shouldBe true
+    }
+
+    "Delegate to repository with status" in {
+      given(service.clear(Some(MigrationStatus.SUCCESS))) willReturn Future.successful(true)
+      await(service.clear(Some(MigrationStatus.SUCCESS))) shouldBe true
+    }
+  }
+
+  private def theMigrationToBeUpdated: CaseMigration = {
     val captor: ArgumentCaptor[CaseMigration] = ArgumentCaptor.forClass(classOf[CaseMigration])
     verify(repository).update(captor.capture())
     captor.getValue
   }
 
-  private def theCaseSentToTheBackend = {
+  private def theCaseSentToTheBackend: Case = {
     val captor: ArgumentCaptor[Case] = ArgumentCaptor.forClass(classOf[Case])
     verify(connector).upsertCase(captor.capture())(any())
     captor.getValue

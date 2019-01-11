@@ -20,11 +20,13 @@ import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.{JsObject, Json}
 import reactivemongo.api.Cursor
+import reactivemongo.api.indexes.Index
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{CaseMigration, MigrationCounts}
+import uk.gov.hmrc.bindingtariffadminfrontend.repository.MongoIndexCreator.createSingleFieldAscendingIndex
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
@@ -59,7 +61,9 @@ class CaseMigrationMongoRepository @Inject()(config: AppConfig,
     domainFormat = CaseMigration.format,
     idFormat = ReactiveMongoFormats.objectIdFormats) with CaseMigrationRepository {
 
-  override lazy val indexes = Seq()
+  override lazy val indexes: Seq[Index] = Seq(
+    createSingleFieldAscendingIndex("case.reference", isUnique = true)
+  )
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
     Future.sequence(indexes.map(collection.indexesManager.ensure(_)))

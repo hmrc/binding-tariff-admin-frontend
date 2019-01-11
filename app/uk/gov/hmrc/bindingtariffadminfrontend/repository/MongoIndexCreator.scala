@@ -16,44 +16,27 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.repository
 
+import reactivemongo.api.indexes.Index
 import reactivemongo.api.indexes.IndexType.Ascending
-import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.BSONDocument
 
 object MongoIndexCreator {
 
-  def createSingleFieldAscendingIndex(indexFieldKey: String,
-                                      isUnique: Boolean = false,
-                                      options: BSONDocument = BSONDocument()): Index = {
-
+  def createSingleFieldAscendingIndex(indexFieldKey: String, isUnique: Boolean): Index = {
     createCompoundIndex(
-      indexFieldMappings = Seq(indexFieldKey -> Ascending),
-      isUnique = isUnique,
-      options = options
+      fieldNames = Seq(indexFieldKey),
+      isUnique = isUnique
     )
   }
 
-  def createCompoundIndex(indexFieldMappings: Seq[(String, IndexType)],
+  def createCompoundIndex(fieldNames: Seq[String],
                           isUnique: Boolean,
-                          name: Option[String] = None,
-                          isBackground: Boolean = false,
-                          options: BSONDocument): Index = {
+                          isBackground: Boolean = false): Index = {
 
     Index(
-      key = indexFieldMappings,
-      name = Some(name.getOrElse(s"${indexFieldMappings.toMap.keys.mkString("-")}_Index")),
+      key = fieldNames.map(_ -> Ascending),
+      name = Some(s"${fieldNames.mkString("-")}_Index"),
       unique = isUnique,
-      background = isBackground,
-      options = options
-    )
-  }
-
-  def createTTLIndex(ttl: Int): Index = {
-    createCompoundIndex(
-      indexFieldMappings = Seq(("lastUpdated", IndexType.Ascending)),
-      isUnique = false,
-      name = Some("expiry_Index"),
-      options = BSONDocument("expireAfterSeconds" -> ttl, "partialFilterExpression" -> BSONDocument("published" -> false))
+      background = isBackground
     )
   }
 

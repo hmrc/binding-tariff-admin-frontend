@@ -21,6 +21,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import reactivemongo.api.DB
 import reactivemongo.bson._
+import reactivemongo.core.errors.DatabaseException
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{CaseMigration, Cases, MigrationStatus}
@@ -171,9 +172,9 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
 
   "countByStatus" should {
     val aCase = Cases.btiCaseExample
-    val migration1 = CaseMigration(aCase, MigrationStatus.SUCCESS)
-    val migration2 = CaseMigration(aCase, MigrationStatus.SUCCESS)
-    val migration3 = CaseMigration(aCase, MigrationStatus.FAILED)
+    val migration1 = CaseMigration(aCase.copy(reference = "1"), MigrationStatus.SUCCESS)
+    val migration2 = CaseMigration(aCase.copy(reference = "2"), MigrationStatus.SUCCESS)
+    val migration3 = CaseMigration(aCase.copy(reference = "3"), MigrationStatus.FAILED)
 
     "collect counts" in {
       await(repository.insert(migration1))
@@ -185,6 +186,22 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
       value.get(MigrationStatus.SUCCESS) shouldBe 2
       value.get(MigrationStatus.FAILED) shouldBe 1
       value.total shouldBe 3
+    }
+  }
+
+  "The 'cases' collection" should {
+    val aCase = CaseMigration(Cases.btiCaseExample)
+
+    "have a unique index based on the field 'reference' " in {
+      await(repository.insert(aCase))
+      val size = collectionSize
+
+      val caught = intercept[DatabaseException] {
+        await(repository.insert(aCase.copy(status = MigrationStatus.SUCCESS)))
+      }
+      caught.code shouldBe Some(11000)
+
+      collectionSize shouldBe size
     }
   }
 

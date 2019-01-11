@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
-import java.time.ZonedDateTime
+import java.time.Instant
 
 import play.api.libs.json.{Json, OFormat}
 
@@ -25,7 +25,7 @@ case class Attachment
   id: String,
   application: Boolean,
   public: Boolean,
-  timestamp: ZonedDateTime = ZonedDateTime.now()
+  timestamp: Instant = Instant.now()
 )
 
 object Attachment {

@@ -16,16 +16,14 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend
 
-import play.api.inject.Binding
+import play.api.inject.{Binding, Module}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.bindingtariffadminfrontend.scheduler.Scheduler
 
-class Module extends play.api.inject.Module {
+class BindingTariffModule extends Module {
 
-  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = {
-    Seq(
-      bind[Scheduler].toSelf.eagerly()
-    )
-  }
+  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = Seq(
+    bind[Scheduler].toSelf.eagerly()
+  )
 
 }

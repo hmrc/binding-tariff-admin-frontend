@@ -1,0 +1,55 @@
+package uk.gov.hmrc.bindingtariffadminfrontend.scheduler
+
+import java.util.concurrent.TimeUnit
+
+import akka.actor.{ActorSystem, Cancellable}
+import org.mockito.ArgumentMatchers.{any, refEq}
+import org.mockito.BDDMockito.given
+import org.mockito.Mockito.verify
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
+import org.scalatest.mockito.MockitoSugar
+import uk.gov.hmrc.play.scheduling.ScheduledJob
+import uk.gov.hmrc.play.test.UnitSpec
+
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
+
+class SchedulerTest extends UnitSpec with MockitoSugar {
+
+  private val actorSystem = mock[ActorSystem]
+  private val internalScheduler = mock[akka.actor.Scheduler]
+  private val job = mock[ScheduledJob]
+
+
+  "Scheduler" should {
+    val initialDelay = FiniteDuration(1, TimeUnit.SECONDS)
+    val interval = FiniteDuration(2, TimeUnit.SECONDS)
+
+    "Schedule Job" in {
+      given(actorSystem.scheduler) willReturn internalScheduler
+      given(internalScheduler.schedule(any[FiniteDuration], any[FiniteDuration], any[Runnable])(any[ExecutionContext])) will runTheJobImmediately
+      given(job.initialDelay) willReturn initialDelay
+      given(job.interval) willReturn interval
+      given(job.execute(any[ExecutionContext])) willReturn Future.successful(null)
+
+      // When
+      new Scheduler(actorSystem, job)
+
+      // Then
+      verify(internalScheduler).schedule(refEq(initialDelay), refEq(interval), any[Runnable])(any[ExecutionContext])
+      verify(job).execute(any[ExecutionContext])
+    }
+  }
+
+  private def runTheJobImmediately: Answer[Cancellable] = new Answer[Cancellable] {
+    override def answer(invocation: InvocationOnMock): Cancellable = {
+      val arg: Runnable = invocation.getArgument(2)
+      if (arg != null) {
+        arg.run()
+      }
+      Cancellable.alreadyCancelled
+    }
+  }
+
+}

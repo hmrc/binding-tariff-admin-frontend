@@ -19,11 +19,12 @@ package uk.gov.hmrc.bindingtariffadminfrontend.scheduler
 import akka.actor.ActorSystem
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
+import uk.gov.hmrc.play.scheduling.ScheduledJob
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class Scheduler @Inject()(actorSystem: ActorSystem, job: MigrationJob) {
+class Scheduler @Inject()(actorSystem: ActorSystem, job: ScheduledJob) {
 
   Logger.info("Starting Scheduler")
   actorSystem.scheduler.schedule(

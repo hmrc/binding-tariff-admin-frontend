@@ -21,12 +21,14 @@ import play.api.inject.{Binding, Module}
 import play.api.{Configuration, Environment}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.DefaultDB
-import uk.gov.hmrc.bindingtariffadminfrontend.scheduler.Scheduler
+import uk.gov.hmrc.bindingtariffadminfrontend.scheduler.{MigrationJob, Scheduler}
 import uk.gov.hmrc.lock.LockRepository
+import uk.gov.hmrc.play.scheduling.ScheduledJob
 
 class BindingTariffModule extends Module {
 
   override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = Seq(
+    bind[ScheduledJob].to[MigrationJob],
     bind[LockRepository].toProvider[LockRepositoryProvider],
     bind[Scheduler].toSelf.eagerly()
   )

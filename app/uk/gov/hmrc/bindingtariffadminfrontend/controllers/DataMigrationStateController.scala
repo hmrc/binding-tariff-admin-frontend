@@ -25,6 +25,8 @@ import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.data_migration_state
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 @Singleton
 class DataMigrationStateController @Inject()(service: DataMigrationService,
                                              val messagesApi: MessagesApi,

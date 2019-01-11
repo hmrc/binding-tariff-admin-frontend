@@ -73,7 +73,7 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
 
     "Execute and Delegate to the Service" in {
       given(lockRepository.lock(anyString, anyString, any())) willReturn Future.successful(true)
-      given(lockRepository.releaseLock(anyString, anyString)) willReturn Future.successful()
+      given(lockRepository.releaseLock(anyString, anyString)) willReturn Future.successful(())
       given(service.getNextMigration) willReturn Future.successful(Some(migration))
       given(service.process(any[CaseMigration])(any[HeaderCarrier])) willReturn Future.successful(migration)
 
@@ -84,7 +84,7 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
 
     "Handle No Migrations Remaining" in {
       given(lockRepository.lock(anyString, anyString, any())) willReturn Future.successful(true)
-      given(lockRepository.releaseLock(anyString, anyString)) willReturn Future.successful()
+      given(lockRepository.releaseLock(anyString, anyString)) willReturn Future.successful(())
       given(service.getNextMigration) willReturn Future.successful(None)
 
       await(job.execute).message shouldBe "Job with DataMigration run and completed with result [There was no migrations]"

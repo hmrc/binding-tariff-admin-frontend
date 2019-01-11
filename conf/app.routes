@@ -5,3 +5,5 @@ GET        /assets/*file        controllers.Assets.at(path="/public", file)
 GET        /                    @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.get
 POST       /                    @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.post
 GET        /state               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.get
+# Browsers cant handle DELETE types so it has to be a POST or a GET
+POST       /state               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.delete(status: Option[String])

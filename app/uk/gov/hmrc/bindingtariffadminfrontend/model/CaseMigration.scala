@@ -35,5 +35,10 @@ object CaseMigration {
 object MigrationStatus extends Enumeration {
   type MigrationStatus = Value
   val UNPROCESSED, SUCCESS, FAILED = Value
+
+  def apply(string: String): Option[MigrationStatus] = {
+    values.find(_.toString == string)
+  }
+
   implicit val format: Format[model.MigrationStatus.Value] = EnumJson.format(MigrationStatus)
 }

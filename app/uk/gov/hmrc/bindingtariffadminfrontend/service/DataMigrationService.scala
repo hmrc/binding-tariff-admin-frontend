@@ -19,6 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 import javax.inject.Inject
 import play.api.Logger
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.BindingTariffClassificationConnector
+import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Case, CaseMigration, MigrationCounts, MigrationStatus}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.CaseMigrationRepository
 import uk.gov.hmrc.http.HeaderCarrier
@@ -58,6 +59,10 @@ class DataMigrationService @Inject()(repository: CaseMigrationRepository, connec
           .update(_)
           .map(_.getOrElse(throw new RuntimeException("Update failed")))
       }
+  }
+
+  def clear(status: Option[MigrationStatus] = None): Future[Boolean] = {
+    repository.delete(status)
   }
 
 }

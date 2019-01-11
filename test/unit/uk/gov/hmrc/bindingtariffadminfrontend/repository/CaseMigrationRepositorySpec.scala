@@ -154,7 +154,7 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
     }
   }
 
-  "delete" should {
+  "delete one" should {
     val migrations = Seq(CaseMigration(Cases.btiCaseExample),
       CaseMigration(Cases.btiCaseExample.copy(reference = "2")))
 
@@ -166,6 +166,36 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
 
       collectionSize shouldBe size - 1
       await(repository.collection.find(selectorByReference(migrations.head)).one[CaseMigration]) shouldBe None
+      await(repository.collection.find(selectorByReference(migrations(1))).one[CaseMigration]) shouldBe Some(migrations(1))
+    }
+  }
+
+  "delete all" should {
+    val migrations = Seq(CaseMigration(Cases.btiCaseExample),
+      CaseMigration(Cases.btiCaseExample.copy(reference = "2")))
+
+    "remove documents from the collection" in {
+      await(repository.insert(migrations)) shouldBe true
+
+      await(repository.delete(None)) shouldBe true
+
+      collectionSize shouldBe 0
+    }
+  }
+
+  "delete by status" should {
+    val migrations = Seq(
+      CaseMigration(Cases.btiCaseExample.copy(reference = "1"), status = MigrationStatus.FAILED),
+      CaseMigration(Cases.btiCaseExample.copy(reference = "2"), status = MigrationStatus.SUCCESS)
+    )
+
+    "remove documents from the collection" in {
+      await(repository.insert(migrations)) shouldBe true
+      collectionSize shouldBe 2
+
+      await(repository.delete(Some(MigrationStatus.FAILED))) shouldBe true
+
+      collectionSize shouldBe 1
       await(repository.collection.find(selectorByReference(migrations(1))).one[CaseMigration]) shouldBe Some(migrations(1))
     }
   }

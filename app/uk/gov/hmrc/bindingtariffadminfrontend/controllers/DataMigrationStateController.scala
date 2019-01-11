@@ -20,6 +20,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.data_migration_state
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
@@ -35,5 +36,11 @@ class DataMigrationStateController @Inject()(service: DataMigrationService,
       state <- service.getState
       view = data_migration_state(state, counts)
     } yield Ok(view)
+  }
+
+  def delete(status: Option[String]): Action[AnyContent] = Action.async { implicit request =>
+    val statusFilter = status.flatMap(MigrationStatus(_))
+    service.clear(statusFilter)
+      .map(_ => Redirect(routes.DataMigrationStateController.get()))
   }
 }

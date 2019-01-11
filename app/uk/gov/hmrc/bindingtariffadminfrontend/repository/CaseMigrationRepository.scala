@@ -50,6 +50,8 @@ trait CaseMigrationRepository {
 
   def delete(c: CaseMigration): Future[Boolean]
 
+  def delete(status: Option[MigrationStatus]): Future[Boolean]
+
 }
 
 @Singleton
@@ -108,6 +110,16 @@ class CaseMigrationMongoRepository @Inject()(config: AppConfig,
       val count = json.value("count").as[Int]
       (status, count)
     })).map(list => new MigrationCounts(list.toMap))
+  }
+
+  override def delete(status: Option[MigrationStatus]): Future[Boolean] = {
+    val query = status
+      .map(s => Json.obj("status" -> s))
+    if(query.isDefined) {
+      collection.remove(query.get).map(_.ok)
+    } else {
+      removeAll().map(_.ok)
+    }
   }
 
   private def byReference(reference: String): JsObject = {

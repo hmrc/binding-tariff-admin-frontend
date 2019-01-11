@@ -68,21 +68,21 @@ class DataMigrationStateControllerControllerSpec extends WordSpec with Matchers 
       given(migrationService.clear(None)) willReturn Future.successful(true)
       val result: Result = await(controller.delete(None)(newFakeGETRequestWithCSRF))
       status(result) shouldBe SEE_OTHER
-      locationOf(result) shouldBe Some("/binding-tariff-admin-frontend/state")
+      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
     }
 
     "return 303 with query params" in {
       given(migrationService.clear(Some(MigrationStatus.UNPROCESSED))) willReturn Future.successful(true)
       val result: Result = await(controller.delete(Some("UNPROCESSED"))(newFakeGETRequestWithCSRF))
       status(result) shouldBe SEE_OTHER
-      locationOf(result) shouldBe Some("/binding-tariff-admin-frontend/state")
+      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
     }
 
     "return 303 with query params with invalid status" in {
       given(migrationService.clear(None)) willReturn Future.successful(true)
       val result: Result = await(controller.delete(Some("other"))(newFakeGETRequestWithCSRF))
       status(result) shouldBe SEE_OTHER
-      locationOf(result) shouldBe Some("/binding-tariff-admin-frontend/state")
+      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
     }
   }
 

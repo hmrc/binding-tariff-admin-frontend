@@ -67,7 +67,7 @@ class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers
 
       val result: Result = await(controller.post(postRequest))
       status(result) shouldBe SEE_OTHER
-      locationOf(result) shouldBe Some("/binding-tariff-admin-frontend/state")
+      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
     }
 
     "return 200 with Json Errors" in {
@@ -87,7 +87,7 @@ class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers
 
       val result: Result = await(controller.post(postRequest))
       status(result) shouldBe SEE_OTHER
-      locationOf(result) shouldBe Some("/binding-tariff-admin-frontend")
+      locationOf(result) shouldBe Some("/binding-tariff-admin")
     }
 
   }

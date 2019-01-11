@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import org.joda.time.Duration
 import play.api.Logger
+import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.CaseMigration
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.HeaderCarrier
@@ -30,14 +31,14 @@ import uk.gov.hmrc.play.scheduling.LockedScheduledJob
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
-class MigrationJob @Inject()(service: DataMigrationService, override val lockRepository: LockRepository) extends LockedScheduledJob {
+class MigrationJob @Inject()(appConfig: AppConfig, service: DataMigrationService, override val lockRepository: LockRepository) extends LockedScheduledJob {
 
   private implicit val headers: HeaderCarrier = HeaderCarrier()
 
   override def name: String = "DataMigration"
-  override val releaseLockAfter: Duration = Duration.standardMinutes(10)
-  override def initialDelay: FiniteDuration = FiniteDuration(10, TimeUnit.SECONDS)
-  override def interval: FiniteDuration = FiniteDuration(1, TimeUnit.MINUTES)
+  override val releaseLockAfter: Duration = Duration.millis(appConfig.dataMigrationLockLifetime.toMillis)
+  override def initialDelay: FiniteDuration = FiniteDuration(0, TimeUnit.SECONDS)
+  override def interval: FiniteDuration = appConfig.dataMigrationInterval
 
   override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
     Logger.info(s"Running Job [$name]")

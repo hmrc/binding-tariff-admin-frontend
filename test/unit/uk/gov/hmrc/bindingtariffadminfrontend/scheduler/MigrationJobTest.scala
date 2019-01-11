@@ -16,12 +16,16 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.scheduler
 
+import java.util.concurrent.TimeUnit
+
+import org.joda.time.Duration
 import org.mockito.ArgumentMatchers.{any, anyString, refEq}
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito
 import org.mockito.Mockito.{verify, verifyZeroInteractions}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
+import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Case, CaseMigration}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.HeaderCarrier
@@ -30,12 +34,14 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
+  private val config = mock[AppConfig]
   private val service = mock[DataMigrationService]
   private val lockRepository = mock[LockRepository]
-  private def job = new MigrationJob(service, lockRepository)
+  private def job = new MigrationJob(config, service, lockRepository)
 
   override protected def afterEach(): Unit = {
     super.afterEach()
@@ -46,6 +52,20 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
     val `case` = mock[Case]
     given(`case`.reference) willReturn "reference"
     val migration = CaseMigration(`case`)
+
+    "Configure 'lock Interval" in {
+      given(config.dataMigrationLockLifetime) willReturn FiniteDuration(60, TimeUnit.SECONDS)
+      job.releaseLockAfter shouldBe Duration.standardSeconds(60)
+    }
+
+    "Configure 'interval'" in {
+      given(config.dataMigrationInterval) willReturn FiniteDuration(60, TimeUnit.SECONDS)
+      job.interval shouldBe FiniteDuration(60, TimeUnit.SECONDS)
+    }
+
+    "Configure 'initial delay'" in {
+      job.initialDelay shouldBe FiniteDuration(0, TimeUnit.SECONDS)
+    }
 
     "Configure 'name'" in {
       job.name shouldBe "DataMigration"
@@ -60,15 +80,6 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       await(job.execute).message shouldBe "Job with DataMigration run and completed with result [Migration with reference [reference] Succeeded]"
 
       verify(service).process(refEq(migration))(any[HeaderCarrier])
-    }
-
-    "Handle Process Exceptions" in {
-      given(lockRepository.lock(anyString, anyString, any())) willReturn Future.successful(true)
-      given(lockRepository.releaseLock(anyString, anyString)) willReturn Future.successful()
-      given(service.getNextMigration) willReturn Future.successful(Some(migration))
-      given(service.process(any[CaseMigration])(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error!"))
-
-      await(job.execute).message shouldBe "Job with DataMigration run and completed with result [Migration with reference [reference] Failed [Error!]]"
     }
 
     "Handle No Migrations Remaining" in {

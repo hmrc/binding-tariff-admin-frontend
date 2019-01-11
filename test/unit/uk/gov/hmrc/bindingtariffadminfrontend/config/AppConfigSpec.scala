@@ -16,9 +16,13 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.config
 
+import java.util.concurrent.TimeUnit
+
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.play.test.UnitSpec
+
+import scala.concurrent.duration.FiniteDuration
 
 class AppConfigSpec extends UnitSpec with GuiceOneAppPerSuite {
 
@@ -41,6 +45,14 @@ class AppConfigSpec extends UnitSpec with GuiceOneAppPerSuite {
         "microservice.services.binding-tariff-classification.host" -> "localhost",
         "microservice.services.binding-tariff-classification.protocol" -> "http"
       ).classificationBackendUrl shouldBe "http://localhost:8080"
+    }
+
+    "Build Data Migration Lock Lifetime" in {
+      configWith("scheduler.data-migration.lock-lifetime" -> "60s").dataMigrationLockLifetime shouldBe FiniteDuration(60, TimeUnit.SECONDS)
+    }
+
+    "Build Data Migration Interval" in {
+      configWith("scheduler.data-migration.interval" -> "60s").dataMigrationInterval shouldBe FiniteDuration(60, TimeUnit.SECONDS)
     }
   }
 

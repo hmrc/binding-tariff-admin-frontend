@@ -17,9 +17,8 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.config
 
 import javax.inject.{Inject, Singleton}
-
-import play.api.{Configuration, Environment}
 import play.api.Mode.Mode
+import play.api.{Configuration, Environment}
 import uk.gov.hmrc.play.config.ServicesConfig
 
 @Singleton
@@ -37,7 +36,6 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: 
   lazy val analyticsHost: String = loadConfig("google-analytics.host")
   lazy val reportAProblemPartialUrl: String = s"$contactHost/contact/problem_reports_ajax?service=$contactFormServiceIdentifier"
   lazy val reportAProblemNonJSUrl: String = s"$contactHost/contact/problem_reports_nonjs?service=$contactFormServiceIdentifier"
-
   lazy val filestoreUrl: String = baseUrl("binding-tariff-filestore")
   lazy val classificationBackendUrl: String = baseUrl("binding-tariff-classification")
 

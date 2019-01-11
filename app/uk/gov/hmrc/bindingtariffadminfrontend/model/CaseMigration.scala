@@ -16,34 +16,29 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
-import java.time.Instant
-
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model
-import uk.gov.hmrc.bindingtariffadminfrontend.model.CaseStatus.CaseStatus
+import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
 
-case class Case
+case class CaseMigration
 (
-  reference: String,
-  status: CaseStatus,
-  createdDate: Instant,
-  daysElapsed: Long,
-  closedDate: Option[Instant] = None,
-  caseBoardsFileNumber: Option[String] = None,
-  assigneeId: Option[String] = None,
-  queueId: Option[String] = None,
-  application: Application,
-  decision: Option[Decision] = None,
-  attachments: Seq[Attachment] = Seq.empty
+  `case`: Case,
+  status: MigrationStatus = MigrationStatus.UNPROCESSED,
+  message: Option[String] = None
 )
 
-object Case {
-  implicit val format: OFormat[Case] = Json.format[Case]
+object CaseMigration {
+  implicit val format: OFormat[CaseMigration] = Json.format[CaseMigration]
 }
 
-object CaseStatus extends Enumeration {
-  type CaseStatus = Value
-  val DRAFT, NEW, OPEN, SUPPRESSED, REFERRED, REJECTED, CANCELLED, SUSPENDED, COMPLETED, REVOKED, ANNULLED = Value
-  implicit val format: Format[model.CaseStatus.Value] = EnumJson.format(CaseStatus)
+object MigrationStatus extends Enumeration {
+  type MigrationStatus = Value
+  val UNPROCESSED, SUCCESS, FAILED = Value
+
+  def apply(string: String): Option[MigrationStatus] = {
+    values.find(_.toString == string)
+  }
+
+  implicit val format: Format[model.MigrationStatus.Value] = EnumJson.format(MigrationStatus)
 }

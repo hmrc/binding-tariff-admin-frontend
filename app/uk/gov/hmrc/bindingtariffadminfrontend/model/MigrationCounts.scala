@@ -16,14 +16,23 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
-import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 
-case class AgentDetails
-(
-  eoriDetails: EORIDetails,
-  letterOfAuthorisation: Attachment
-)
+class MigrationCounts(counts: Map[MigrationStatus, Int]) {
 
-object AgentDetails {
-  implicit val outboundFormat: OFormat[AgentDetails] = Json.format[AgentDetails]
+  def get(status: MigrationStatus): Int = {
+    counts.getOrElse(status, 0)
+  }
+
+  def total: Int = {
+    counts.foldLeft(0)(_ + _._2)
+  }
+
+  def hasUnprocessed: Boolean = {
+    get(MigrationStatus.UNPROCESSED) > 0
+  }
+
+  def processed: Int = {
+    counts.filter(_._1 != MigrationStatus.UNPROCESSED).foldLeft(0)(_ + _._2)
+  }
 }

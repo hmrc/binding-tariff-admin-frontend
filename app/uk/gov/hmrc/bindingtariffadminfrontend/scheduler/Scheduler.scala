@@ -14,16 +14,26 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model
+package uk.gov.hmrc.bindingtariffadminfrontend.scheduler
 
-import play.api.libs.json.{Json, OFormat}
+import akka.actor.ActorSystem
+import javax.inject.{Inject, Singleton}
+import play.api.Logger
+import uk.gov.hmrc.play.scheduling.ScheduledJob
 
-case class AgentDetails
-(
-  eoriDetails: EORIDetails,
-  letterOfAuthorisation: Attachment
-)
+import scala.concurrent.ExecutionContext.Implicits.global
 
-object AgentDetails {
-  implicit val outboundFormat: OFormat[AgentDetails] = Json.format[AgentDetails]
+@Singleton
+class Scheduler @Inject()(actorSystem: ActorSystem, job: ScheduledJob) {
+
+  Logger.info("Starting Scheduler")
+  actorSystem.scheduler.schedule(
+    initialDelay = job.initialDelay,
+    interval = job.interval,
+    new Runnable {
+      override def run(): Unit = {
+        job.execute.map(r => Logger.info(r.message))
+      }
+    }
+  )
 }

@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model
+package uk.gov.hmrc.bindingtariffadminfrontend.repository
 
-import play.api.libs.json.{Json, OFormat}
+import com.google.inject.ImplementedBy
+import javax.inject.{Inject, Singleton}
+import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.DB
 
-case class AgentDetails
-(
-  eoriDetails: EORIDetails,
-  letterOfAuthorisation: Attachment
-)
+@ImplementedBy(classOf[MongoDb])
+trait MongoDbProvider {
+  def mongo: () => DB
+}
 
-object AgentDetails {
-  implicit val outboundFormat: OFormat[AgentDetails] = Json.format[AgentDetails]
+@Singleton
+class MongoDb @Inject()(component: ReactiveMongoComponent)  extends MongoDbProvider {
+  override val mongo: () => DB = component.mongoConnector.db
 }

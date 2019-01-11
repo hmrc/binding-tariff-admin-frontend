@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model
+package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
-import play.api.libs.json.{Json, OFormat}
+import scala.io.Source
 
-case class AgentDetails
-(
-  eoriDetails: EORIDetails,
-  letterOfAuthorisation: Attachment
-)
+trait ResourceFiles {
 
-object AgentDetails {
-  implicit val outboundFormat: OFormat[AgentDetails] = Json.format[AgentDetails]
+  protected def fromResource(path: String): String = {
+    val url = getClass.getClassLoader.getResource(path)
+    Source.fromURL(url, "UTF-8").getLines().mkString
+  }
+
 }

@@ -16,14 +16,18 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
+import java.time.Instant
+
 import play.api.libs.json.{Json, OFormat}
 
-case class AgentDetails
+case class Attachment
 (
-  eoriDetails: EORIDetails,
-  letterOfAuthorisation: Attachment
+  id: String,
+  application: Boolean,
+  public: Boolean,
+  timestamp: Instant = Instant.now()
 )
 
-object AgentDetails {
-  implicit val outboundFormat: OFormat[AgentDetails] = Json.format[AgentDetails]
+object Attachment {
+  implicit val outboundFormat: OFormat[Attachment] = Json.format[Attachment]
 }

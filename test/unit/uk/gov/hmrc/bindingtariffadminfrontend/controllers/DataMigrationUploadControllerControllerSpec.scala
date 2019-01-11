@@ -19,9 +19,12 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 import java.io.{BufferedWriter, File, FileWriter}
 
 import akka.stream.Materializer
+import org.mockito.BDDMockito.given
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.http.Status.OK
+import play.api.http.HeaderNames.LOCATION
+import play.api.http.Status.{OK, SEE_OTHER}
 import play.api.i18n.{DefaultLangs, DefaultMessagesApi}
 import play.api.libs.Files.TemporaryFile
 import play.api.mvc.MultipartFormData.FilePart
@@ -29,41 +32,62 @@ import play.api.mvc.{MultipartFormData, Result}
 import play.api.test.FakeRequest
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.play.test.UnitSpec
 
-class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers with UnitSpec with GuiceOneAppPerSuite {
+import scala.concurrent.Future
+
+class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers with UnitSpec with MockitoSugar with GuiceOneAppPerSuite {
 
   private val fakeRequest = FakeRequest()
-
   private val env = Environment.simple()
   private val configuration = Configuration.load(env)
-
-  private implicit val mtrlzr = fakeApplication().injector.instanceOf[Materializer]
-
+  private val migrationService = mock[DataMigrationService]
   private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
   private val appConfig = new AppConfig(configuration, env)
-
-  private val controller = new DataMigrationUploadController(messageApi, appConfig)
+  private implicit val mat: Materializer = app.materializer
+  private val controller = new DataMigrationUploadController(migrationService, messageApi, appConfig)
 
   "GET /" should {
-
     "return 200" in {
       val result: Result = await(controller.get()(fakeRequest))
       status(result) shouldBe OK
+      bodyOf(result) should include("Data Migration Upload")
     }
-
   }
 
   "POST /" should {
+    "Prepare Upload and Redirect To Migration State Controller" in {
+      given(migrationService.prepareMigration(Seq.empty)) willReturn Future.successful(true)
 
-    "return 200 for empty array" in {
       val file = TemporaryFile(withJson("[]"))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
 
       val result: Result = await(controller.post(postRequest))
+      status(result) shouldBe SEE_OTHER
+      locationOf(result) shouldBe Some("/binding-tariff-admin-frontend/state")
+    }
+
+    "return 200 with Json Errors" in {
+      val file = TemporaryFile(withJson("[{}]"))
+      val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
+      val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(filePart), badParts = Seq.empty)
+      val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
+
+      val result: Result = await(controller.post(postRequest))
       status(result) shouldBe OK
+      bodyOf(result) should include("Data Migration Failed")
+    }
+
+    "Redirect to GET given no file" in {
+      val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(), badParts = Seq.empty)
+      val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
+
+      val result: Result = await(controller.post(postRequest))
+      status(result) shouldBe SEE_OTHER
+      locationOf(result) shouldBe Some("/binding-tariff-admin-frontend")
     }
 
   }
@@ -74,6 +98,10 @@ class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers
     bw.write(json)
     bw.close()
     file
+  }
+
+  private def locationOf(result: Result): Option[String] = {
+    result.header.headers.get(LOCATION)
   }
 
 }

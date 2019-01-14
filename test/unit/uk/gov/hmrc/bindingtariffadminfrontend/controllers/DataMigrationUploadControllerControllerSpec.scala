@@ -28,9 +28,10 @@ import play.api.http.Status.{OK, SEE_OTHER}
 import play.api.i18n.{DefaultLangs, DefaultMessagesApi}
 import play.api.libs.Files.TemporaryFile
 import play.api.mvc.MultipartFormData.FilePart
-import play.api.mvc.{MultipartFormData, Result}
-import play.api.test.FakeRequest
+import play.api.mvc.{AnyContentAsEmpty, MultipartFormData, Result}
+import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.{Configuration, Environment}
+import play.filters.csrf.CSRF.{Token, TokenProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.play.test.UnitSpec
@@ -50,7 +51,7 @@ class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers
 
   "GET /" should {
     "return 200" in {
-      val result: Result = await(controller.get()(fakeRequest))
+      val result: Result = await(controller.get()(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
       bodyOf(result) should include("Data Migration Upload")
     }
@@ -90,6 +91,12 @@ class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers
       locationOf(result) shouldBe Some("/binding-tariff-admin")
     }
 
+  }
+
+  private def newFakeGETRequestWithCSRF: FakeRequest[AnyContentAsEmpty.type] = {
+    val tokenProvider: TokenProvider = app.injector.instanceOf[TokenProvider]
+    val csrfTags = Map(Token.NameRequestTag -> "csrfToken", Token.RequestTag -> tokenProvider.generateToken)
+    FakeRequest("GET", "/", FakeHeaders(), AnyContentAsEmpty, tags = csrfTags)
   }
 
   private def withJson(json: String): File = {

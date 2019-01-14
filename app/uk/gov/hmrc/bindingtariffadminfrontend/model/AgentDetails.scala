@@ -21,7 +21,7 @@ import play.api.libs.json.{Json, OFormat}
 case class AgentDetails
 (
   eoriDetails: EORIDetails,
-  letterOfAuthorisation: Attachment
+  letterOfAuthorisation: Option[Attachment] = None
 )
 
 object AgentDetails {

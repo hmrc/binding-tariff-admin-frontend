@@ -17,21 +17,24 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.CaseMigration
 @(migrations: Seq[CaseMigration])
 
-<table class="width-960">
- <thead>
-  <tr>
-   <th>Case Reference</th>
-   <th>Status</th>
-   <th>Message</th>
-  </tr>
- </thead>
- <tbody>
-  @for(migration: CaseMigration <- migrations.sortBy(_.status)) {
+<div>
+ <table class="width-960">
+  <thead>
    <tr>
-    <td>@{migration.`case`.reference}</td>
-    <td>@{migration.status}</td>
-    <td>@{migration.message.getOrElse("-")}</td>
+    <th>Case Reference</th>
+    <th>Status</th>
+    <th>Message</th>
    </tr>
-  }
- </tbody>
-</table>
+  </thead>
+  <tbody class="max-height-960 overflow-y">
+   @for(migration: CaseMigration <- migrations.sortBy(_.status)) {
+    <tr>
+     <td>@{migration.`case`.reference}</td>
+     <td>@{migration.status}</td>
+     <td>@{migration.message.getOrElse("-")}</td>
+    </tr>
+   }
+  </tbody>
+ </table>
+</div>
+

@@ -41,7 +41,7 @@ class MigrationJob @Inject()(appConfig: AppConfig, service: DataMigrationService
   override def interval: FiniteDuration = appConfig.dataMigrationInterval
 
   override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
-    Logger.info(s"Running Job [$name]")
+    Logger.debug(s"Running Job [$name]")
     service.getNextMigration flatMap {
       _
         .map(process)

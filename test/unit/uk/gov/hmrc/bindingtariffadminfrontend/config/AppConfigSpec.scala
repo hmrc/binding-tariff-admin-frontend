@@ -31,6 +31,12 @@ class AppConfigSpec extends UnitSpec with GuiceOneAppPerSuite {
   }
 
   "Config" should {
+    "throw error on missing config key" in {
+      intercept[Exception]{
+        configWith().analyticsToken
+      }.getMessage shouldBe "Missing configuration key: google-analytics.token"
+    }
+
     "Build Filestore URL" in {
       configWith(
         "microservice.services.binding-tariff-filestore.port" -> "8080",

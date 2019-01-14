@@ -14,7 +14,7 @@
  * limitations under the License.
  *@
 
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.CaseMigration
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.{CaseMigration, MigrationStatus}
 @(migrations: Seq[CaseMigration])
 
 <div>
@@ -30,7 +30,11 @@
    @for(migration: CaseMigration <- migrations.sortBy(_.status)) {
     <tr>
      <td>@{migration.`case`.reference}</td>
-     <td>@{migration.status}</td>
+     <td>
+      <strong class="phase-tag @if(migration.status == MigrationStatus.FAILED){phase-tag-red} @if(migration.status == MigrationStatus.SUCCESS){phase-tag-green}">
+      @{migration.status}
+      </strong>
+     </td>
      <td>@{migration.message.getOrElse("-")}</td>
     </tr>
    }

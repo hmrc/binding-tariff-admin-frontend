@@ -19,7 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 import com.google.inject.Inject
 import javax.inject.Singleton
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Case
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Case
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
@@ -32,6 +32,11 @@ class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, c
   def upsertCase(c: Case)(implicit hc: HeaderCarrier): Future[Case] = {
     val url = s"${configuration.classificationBackendUrl}/cases/${c.reference}"
     client.PUT[Case, Case](url = url, body = c)
+  }
+
+  def getCase(ref: String)(implicit hc: HeaderCarrier): Future[Option[Case]] = {
+    val url = s"${configuration.classificationBackendUrl}/cases/$ref"
+    client.GET[Option[Case]](url = url)
   }
 
 }

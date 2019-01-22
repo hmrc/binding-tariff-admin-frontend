@@ -16,29 +16,16 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
-import play.api.libs.json.{Format, Json, OFormat}
-import uk.gov.hmrc.bindingtariffadminfrontend.model
-import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
+import play.api.libs.json.Format
 import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
-
-case class CaseMigration
-(
-  `case`: Case,
-  status: MigrationStatus = MigrationStatus.UNPROCESSED,
-  message: Option[String] = None
-)
-
-object CaseMigration {
-  implicit val format: OFormat[CaseMigration] = Json.format[CaseMigration]
-}
 
 object MigrationStatus extends Enumeration {
   type MigrationStatus = Value
-  val UNPROCESSED, SUCCESS, FAILED = Value
+  val UNPROCESSED, SUCCESS, PARTIAL_SUCCESS, FAILED = Value
 
   def apply(string: String): Option[MigrationStatus] = {
     values.find(_.toString == string)
   }
 
-  implicit val format: Format[model.MigrationStatus.Value] = EnumJson.format(MigrationStatus)
+  implicit val format: Format[MigrationStatus.Value] = EnumJson.format(MigrationStatus)
 }

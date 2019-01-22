@@ -14,16 +14,28 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model
+package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
+
+import java.time.Instant
 
 import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.CaseStatus
 
-case class AgentDetails
+case class Case
 (
-  eoriDetails: EORIDetails,
-  letterOfAuthorisation: Option[Attachment] = None
+  reference: String,
+  status: CaseStatus,
+  createdDate: Instant,
+  daysElapsed: Long,
+  closedDate: Option[Instant] = None,
+  caseBoardsFileNumber: Option[String] = None,
+  assigneeId: Option[String] = None,
+  queueId: Option[String] = None,
+  application: Application,
+  decision: Option[Decision] = None,
+  attachments: Seq[Attachment]
 )
 
-object AgentDetails {
-  implicit val outboundFormat: OFormat[AgentDetails] = Json.format[AgentDetails]
+object Case {
+  implicit val format: OFormat[Case] = Json.format[Case]
 }

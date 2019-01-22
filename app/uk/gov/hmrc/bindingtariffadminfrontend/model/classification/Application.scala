@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model
+package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
 import java.time.ZonedDateTime
 
 import play.api.libs.json.{Format, Json, OFormat}
-import uk.gov.hmrc.bindingtariffadminfrontend.model
-import uk.gov.hmrc.bindingtariffadminfrontend.model.ApplicationType.ApplicationType
-import uk.gov.hmrc.bindingtariffadminfrontend.model.LiabilityStatus.LiabilityStatus
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ApplicationType.ApplicationType
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.LiabilityStatus.LiabilityStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
 import uk.gov.hmrc.play.json.Union
 
@@ -54,7 +53,7 @@ case class BTIApplication
   sampleToBeProvided: Boolean = false,
   sampleToBeReturned: Boolean = false
 ) extends Application {
-  override val `type`: model.ApplicationType.Value = ApplicationType.BTI
+  override val `type`: ApplicationType.Value = ApplicationType.BTI
 }
 
 object BTIApplication {
@@ -70,7 +69,7 @@ case class LiabilityOrder
   entryNumber: String,
   endDate: ZonedDateTime
 ) extends Application {
-  override val `type`: model.ApplicationType.Value = ApplicationType.LIABILITY_ORDER
+  override val `type`: ApplicationType.Value = ApplicationType.LIABILITY_ORDER
 }
 
 object LiabilityOrder {
@@ -80,11 +79,11 @@ object LiabilityOrder {
 object LiabilityStatus extends Enumeration {
   type LiabilityStatus = Value
   val LIVE, NON_LIVE = Value
-  implicit val format: Format[model.LiabilityStatus.Value] = EnumJson.format(LiabilityStatus)
+  implicit val format: Format[LiabilityStatus.Value] = EnumJson.format(LiabilityStatus)
 }
 
 object ApplicationType extends Enumeration {
   type ApplicationType = Value
   val BTI, LIABILITY_ORDER = Value
-  implicit val format: Format[model.LiabilityStatus.Value] = EnumJson.format(LiabilityStatus)
+  implicit val format: Format[LiabilityStatus.Value] = EnumJson.format(LiabilityStatus)
 }

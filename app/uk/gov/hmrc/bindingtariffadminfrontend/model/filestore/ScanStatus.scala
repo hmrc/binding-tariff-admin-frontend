@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model
+package uk.gov.hmrc.bindingtariffadminfrontend.model.filestore
 
-import play.api.libs.json.Json
+import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
 
-case class Contact
-(
-  name: String,
-  email: String,
-  phone: Option[String]
-)
+object ScanStatus extends Enumeration {
+  type ScanStatus = Value
+  val READY, FAILED = Value
 
-object Contact {
-  implicit val format = Json.format[Contact]
+  implicit val format = EnumJson.format(ScanStatus)
 }

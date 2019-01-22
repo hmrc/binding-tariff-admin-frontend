@@ -81,4 +81,32 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
     }
   }
 
+  "Connector 'GET Case'" should {
+    val ref = Cases.btiCaseExample.reference
+
+    "Get valid case" in {
+      val response = Cases.btiCaseExample
+      val responseJSON = Json.toJson(response).toString()
+
+      stubFor(get(urlEqualTo(s"/cases/$ref"))
+        .willReturn(aResponse()
+          .withStatus(HttpStatus.SC_OK)
+          .withBody(responseJSON)
+        )
+      )
+
+      await(connector.getCase(ref)) shouldBe Some(response)
+    }
+
+    "Return None for 404" in {
+      stubFor(get(urlEqualTo(s"/cases/$ref"))
+        .willReturn(aResponse()
+          .withStatus(HttpStatus.SC_NOT_FOUND)
+        )
+      )
+
+      await(connector.getCase(ref)) shouldBe None
+    }
+  }
+
 }

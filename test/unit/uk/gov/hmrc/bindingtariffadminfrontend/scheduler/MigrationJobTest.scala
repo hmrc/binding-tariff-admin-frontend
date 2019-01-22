@@ -23,10 +23,12 @@ import org.mockito.ArgumentMatchers.{any, anyString, refEq}
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito
 import org.mockito.Mockito.{verify, verifyZeroInteractions}
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{Case, CaseMigration}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigratableCase, Migration, MigrationStatus}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.LockRepository
@@ -41,6 +43,7 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
   private val config = mock[AppConfig]
   private val service = mock[DataMigrationService]
   private val lockRepository = mock[LockRepository]
+
   private def job = new MigrationJob(config, service, lockRepository)
 
   override protected def afterEach(): Unit = {
@@ -49,17 +52,17 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
   }
 
   "MigrationJob" should {
-    val `case` = mock[Case]
+    given(config.dataMigrationLockLifetime) willReturn FiniteDuration(60, TimeUnit.SECONDS)
+    given(config.dataMigrationInterval) willReturn FiniteDuration(60, TimeUnit.SECONDS)
+
+    val `case` = mock[MigratableCase]
     given(`case`.reference) willReturn "reference"
-    val migration = CaseMigration(`case`)
 
     "Configure 'lock Interval" in {
-      given(config.dataMigrationLockLifetime) willReturn FiniteDuration(60, TimeUnit.SECONDS)
       job.releaseLockAfter shouldBe Duration.standardSeconds(60)
     }
 
     "Configure 'interval'" in {
-      given(config.dataMigrationInterval) willReturn FiniteDuration(60, TimeUnit.SECONDS)
       job.interval shouldBe FiniteDuration(60, TimeUnit.SECONDS)
     }
 
@@ -70,16 +73,55 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
     "Configure 'name'" in {
       job.name shouldBe "DataMigration"
     }
+  }
 
-    "Execute and Delegate to the Service" in {
+  "Execute" should {
+    given(config.dataMigrationLockLifetime) willReturn FiniteDuration(60, TimeUnit.SECONDS)
+    given(config.dataMigrationInterval) willReturn FiniteDuration(60, TimeUnit.SECONDS)
+
+    val `case` = mock[MigratableCase]
+    given(`case`.reference) willReturn "reference"
+    val migration = Migration(`case`)
+
+    "Execute in Lock Successfully" in {
+      val migrationComplete = Migration(`case`, MigrationStatus.SUCCESS)
       given(lockRepository.lock(anyString, anyString, any())) willReturn Future.successful(true)
       given(lockRepository.releaseLock(anyString, anyString)) willReturn Future.successful(())
       given(service.getNextMigration) willReturn Future.successful(Some(migration))
-      given(service.process(any[CaseMigration])(any[HeaderCarrier])) willReturn Future.successful(migration)
+      given(service.process(any[Migration])(any[HeaderCarrier])) willReturn Future.successful(migrationComplete)
+      given(service.update(any[Migration])) will returnWhatWasUpdated
 
-      await(job.execute).message shouldBe "Job with DataMigration run and completed with result [Migration with reference [reference] Succeeded]"
+      await(job.execute).message shouldBe "Job with DataMigration run and completed with result [Migration with reference [reference] completed with status [SUCCESS]]"
 
       verify(service).process(refEq(migration))(any[HeaderCarrier])
+      verify(service).update(migrationComplete)
+    }
+
+    "Execute in Lock handling Cleared" in {
+      val migrationComplete = Migration(`case`, MigrationStatus.SUCCESS)
+      given(lockRepository.lock(anyString, anyString, any())) willReturn Future.successful(true)
+      given(lockRepository.releaseLock(anyString, anyString)) willReturn Future.successful(())
+      given(service.getNextMigration) willReturn Future.successful(Some(migration))
+      given(service.process(any[Migration])(any[HeaderCarrier])) willReturn Future.successful(migrationComplete)
+      given(service.update(any[Migration])) willReturn Future.successful(None)
+
+      await(job.execute).message shouldBe "Job with DataMigration run and completed with result [Migration with reference [reference] was cleared before it completed]"
+
+      verify(service).process(refEq(migration))(any[HeaderCarrier])
+      verify(service).update(migrationComplete)
+    }
+
+    "Execute in Lock handling Failure" in {
+      given(lockRepository.lock(anyString, anyString, any())) willReturn Future.successful(true)
+      given(lockRepository.releaseLock(anyString, anyString)) willReturn Future.successful(())
+      given(service.getNextMigration) willReturn Future.successful(Some(migration))
+      given(service.process(any[Migration])(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
+      given(service.update(any[Migration])) will returnWhatWasUpdated
+
+      await(job.execute).message shouldBe "Job with DataMigration run and completed with result [Migration with reference [reference] completed with status [FAILED]]"
+
+      verify(service).process(refEq(migration))(any[HeaderCarrier])
+      verify(service).update(Migration(`case`, status = MigrationStatus.FAILED, message = Some("Error")))
     }
 
     "Handle No Migrations Remaining" in {
@@ -96,6 +138,10 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       await(job.execute)
 
       verifyZeroInteractions(service)
+    }
+
+    def returnWhatWasUpdated: Answer[Future[Option[Migration]]] = new Answer[Future[Option[Migration]]] {
+      override def answer(invocation: InvocationOnMock): Future[Option[Migration]] = Future.successful(Some(invocation.getArgument(0)))
     }
   }
 }

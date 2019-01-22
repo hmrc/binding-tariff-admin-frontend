@@ -26,7 +26,7 @@ import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Case
+import uk.gov.hmrc.bindingtariffadminfrontend.model.MigratableCase
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
@@ -50,8 +50,8 @@ class DataMigrationUploadController @Inject()(service: DataMigrationService,
       case Some(file: File) =>
         val result = toJson(file)
         result match {
-          case JsSuccess(cases, _) =>
-            service.prepareMigration(cases)
+          case JsSuccess(migrations, _) =>
+            service.prepareMigration(migrations)
               .map(_ => Redirect(routes.DataMigrationStateController.get()))
           case JsError(errs) =>
             successful(Ok(views.html.data_migration_file_error(errs)))
@@ -61,9 +61,9 @@ class DataMigrationUploadController @Inject()(service: DataMigrationService,
     }
   }
 
-  private def toJson(file: File): JsResult[Seq[Case]] = {
+  private def toJson(file: File): JsResult[Seq[MigratableCase]] = {
     val jsonValue: JsValue = Json.parse(FileUtils.readFileToString(file))
-    Json.fromJson[Seq[Case]](jsonValue)
+    Json.fromJson[Seq[MigratableCase]](jsonValue)
   }
 
 }

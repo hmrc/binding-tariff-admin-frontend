@@ -16,25 +16,37 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.service
 
-import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers.any
+import java.time.Instant
+
+import org.mockito.ArgumentMatchers.{any, anyString}
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito.verify
+import org.mockito.{ArgumentCaptor, Mockito}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.BindingTariffClassificationConnector
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Cases.btiApplicationExample
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
-import uk.gov.hmrc.bindingtariffadminfrontend.repository.CaseMigrationRepository
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Case, CaseStatus}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
+import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-class DataMigrationServiceTest extends UnitSpec with MockitoSugar {
+class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
-  private val repository = mock[CaseMigrationRepository]
-  private val connector = mock[BindingTariffClassificationConnector]
-  private val service = new DataMigrationService(repository, connector)
+  private val repository = mock[MigrationRepository]
+  private val caseConnector = mock[BindingTariffClassificationConnector]
+  private val fileConnector = mock[FileStoreConnector]
+  private val service = new DataMigrationService(repository, fileConnector, caseConnector)
   private implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
+
+  override protected def afterEach(): Unit = {
+    super.afterEach()
+    Mockito.reset(repository, caseConnector, fileConnector)
+  }
 
   "Service 'Counts'" should {
 
@@ -46,7 +58,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar {
   }
 
   "Service 'Get State'" should {
-    val migration = mock[CaseMigration]
+    val migration = mock[Migration]
     val migrations = Seq(migration)
 
     "Delegate to Repository" in {
@@ -56,7 +68,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar {
   }
 
   "Service 'Get Next Unprocessed'" should {
-    val migration = mock[CaseMigration]
+    val migration = mock[Migration]
 
     "Delegate to Repository" in {
       given(repository.get(MigrationStatus.UNPROCESSED)) willReturn Future.successful(Some(migration))
@@ -65,49 +77,179 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar {
   }
 
   "Service 'Prepare Migration'" should {
-    val `case` = mock[Case]
+    val `case` = mock[MigratableCase]
 
     "Delegate to Repository" in {
-      given(repository.insert(any[Seq[CaseMigration]])) willReturn Future.successful(true)
+      given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
 
       await(service.prepareMigration(Seq(`case`))) shouldBe true
 
       theMigrationsCreated shouldBe Seq(
-        CaseMigration(`case`, MigrationStatus.UNPROCESSED, None)
+        Migration(`case`, MigrationStatus.UNPROCESSED, None)
       )
+    }
+
+    "Service 'Update'" should {
+      val migration = mock[Migration]
+      val migrationUpdated = mock[Migration]
+
+      "Delegate to Repository" in {
+        given(repository.update(migration)) willReturn Future.successful(Some(migrationUpdated))
+
+        await(service.update(migration)) shouldBe Some(migrationUpdated)
+      }
+    }
+
+    def theMigrationsCreated: Seq[Migration] = {
+      val captor: ArgumentCaptor[Seq[Migration]] = ArgumentCaptor.forClass(classOf[Seq[Migration]])
+      verify(repository).insert(captor.capture())
+      captor.getValue
     }
   }
 
   "Service 'Process'" should {
-    val aCase = Cases.btiCaseExample
-    val anUnprocessedMigration = CaseMigration(aCase)
+    val migratableAttachment = MigratableAttachment(public = true, url = "url", name = "name", mimeType = "text/plain", timestamp = Instant.EPOCH)
+    val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(migratableAttachment))
 
-    "Send the case to the backend via the connector and update the status to SUCCESS in the repository" in {
-      val aSuccessfullyProcessedMigration = CaseMigration(aCase, MigrationStatus.SUCCESS)
-      given(connector.upsertCase(any[Case])(any[HeaderCarrier])) willReturn Future.successful(aCase)
-      given(repository.update(any[CaseMigration])) willReturn Future.successful(Some(aSuccessfullyProcessedMigration))
+    val attachment = Attachment("id", public = true, Instant.EPOCH)
+    val aCase = Case("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(attachment))
 
-      await(service.process(anUnprocessedMigration)).status shouldBe MigrationStatus.SUCCESS
+    val anUnprocessedMigration = Migration(migratableCase)
 
-      theCaseSentToTheBackend shouldBe aCase
-      theMigrationToBeUpdated shouldBe aSuccessfullyProcessedMigration
+    "Migrate all Attachments and Case" in {
+      val aSuccessfullyUploadedFile = FileUploaded("id", "uploaded", "text/plain", None, None)
+      val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None)
+
+      givenTheCaseDoesNotAlreadyExist()
+      givenUpsertingTheCaseReturns(aCase)
+      givenUploadingTheFileReturns(aSuccessfullyUploadedFile)
+      givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
+
+      val migrated = await(service.process(anUnprocessedMigration))
+      migrated.status shouldBe MigrationStatus.SUCCESS
+      migrated.message shouldBe None
+
+      theCaseCreated shouldBe aCase
     }
 
-    "update the status to FAILED in the repository when sending to the backend fails" in {
-      val aFailedProcessedMigration = CaseMigration(aCase, MigrationStatus.FAILED)
-      given(connector.upsertCase(any[Case])(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Boom!"))
-      given(repository.update(any[CaseMigration])) willReturn Future.successful(Some(aFailedProcessedMigration))
+    "Migrate some Attachments and Case when upload fails" in {
 
-      await(service.process(anUnprocessedMigration)).status shouldBe MigrationStatus.FAILED
+      givenTheCaseDoesNotAlreadyExist()
+      givenUpsertingTheCaseReturns(aCase)
+      givenUploadingTheFileFails()
+
+      val migrated = await(service.process(anUnprocessedMigration))
+      migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
+      migrated.message shouldBe Some("1/1 Attachments Failed [url]")
+
+      theCaseCreated.attachments shouldBe Seq.empty
     }
 
-    "throw exception on update failure" in {
-      given(connector.upsertCase(any[Case])(any[HeaderCarrier])) willReturn Future.successful(aCase)
-      given(repository.update(any[CaseMigration])) willReturn Future.successful(None)
+    "Migrate some Attachments and Case when publish fails" in {
+      val aSuccessfullyUploadedFile = FileUploaded("id", "uploaded", "text/plain", None, None)
+
+      givenTheCaseDoesNotAlreadyExist()
+      givenUpsertingTheCaseReturns(aCase)
+      givenUploadingTheFileReturns(aSuccessfullyUploadedFile)
+      givenPublishingTheFileFails()
+
+      val migrated = await(service.process(anUnprocessedMigration))
+      migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
+      migrated.message shouldBe Some("1/1 Attachments Failed [url]")
+
+      theCaseCreated shouldBe aCase
+    }
+
+    "Migrate all Attachments for existing Case" in {
+      val aSuccessfullyUploadedFile = FileUploaded("id", "uploaded", "text/plain", None, None)
+      val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None)
+
+      givenTheCaseExistsWithoutAttachments()
+      givenUpsertingTheCaseReturns(aCase)
+      givenUploadingTheFileReturns(aSuccessfullyUploadedFile)
+      givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
+
+      val migrated = await(service.process(anUnprocessedMigration))
+      migrated.status shouldBe MigrationStatus.SUCCESS
+      migrated.message shouldBe None
+
+      theCaseCreated shouldBe aCase
+    }
+
+    "Migrate all attachments for existing Case (with attachments)" in {
+      val aSuccessfullyUploadedFile = FileUploaded("id", "name", "text/plain", None, None)
+      val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None)
+
+      givenTheCaseExistsWithAttachment("attachment-id")
+      givenUpsertingTheCaseReturns(aCase)
+      givenUploadingTheFileReturns(aSuccessfullyUploadedFile)
+      givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
+
+      val migrated = await(service.process(anUnprocessedMigration))
+      migrated.status shouldBe MigrationStatus.SUCCESS
+      migrated.message shouldBe None
+
+      verify(fileConnector).delete("attachment-id")
+      theCaseCreated shouldBe aCase
+    }
+
+    "Throw Exception on Upsert Failure" in {
+      val aSuccessfullyUploadedFile = FileUploaded("id", "name", "text/plain", None, None)
+
+      givenTheCaseDoesNotAlreadyExist()
+      givenUpsertingTheCaseReturns(aCase)
+      givenUploadingTheFileReturns(aSuccessfullyUploadedFile)
+      givenUpsertingTheCaseFails()
 
       intercept[RuntimeException] {
         await(service.process(anUnprocessedMigration))
-      }.getMessage shouldBe "Update failed"
+      }.getMessage shouldBe "Upsert Error"
+    }
+
+    def givenTheCaseExistsWithoutAttachments(): Unit = {
+      given(fileConnector.delete(any[String])(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(Some(aCase))
+    }
+
+    def givenTheCaseExistsWithAttachment(id: String): Unit = {
+      val attachment = mock[Attachment]
+      given(attachment.id) willReturn id
+      given(fileConnector.delete(any[String])(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(Some(aCase.copy(attachments = Seq(attachment))))
+    }
+
+    def givenUploadingTheFileReturns(aSuccessfullyUploadedFile: FileUploaded) = {
+      given(fileConnector.upload(any[MigratableAttachment])) willReturn Future.successful(aSuccessfullyUploadedFile)
+    }
+
+    def givenUploadingTheFileFails() = {
+      given(fileConnector.upload(any[MigratableAttachment])) willReturn Future.failed(new RuntimeException("Upload Error"))
+    }
+
+    def givenPublishingTheFileReturns(aSuccessfullyUploadedFile: FileUploaded) = {
+      given(fileConnector.publish(anyString())(any[HeaderCarrier])) willReturn Future.successful(aSuccessfullyUploadedFile)
+    }
+
+    def givenPublishingTheFileFails() = {
+      given(fileConnector.publish(anyString())(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Publish Error"))
+    }
+
+    def givenUpsertingTheCaseReturns(aCase: Case) = {
+      given(caseConnector.upsertCase(any[Case])(any[HeaderCarrier])) willReturn Future.successful(aCase)
+    }
+
+    def givenUpsertingTheCaseFails() = {
+      given(caseConnector.upsertCase(any[Case])(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Upsert Error"))
+    }
+
+    def givenTheCaseDoesNotAlreadyExist() = {
+      given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(None)
+    }
+
+    def theCaseCreated: Case = {
+      val captor: ArgumentCaptor[Case] = ArgumentCaptor.forClass(classOf[Case])
+      verify(caseConnector).upsertCase(captor.capture())(any())
+      captor.getValue
     }
 
   }
@@ -124,21 +266,4 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar {
     }
   }
 
-  private def theMigrationToBeUpdated: CaseMigration = {
-    val captor: ArgumentCaptor[CaseMigration] = ArgumentCaptor.forClass(classOf[CaseMigration])
-    verify(repository).update(captor.capture())
-    captor.getValue
-  }
-
-  private def theCaseSentToTheBackend: Case = {
-    val captor: ArgumentCaptor[Case] = ArgumentCaptor.forClass(classOf[Case])
-    verify(connector).upsertCase(captor.capture())(any())
-    captor.getValue
-  }
-
-  private def theMigrationsCreated: Seq[CaseMigration] = {
-    val captor: ArgumentCaptor[Seq[CaseMigration]] = ArgumentCaptor.forClass(classOf[Seq[CaseMigration]])
-    verify(repository).insert(captor.capture())
-    captor.getValue
-  }
 }

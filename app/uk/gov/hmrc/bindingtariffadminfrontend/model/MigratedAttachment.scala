@@ -16,19 +16,21 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
-import play.api.libs.json.Json
+import java.time.Instant
 
-case class EORIDetails
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Operator}
+
+case class MigratedAttachment
 (
-  eori: String,
-  businessName: String,
-  addressLine1: String,
-  addressLine2: String,
-  addressLine3: String,
-  postcode: String,
-  country: String
-)
-
-object EORIDetails {
-  implicit val format = Json.format[EORIDetails]
+  id: String,
+  filestoreId: String,
+  public: Boolean = false,
+  name: String,
+  mimeType: String,
+  user: Option[Operator] = None,
+  timestamp: Instant
+) {
+  def asAttachment: Attachment = {
+    Attachment(filestoreId, public, timestamp)
+  }
 }

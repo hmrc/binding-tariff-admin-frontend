@@ -18,18 +18,22 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 
 import javax.inject.Inject
 import play.api.Logger
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.BindingTariffClassificationConnector
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{Case, CaseMigration, MigrationCounts, MigrationStatus}
-import uk.gov.hmrc.bindingtariffadminfrontend.repository.CaseMigrationRepository
+import uk.gov.hmrc.bindingtariffadminfrontend.model._
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Attachment
+import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 
-class DataMigrationService @Inject()(repository: CaseMigrationRepository, connector: BindingTariffClassificationConnector) {
+class DataMigrationService @Inject()(repository: MigrationRepository,
+                                     fileConnector: FileStoreConnector,
+                                     caseConnector: BindingTariffClassificationConnector) {
 
-  def getState: Future[Seq[CaseMigration]] = {
+  def getState: Future[Seq[Migration]] = {
     repository.get()
   }
 
@@ -37,28 +41,92 @@ class DataMigrationService @Inject()(repository: CaseMigrationRepository, connec
     repository.countByStatus
   }
 
-  def prepareMigration(migrations: Seq[Case]): Future[Boolean] = {
-    repository.insert(migrations.map(CaseMigration(_)))
+  def prepareMigration(migrations: Seq[MigratableCase]): Future[Boolean] = {
+    repository.insert(migrations.map(Migration(_)))
   }
 
-  def getNextMigration: Future[Option[CaseMigration]] = {
+  def getNextMigration: Future[Option[Migration]] = {
     repository.get(MigrationStatus.UNPROCESSED)
   }
 
-  def process(c: CaseMigration)(implicit hc: HeaderCarrier): Future[CaseMigration] = {
-    Logger.info(s"Case Migration with reference [${c.`case`.reference}]: Starting")
-    connector.upsertCase(c.`case`)
-      .map(_ => c.copy(status = MigrationStatus.SUCCESS))
-      .recover({
-        case t: Throwable =>
-          Logger.error(s"Case Migration with reference [${c.`case`.reference}]: Failed", t)
-          c.copy(status = MigrationStatus.FAILED, message = Some(t.getMessage))
-      })
-      .flatMap {
-        repository
-          .update(_)
-          .map(_.getOrElse(throw new RuntimeException("Update failed")))
-      }
+  def update(migration: Migration): Future[Option[Migration]] = {
+    repository.update(migration)
+  }
+
+  def process(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
+    Logger.info(s"Case Migration with reference [${migration.`case`.reference}]: Starting")
+
+    val uploads: Future[Seq[Try[MigratedAttachment]]] = for {
+      // If the case exists we cannot tell if all its attachments are up to date with what is in the Migration.
+      // The only option is to remove them all and re-upload
+      _ <- removeAnyExistingAttachments(migration)
+
+      // Try Upload The Files
+      uploads: Seq[Try[MigratedAttachment]] <- Future.sequence(
+        migration.`case`.attachments.map(upload)
+      )
+
+      // Attachments
+      successfulAttachments: Seq[Attachment] = uploads.filter(_.isSuccess).map(_.get.asAttachment)
+      successfulUploads: Seq[MigratedAttachment] = uploads.filter(_.isSuccess).map(_.get)
+
+      // Upsert The Case
+      _ <- caseConnector.upsertCase(migration.`case`.toCase(successfulAttachments))
+
+      //Publish The Files
+      publishedUploads <- Future.sequence(successfulUploads.map(publish))
+
+    } yield publishedUploads
+
+    uploads map {
+      // All Uploads were successful
+      case u: Seq[Try[MigratedAttachment]] if u.count(_.isSuccess) == migration.`case`.attachments.size =>
+        migration.copy(status = MigrationStatus.SUCCESS)
+
+      // Not all Uploads were successful
+      case u: Seq[Try[MigratedAttachment]] =>
+        val successfulAttachments = u.filter(_.isSuccess).map(_.get.id)
+        val failedAttachments = migration.`case`.attachments.filterNot(att => successfulAttachments.contains(att.id))
+        val errorMessage = s"${failedAttachments.size}/${migration.`case`.attachments.size} Attachments Failed [${failedAttachments.map(_.url).mkString(", ")}]"
+        migration.copy(status = MigrationStatus.PARTIAL_SUCCESS, message = Some(errorMessage))
+    }
+  }
+
+  private def upload(migration: MigratableAttachment): Future[Try[MigratedAttachment]] = {
+    fileConnector.upload(migration) map { uploaded =>
+      Success(
+        MigratedAttachment(
+          id = migration.id,
+          filestoreId = uploaded.id,
+          public = migration.public,
+          name = migration.name,
+          mimeType = migration.mimeType,
+          user = migration.user,
+          timestamp = migration.timestamp
+        )
+      )
+    } recover {
+      case error => Failure(error)
+    }
+  }
+
+  private def publish(attachment: MigratedAttachment)(implicit hc: HeaderCarrier): Future[Try[MigratedAttachment]] = {
+    fileConnector.publish(attachment.filestoreId) map {
+      _ => Success(attachment)
+    } recover {
+      case error => Failure(error)
+    }
+  }
+
+  private def removeAnyExistingAttachments(migration: Migration)(implicit hc: HeaderCarrier): Future[Unit] = {
+    caseConnector.getCase(migration.`case`.reference) flatMap {
+      case Some(c) => Future.sequence(c.attachments.map(delete)).map(_ => Unit)
+      case None => Future.successful(Unit)
+    }
+  }
+
+  def delete(attachment: Attachment)(implicit hc: HeaderCarrier): Future[Unit] = {
+    fileConnector.delete(attachment.id)
   }
 
   def clear(status: Option[MigrationStatus] = None): Future[Boolean] = {

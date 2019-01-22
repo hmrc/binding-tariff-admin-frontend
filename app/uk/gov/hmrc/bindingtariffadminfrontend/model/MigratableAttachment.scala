@@ -17,33 +17,23 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
 import java.time.Instant
+import java.util.UUID
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.Format
+import play.json.extra.Jsonx
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Operator
 
-case class Decision
+case class MigratableAttachment
 (
-  bindingCommodityCode: String,
-  effectiveStartDate: Instant,
-  effectiveEndDate: Instant,
-  justification: String,
-  goodsDescription: String,
-  keywords: Seq[String],
-  methodSearch: Option[String] = None,
-  methodCommercialDenomination: Option[String] = None,
-  methodExclusion: Option[String] = None,
-  appeal: Option[Appeal] = None
+  id: String = UUID.randomUUID().toString,
+  public: Boolean = false,
+  url: String,
+  name: String,
+  mimeType: String,
+  user: Option[Operator] = None,
+  timestamp: Instant
 )
 
-object Decision {
-  implicit val outboundFormat: OFormat[Decision] = Json.format[Decision]
-}
-
-case class Appeal
-(
-  reviewStatus: String,
-  reviewResult: String
-)
-
-object Appeal {
-  implicit val outboundFormat: OFormat[Appeal] = Json.format[Appeal]
+object MigratableAttachment {
+  implicit val format: Format[MigratableAttachment] = Jsonx.formatCaseClass[MigratableAttachment]
 }

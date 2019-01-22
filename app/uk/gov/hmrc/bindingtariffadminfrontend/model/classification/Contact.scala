@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model
+package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import java.time.Instant
+import play.api.libs.json.Json
 
-import play.api.libs.json.{Json, OFormat}
-
-case class Attachment
+case class Contact
 (
-  id: String,
-  application: Boolean,
-  public: Boolean,
-  timestamp: Instant = Instant.now()
+  name: String,
+  email: String,
+  phone: Option[String]
 )
 
-object Attachment {
-  implicit val outboundFormat: OFormat[Attachment] = Json.format[Attachment]
+object Contact {
+  implicit val format = Json.format[Contact]
 }

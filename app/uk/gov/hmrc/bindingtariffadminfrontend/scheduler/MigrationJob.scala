@@ -22,7 +22,7 @@ import javax.inject.Inject
 import org.joda.time.Duration
 import play.api.Logger
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.CaseMigration
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{Migration, MigrationStatus}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.lock.LockRepository
@@ -36,8 +36,11 @@ class MigrationJob @Inject()(appConfig: AppConfig, service: DataMigrationService
   private implicit val headers: HeaderCarrier = HeaderCarrier()
 
   override def name: String = "DataMigration"
+
   override val releaseLockAfter: Duration = Duration.millis(appConfig.dataMigrationLockLifetime.toMillis)
+
   override def initialDelay: FiniteDuration = FiniteDuration(0, TimeUnit.SECONDS)
+
   override def interval: FiniteDuration = appConfig.dataMigrationInterval
 
   override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
@@ -49,10 +52,16 @@ class MigrationJob @Inject()(appConfig: AppConfig, service: DataMigrationService
     }
   }
 
-  private def process(migration: CaseMigration)(implicit ctx: ExecutionContext): Future[Result] = {
-    service.process(migration)
-      .map { processed =>
-        Result(s"[Migration with reference [${processed.`case`.reference}] Succeeded]")
-      }
+  private def process(migration: Migration)(implicit ctx: ExecutionContext): Future[Result] = {
+    service.process(migration) recover {
+      case t: Throwable =>
+        Logger.error(s"Migration with reference [${migration.`case`.reference}] failed", t)
+        migration.copy(status = MigrationStatus.FAILED, message = Some(t.getMessage))
+    } flatMap {
+      service.update
+    } map {
+      case Some(processed) => Result(s"[Migration with reference [${processed.`case`.reference}] completed with status [${processed.status}]]")
+      case None => Result(s"[Migration with reference [${migration.`case`.reference}] was cleared before it completed]")
+    }
   }
 }

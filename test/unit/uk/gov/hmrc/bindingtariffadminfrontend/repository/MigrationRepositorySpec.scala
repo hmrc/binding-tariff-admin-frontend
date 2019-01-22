@@ -24,12 +24,12 @@ import reactivemongo.bson._
 import reactivemongo.core.errors.DatabaseException
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{CaseMigration, Cases, MigrationStatus}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{Cases, Migration, MigrationStatus}
 import uk.gov.hmrc.mongo.MongoSpecSupport
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
+class MigrationRepositorySpec extends BaseMongoIndexSpec
   with BeforeAndAfterAll
   with BeforeAndAfterEach
   with MongoSpecSupport
@@ -42,7 +42,7 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
   }
 
   private val config = mock[AppConfig]
-  private val repository = new CaseMigrationMongoRepository(config, mongoDbProvider)
+  private val repository = new MigrationMongoRepository(config, mongoDbProvider)
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -60,8 +60,8 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
   }
 
   "getAll" should {
-    val aCase = Cases.btiCaseExample
-    val migration = CaseMigration(aCase)
+    val aCase = Cases.migratableCase
+    val migration = Migration(aCase)
 
     "retrieve the expected documents from the collection" in {
 
@@ -78,8 +78,8 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
   }
 
   "get by id" should {
-    val aCase = Cases.btiCaseExample
-    val migration = CaseMigration(aCase)
+    val aCase = Cases.migratableCase
+    val migration = Migration(aCase)
 
     "retrieves the expected document" in {
       await(repository.insert(migration))
@@ -97,8 +97,8 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
   }
 
   "get by status" should {
-    val aCase = Cases.btiCaseExample
-    val migration = CaseMigration(aCase, status = MigrationStatus.UNPROCESSED)
+    val aCase = Cases.migratableCase
+    val migration = Migration(aCase, status = MigrationStatus.UNPROCESSED)
 
     "retrieves the expected document" in {
       await(repository.insert(migration))
@@ -116,18 +116,18 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
   }
 
   "update" should {
-    val aCase = Cases.btiCaseExample
-    val migration = CaseMigration(aCase)
+    val aCase = Cases.migratableCase
+    val migration = Migration(aCase)
 
     "modify an existing document in the collection" in {
       await(repository.insert(migration))
       collectionSize shouldBe 1
 
-      val updated: CaseMigration = migration.copy(status = MigrationStatus.SUCCESS)
+      val updated: Migration = migration.copy(status = MigrationStatus.SUCCESS)
       await(repository.update(updated)) shouldBe Some(updated)
 
       collectionSize shouldBe 1
-      await(repository.collection.find(selectorByReference(updated)).one[CaseMigration]) shouldBe Some(updated)
+      await(repository.collection.find(selectorByReference(updated)).one[Migration]) shouldBe Some(updated)
     }
 
     "do nothing when trying to update a non existing document in the collection" in {
@@ -140,8 +140,8 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
   }
 
   "insert" should {
-    val migrations = Seq(CaseMigration(Cases.btiCaseExample),
-                         CaseMigration(Cases.btiCaseExample.copy(reference = "2")))
+    val migrations = Seq(Migration(Cases.migratableCase),
+                         Migration(Cases.migratableCase.copy(reference = "2")))
 
     "insert a list of new documents into the collection" in {
       val size = collectionSize
@@ -149,14 +149,14 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
       await(repository.insert(migrations)) shouldBe true
 
       collectionSize shouldBe size + 2
-      await(repository.collection.find(selectorByReference(migrations.head)).one[CaseMigration]) shouldBe Some(migrations.head)
-      await(repository.collection.find(selectorByReference(migrations(1))).one[CaseMigration]) shouldBe Some(migrations(1))
+      await(repository.collection.find(selectorByReference(migrations.head)).one[Migration]) shouldBe Some(migrations.head)
+      await(repository.collection.find(selectorByReference(migrations(1))).one[Migration]) shouldBe Some(migrations(1))
     }
   }
 
   "delete one" should {
-    val migrations = Seq(CaseMigration(Cases.btiCaseExample),
-      CaseMigration(Cases.btiCaseExample.copy(reference = "2")))
+    val migrations = Seq(Migration(Cases.migratableCase),
+      Migration(Cases.migratableCase.copy(reference = "2")))
 
     "removes document from the collection" in {
       await(repository.insert(migrations)) shouldBe true
@@ -165,14 +165,14 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
       await(repository.delete(migrations.head))
 
       collectionSize shouldBe size - 1
-      await(repository.collection.find(selectorByReference(migrations.head)).one[CaseMigration]) shouldBe None
-      await(repository.collection.find(selectorByReference(migrations(1))).one[CaseMigration]) shouldBe Some(migrations(1))
+      await(repository.collection.find(selectorByReference(migrations.head)).one[Migration]) shouldBe None
+      await(repository.collection.find(selectorByReference(migrations(1))).one[Migration]) shouldBe Some(migrations(1))
     }
   }
 
   "delete all" should {
-    val migrations = Seq(CaseMigration(Cases.btiCaseExample),
-      CaseMigration(Cases.btiCaseExample.copy(reference = "2")))
+    val migrations = Seq(Migration(Cases.migratableCase),
+      Migration(Cases.migratableCase.copy(reference = "2")))
 
     "remove documents from the collection" in {
       await(repository.insert(migrations)) shouldBe true
@@ -185,8 +185,8 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
 
   "delete by status" should {
     val migrations = Seq(
-      CaseMigration(Cases.btiCaseExample.copy(reference = "1"), status = MigrationStatus.FAILED),
-      CaseMigration(Cases.btiCaseExample.copy(reference = "2"), status = MigrationStatus.SUCCESS)
+      Migration(Cases.migratableCase.copy(reference = "1"), status = MigrationStatus.FAILED),
+      Migration(Cases.migratableCase.copy(reference = "2"), status = MigrationStatus.SUCCESS)
     )
 
     "remove documents from the collection" in {
@@ -196,15 +196,15 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
       await(repository.delete(Some(MigrationStatus.FAILED))) shouldBe true
 
       collectionSize shouldBe 1
-      await(repository.collection.find(selectorByReference(migrations(1))).one[CaseMigration]) shouldBe Some(migrations(1))
+      await(repository.collection.find(selectorByReference(migrations(1))).one[Migration]) shouldBe Some(migrations(1))
     }
   }
 
   "countByStatus" should {
-    val aCase = Cases.btiCaseExample
-    val migration1 = CaseMigration(aCase.copy(reference = "1"), MigrationStatus.SUCCESS)
-    val migration2 = CaseMigration(aCase.copy(reference = "2"), MigrationStatus.SUCCESS)
-    val migration3 = CaseMigration(aCase.copy(reference = "3"), MigrationStatus.FAILED)
+    val aCase = Cases.migratableCase
+    val migration1 = Migration(aCase.copy(reference = "1"), MigrationStatus.SUCCESS)
+    val migration2 = Migration(aCase.copy(reference = "2"), MigrationStatus.SUCCESS)
+    val migration3 = Migration(aCase.copy(reference = "3"), MigrationStatus.FAILED)
 
     "collect counts" in {
       await(repository.insert(migration1))
@@ -220,7 +220,7 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
   }
 
   "The 'cases' collection" should {
-    val aCase = CaseMigration(Cases.btiCaseExample)
+    val aCase = Migration(Cases.migratableCase)
 
     "have a unique index based on the field 'reference' " in {
       await(repository.insert(aCase))
@@ -235,7 +235,7 @@ class CaseMigrationRepositorySpec extends BaseMongoIndexSpec
     }
   }
 
-  private def selectorByReference(caseMigration: CaseMigration) = {
+  private def selectorByReference(caseMigration: Migration) = {
     BSONDocument("case.reference" -> caseMigration.`case`.reference)
   }
 

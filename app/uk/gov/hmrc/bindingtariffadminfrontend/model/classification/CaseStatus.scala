@@ -14,36 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model
+package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import java.time.Instant
-
-import play.api.libs.json.{Format, Json, OFormat}
-import uk.gov.hmrc.bindingtariffadminfrontend.model
-import uk.gov.hmrc.bindingtariffadminfrontend.model.CaseStatus.CaseStatus
+import play.api.libs.json.Format
 import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
-
-case class Case
-(
-  reference: String,
-  status: CaseStatus,
-  createdDate: Instant,
-  daysElapsed: Long,
-  closedDate: Option[Instant] = None,
-  caseBoardsFileNumber: Option[String] = None,
-  assigneeId: Option[String] = None,
-  queueId: Option[String] = None,
-  application: Application,
-  decision: Option[Decision] = None,
-  attachments: Seq[Attachment] = Seq.empty
-)
-
-object Case {
-  implicit val format: OFormat[Case] = Json.format[Case]
-}
 
 object CaseStatus extends Enumeration {
   type CaseStatus = Value
   val DRAFT, NEW, OPEN, SUPPRESSED, REFERRED, REJECTED, CANCELLED, SUSPENDED, COMPLETED, REVOKED, ANNULLED = Value
-  implicit val format: Format[model.CaseStatus.Value] = EnumJson.format(CaseStatus)
+  implicit val format: Format[CaseStatus.Value] = EnumJson.format(CaseStatus)
 }

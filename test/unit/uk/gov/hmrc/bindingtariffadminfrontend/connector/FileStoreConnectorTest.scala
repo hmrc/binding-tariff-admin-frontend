@@ -130,6 +130,23 @@ class FileStoreConnectorTest extends UnitSpec with WithFakeApplication with Wire
         )
       }.getMessage shouldBe "File had invalid URL [some url]"
     }
+
+    "Handle Error" in {
+      val file = MigratableAttachment(
+        name = "file-name.txt",
+        mimeType = "text/plain",
+        url = "http://localhost:123/image.png",
+        timestamp = Instant.EPOCH
+      )
+
+      intercept[MigrationFailedException] {
+        await(connector.upload(file)) shouldBe FileUploaded(
+          id = "id",
+          fileName = "file-name.txt",
+          mimeType = "text/plain"
+        )
+      }.getMessage shouldBe "File was inaccessible [http://localhost:123/image.png] due to [Connection refused (Connection refused)]"
+    }
   }
 
   "Connector Publish" should {

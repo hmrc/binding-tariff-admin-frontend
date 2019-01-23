@@ -22,8 +22,7 @@ import java.net.{MalformedURLException, URL}
 import akka.stream.IOResult
 import akka.stream.scaladsl.{FileIO, Source}
 import akka.util.ByteString
-import com.google.inject.Inject
-import javax.inject.Singleton
+import javax.inject.{Inject, Singleton}
 import org.apache.commons.io.FileUtils
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.json.Json
@@ -63,6 +62,7 @@ class FileStoreConnector @Inject()(configuration: AppConfig, client: WSClient, h
     } catch {
       case _: FileNotFoundException => Future.failed(new MigrationFailedException(s"File didnt exist at [${file.url}]"))
       case _: MalformedURLException => Future.failed(new MigrationFailedException(s"File had invalid URL [${file.url}]"))
+      case t: Throwable => Future.failed(new MigrationFailedException(s"File was inaccessible [${file.url}] due to [${t.getMessage}]"))
     }
   }
 

@@ -18,7 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
 import play.api.libs.json.{Json, OFormat}
 
-case class Operator(id: String, name: Option[String])
+case class Operator(id: String, name: Option[String] = None)
 
 object Operator {
   implicit val format: OFormat[Operator] = Json.format[Operator]

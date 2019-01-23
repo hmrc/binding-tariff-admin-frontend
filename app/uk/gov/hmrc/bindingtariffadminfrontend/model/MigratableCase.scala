@@ -20,7 +20,7 @@ import java.time.Instant
 
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.CaseStatus
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Application, Attachment, Case, Decision}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 
 case class MigratableCase
 (
@@ -30,7 +30,7 @@ case class MigratableCase
   daysElapsed: Long,
   closedDate: Option[Instant] = None,
   caseBoardsFileNumber: Option[String] = None,
-  assigneeId: Option[String] = None,
+  assignee: Option[Operator] = None,
   queueId: Option[String] = None,
   application: Application,
   decision: Option[Decision] = None,
@@ -44,7 +44,7 @@ case class MigratableCase
       daysElapsed,
       closedDate,
       caseBoardsFileNumber,
-      assigneeId,
+      assignee,
       queueId,
       application,
       decision,

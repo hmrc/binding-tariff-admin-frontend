@@ -29,7 +29,7 @@ case class Case
   daysElapsed: Long,
   closedDate: Option[Instant] = None,
   caseBoardsFileNumber: Option[String] = None,
-  assigneeId: Option[String] = None,
+  assignee: Option[Operator] = None,
   queueId: Option[String] = None,
   application: Application,
   decision: Option[Decision] = None,

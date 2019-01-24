@@ -46,7 +46,7 @@
     background-color: #F47738;
   }
 
-  &:hover, :visited:hover {
+  &:hover, :focus, :active, :visited:hover {
     background-color: #f44710;
   }
 

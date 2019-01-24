@@ -39,4 +39,14 @@ class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, c
     client.GET[Option[Case]](url = url)
   }
 
+  def deleteCases()(implicit hc: HeaderCarrier): Future[Unit] = {
+    val url = s"${configuration.classificationBackendUrl}/cases"
+    client.DELETE(url = url).map(_ => Unit)
+  }
+
+  def deleteEvents()(implicit hc: HeaderCarrier): Future[Unit] = {
+    val url = s"${configuration.classificationBackendUrl}/events"
+    client.DELETE(url = url).map(_ => Unit)
+  }
+
 }

@@ -22,6 +22,7 @@ import org.apache.http.HttpStatus
 import org.mockito.BDDMockito._
 import org.scalatest.mockito.MockitoSugar
 import play.api.Environment
+import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
@@ -106,6 +107,38 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
       )
 
       await(connector.getCase(ref)) shouldBe None
+    }
+  }
+
+  "Connector Delete All Cases" should {
+    "DELETE from the Case Store" in {
+      stubFor(
+        delete("/cases")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.NO_CONTENT)
+          )
+      )
+
+      await(connector.deleteCases)
+
+      verify(deleteRequestedFor(urlEqualTo("/cases")))
+    }
+  }
+
+  "Connector Delete All Events" should {
+    "DELETE from the Case Store" in {
+      stubFor(
+        delete("/events")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.NO_CONTENT)
+          )
+      )
+
+      await(connector.deleteEvents)
+
+      verify(deleteRequestedFor(urlEqualTo("/events")))
     }
   }
 

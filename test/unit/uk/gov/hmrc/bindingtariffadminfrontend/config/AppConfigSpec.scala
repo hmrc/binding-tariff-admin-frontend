@@ -60,6 +60,11 @@ class AppConfigSpec extends UnitSpec with GuiceOneAppPerSuite {
     "Build Data Migration Interval" in {
       configWith("scheduler.data-migration.interval" -> "60s").dataMigrationInterval shouldBe FiniteDuration(60, TimeUnit.SECONDS)
     }
+
+    "Build 'Reset Permitted" in {
+      configWith("reset-permitted" -> "true").resetPermitted shouldBe true
+      configWith("reset-permitted" -> "false").resetPermitted shouldBe false
+    }
   }
 
 }

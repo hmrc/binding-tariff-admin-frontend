@@ -17,9 +17,12 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import akka.stream.Materializer
+import org.mockito.ArgumentMatchers.any
 import org.mockito.BDDMockito.given
+import org.mockito.Mockito
+import org.mockito.Mockito.{never, verify}
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.HeaderNames.LOCATION
 import play.api.http.Status.{OK, SEE_OTHER}
@@ -31,19 +34,36 @@ import play.filters.csrf.CSRF.{Token, TokenProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationCounts, MigrationStatus}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-class DataMigrationStateControllerControllerSpec extends WordSpec with Matchers with UnitSpec with MockitoSugar with GuiceOneAppPerSuite {
+class DataMigrationStateControllerControllerSpec extends WordSpec
+  with Matchers
+  with UnitSpec
+  with MockitoSugar
+  with GuiceOneAppPerSuite
+  with BeforeAndAfterEach {
 
   private val env = Environment.simple()
   private val configuration = Configuration.load(env)
   private val migrationService = mock[DataMigrationService]
   private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
-  private val appConfig = new AppConfig(configuration, env)
+  private val appConfig = mock[AppConfig]
   private implicit val mat: Materializer = app.materializer
   private val controller = new DataMigrationStateController(migrationService, messageApi, appConfig)
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    given(appConfig.analyticsToken) willReturn "token"
+    given(appConfig.analyticsHost) willReturn "host"
+  }
+
+  override protected def afterEach(): Unit = {
+    super.afterEach()
+    Mockito.reset(migrationService, appConfig)
+  }
 
   "GET /state" should {
     "return 200 when not in progress" in {
@@ -83,6 +103,43 @@ class DataMigrationStateControllerControllerSpec extends WordSpec with Matchers 
       val result: Result = await(controller.delete(Some("other"))(newFakeGETRequestWithCSRF))
       status(result) shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
+    }
+  }
+
+  "GET /reset" should {
+    "return 200 when permitted" in {
+      given(appConfig.resetPermitted) willReturn true
+      val result: Result = await(controller.reset()(newFakeGETRequestWithCSRF))
+      status(result) shouldBe OK
+      bodyOf(result) should include("Are You Sure?")
+    }
+
+    "return 303 when not permitted" in {
+      given(appConfig.resetPermitted) willReturn false
+      val result: Result = await(controller.reset()(newFakeGETRequestWithCSRF))
+      status(result) shouldBe SEE_OTHER
+      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
+    }
+  }
+
+  "POST /reset" should {
+    "return 303 when permitted" in {
+      given(appConfig.resetPermitted) willReturn true
+      given(migrationService.resetEnvironment()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+
+      val result: Result = await(controller.resetConfirm()(newFakeGETRequestWithCSRF))
+      status(result) shouldBe SEE_OTHER
+      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
+      verify(migrationService).resetEnvironment()(any[HeaderCarrier])
+    }
+
+    "return 303 when not permitted" in {
+      given(appConfig.resetPermitted) willReturn false
+      val result: Result = await(controller.resetConfirm()(newFakeGETRequestWithCSRF))
+
+      status(result) shouldBe SEE_OTHER
+      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
+      verify(migrationService, never()).resetEnvironment()(any[HeaderCarrier])
     }
   }
 

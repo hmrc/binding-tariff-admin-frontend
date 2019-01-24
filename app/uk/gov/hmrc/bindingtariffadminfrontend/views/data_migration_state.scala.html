@@ -37,6 +37,11 @@
     <div class="inline-block">
       <a class="button inline-block" href="@DataMigrationUploadController.get()">Upload Another</a>
     </div>
+    @if(appConfig.resetPermitted) {
+     <div class="inline-block">
+      <a class="button button-warn inline-block" href="@DataMigrationStateController.reset()">Reset Services</a>
+     </div>
+    }
    </div>
  }
 

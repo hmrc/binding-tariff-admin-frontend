@@ -22,10 +22,11 @@ import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
-import uk.gov.hmrc.bindingtariffadminfrontend.views.html.data_migration_state
+import uk.gov.hmrc.bindingtariffadminfrontend.views.html.{data_migration_reset_confirm, data_migration_state}
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 @Singleton
 class DataMigrationStateController @Inject()(service: DataMigrationService,
@@ -44,6 +45,24 @@ class DataMigrationStateController @Inject()(service: DataMigrationService,
     val statusFilter = status.flatMap(MigrationStatus(_))
     service.clear(statusFilter)
       .map(_ => Redirect(routes.DataMigrationStateController.get()))
+  }
+
+  def reset(): Action[AnyContent] = Action.async { implicit request =>
+    if(appConfig.resetPermitted) {
+      Future.successful(Ok(data_migration_reset_confirm()))
+    } else {
+      Future.successful(Redirect(routes.DataMigrationStateController.get()))
+    }
+  }
+
+  def resetConfirm(): Action[AnyContent] = Action.async { implicit request =>
+    if(appConfig.resetPermitted) {
+      service.resetEnvironment()
+        .map(_ => Redirect(routes.DataMigrationStateController.get()))
+    } else {
+      Future.successful(Redirect(routes.DataMigrationStateController.get()))
+    }
+
   }
 
 }

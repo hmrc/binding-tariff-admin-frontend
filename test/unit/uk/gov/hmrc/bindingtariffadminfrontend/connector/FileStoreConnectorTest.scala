@@ -67,6 +67,22 @@ class FileStoreConnectorTest extends UnitSpec with WithFakeApplication with Wire
     }
   }
 
+  "Connector Delete All" should {
+    "DELETE from the File Store" in {
+      stubFor(
+        delete("/file")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.NO_CONTENT)
+          )
+      )
+
+      await(connector.delete)
+
+      verify(deleteRequestedFor(urlEqualTo("/file")))
+    }
+  }
+
   "Connector Upload" should {
     "POST to the File Store" in {
       stubFor(

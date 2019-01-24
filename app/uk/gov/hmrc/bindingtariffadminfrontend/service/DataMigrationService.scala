@@ -110,6 +110,26 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     }
   }
 
+  def delete(attachment: Attachment)(implicit hc: HeaderCarrier): Future[Unit] = {
+    fileConnector.delete(attachment.id)
+  }
+
+  def clear(status: Option[MigrationStatus] = None): Future[Boolean] = {
+    repository.delete(status)
+  }
+
+  def resetEnvironment()(implicit hc: HeaderCarrier): Future[Unit] = {
+    def loggingAWarning: PartialFunction[Throwable, Unit] = {
+      case t: Throwable => Logger.warn("Failed to clear Service", t)
+    }
+
+    for {
+      _ <- fileConnector.delete() recover loggingAWarning
+      _ <- caseConnector.deleteCases() recover loggingAWarning
+      _ <- caseConnector.deleteEvents() recover loggingAWarning
+    } yield Unit
+  }
+
   private def publish(attachment: MigratedAttachment)(implicit hc: HeaderCarrier): Future[Try[MigratedAttachment]] = {
     fileConnector.publish(attachment.filestoreId) map {
       _ => Success(attachment)
@@ -123,14 +143,6 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       case Some(c) => Future.sequence(c.attachments.map(delete)).map(_ => Unit)
       case None => Future.successful(Unit)
     }
-  }
-
-  def delete(attachment: Attachment)(implicit hc: HeaderCarrier): Future[Unit] = {
-    fileConnector.delete(attachment.id)
-  }
-
-  def clear(status: Option[MigrationStatus] = None): Future[Boolean] = {
-    repository.delete(status)
   }
 
 }

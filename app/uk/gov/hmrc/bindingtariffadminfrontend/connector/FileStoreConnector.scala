@@ -41,6 +41,10 @@ import scala.concurrent.Future
 @Singleton
 class FileStoreConnector @Inject()(configuration: AppConfig, client: WSClient, http: HttpClient) {
 
+  def delete()(implicit hc: HeaderCarrier): Future[Unit] = {
+    http.DELETE(s"${configuration.filestoreUrl}/file").map(_ => Unit)
+  }
+
   def delete(id: String)(implicit hc: HeaderCarrier): Future[Unit] = {
     http.DELETE(s"${configuration.filestoreUrl}/file/$id").map(_ => Unit)
   }

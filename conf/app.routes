@@ -7,3 +7,6 @@ POST       /                    @uk.gov.hmrc.bindingtariffadminfrontend.controll
 GET        /state               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.get
 # Browsers cant handle DELETE types so it has to be a POST or a GET
 POST       /state               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.delete(status: Option[String])
+
+GET        /reset              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.reset()
+POST       /reset              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.resetConfirm()

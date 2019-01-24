@@ -107,6 +107,55 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     }
   }
 
+  "Service 'Clear Environment'" should {
+    "Clear Back Ends" in {
+      given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+
+      await(service.resetEnvironment())
+
+      verify(fileConnector).delete()(any[HeaderCarrier])
+      verify(caseConnector).deleteCases()(any[HeaderCarrier])
+      verify(caseConnector).deleteEvents()(any[HeaderCarrier])
+    }
+
+    "Handle FileStore Failure" in {
+      given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
+      given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+
+      await(service.resetEnvironment())
+
+      verify(fileConnector).delete()(any[HeaderCarrier])
+      verify(caseConnector).deleteCases()(any[HeaderCarrier])
+    }
+
+    "Handle CaseStore Case Delete Failure " in {
+      given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
+      given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+
+      await(service.resetEnvironment())
+
+      verify(fileConnector).delete()(any[HeaderCarrier])
+      verify(caseConnector).deleteCases()(any[HeaderCarrier])
+      verify(caseConnector).deleteEvents()(any[HeaderCarrier])
+    }
+
+    "Handle CaseStore Event Delete Failure" in {
+      given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
+
+      await(service.resetEnvironment())
+
+      verify(fileConnector).delete()(any[HeaderCarrier])
+      verify(caseConnector).deleteCases()(any[HeaderCarrier])
+      verify(caseConnector).deleteEvents()(any[HeaderCarrier])
+    }
+  }
+
   "Service 'Process'" should {
     val migratableAttachment = MigratableAttachment(public = true, url = "url", name = "name", mimeType = "text/plain", timestamp = Instant.EPOCH)
     val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(migratableAttachment))

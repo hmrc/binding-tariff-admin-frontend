@@ -77,7 +77,7 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
 
   }
 
-  "get by id" should {
+  "getCase by id" should {
     val aCase = Cases.migratableCase
     val migration = Migration(aCase)
 
@@ -96,7 +96,7 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
     }
   }
 
-  "get by status" should {
+  "getCase by status" should {
     val aCase = Cases.migratableCase
     val migration = Migration(aCase, status = MigrationStatus.UNPROCESSED)
 

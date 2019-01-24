@@ -127,6 +127,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       _ <- fileConnector.delete() recover loggingAWarning
       _ <- caseConnector.deleteCases() recover loggingAWarning
       _ <- caseConnector.deleteEvents() recover loggingAWarning
+      _ <- clear() recover loggingAWarning
     } yield Unit
   }
 

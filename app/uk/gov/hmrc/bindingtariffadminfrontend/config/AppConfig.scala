@@ -42,7 +42,7 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: 
   lazy val credentials: Seq[Credentials] = getString("auth.credentials")
     .split(",")
     .map(_.split(":") match {
-      case Array(username, hash) => Credentials(username, hash)
+      case Array(username, hash) => Credentials(username.trim, hash.trim)
     })
 }
 

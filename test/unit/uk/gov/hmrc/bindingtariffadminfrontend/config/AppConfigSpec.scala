@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit
 
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.{Configuration, Environment}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Credentials
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.duration.FiniteDuration
@@ -64,6 +65,11 @@ class AppConfigSpec extends UnitSpec with GuiceOneAppPerSuite {
     "Build 'Reset Permitted" in {
       configWith("reset-permitted" -> "true").resetPermitted shouldBe true
       configWith("reset-permitted" -> "false").resetPermitted shouldBe false
+    }
+
+    "Build 'Credentials" in {
+      configWith("auth.credentials" -> "x : y , a : b").credentials shouldBe Seq(Credentials("x", "y"), Credentials("a", "b"))
+      configWith("auth.credentials" -> "x:y,a:b").credentials shouldBe Seq(Credentials("x", "y"), Credentials("a", "b"))
     }
   }
 

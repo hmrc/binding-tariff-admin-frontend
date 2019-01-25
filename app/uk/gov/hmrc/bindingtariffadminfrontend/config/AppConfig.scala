@@ -19,6 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.config
 import javax.inject.{Inject, Singleton}
 import play.api.Mode.Mode
 import play.api.{Configuration, Environment}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Credentials
 import uk.gov.hmrc.play.config.ServicesConfig
 
 import scala.concurrent.duration.FiniteDuration
@@ -37,5 +38,11 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: 
   lazy val dataMigrationLockLifetime: FiniteDuration = getDuration("scheduler.data-migration.lock-lifetime").asInstanceOf[FiniteDuration]
   lazy val dataMigrationInterval: FiniteDuration = getDuration("scheduler.data-migration.interval").asInstanceOf[FiniteDuration]
   lazy val resetPermitted: Boolean = getBoolean("reset-permitted")
+
+  lazy val credentials: Seq[Credentials] = getString("auth.credentials")
+    .split(",")
+    .map(_.split(":") match {
+      case Array(username, hash) => Credentials(username, hash)
+    })
 }
 

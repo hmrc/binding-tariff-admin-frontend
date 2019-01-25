@@ -52,7 +52,7 @@ class DataMigrationStateControllerControllerSpec extends WordSpec
   private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
   private val appConfig = mock[AppConfig]
   private implicit val mat: Materializer = app.materializer
-  private val controller = new DataMigrationStateController(migrationService, messageApi, appConfig)
+  private val controller = new DataMigrationStateController(new SuccessfulAuthenticatedAction, migrationService, messageApi, appConfig)
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

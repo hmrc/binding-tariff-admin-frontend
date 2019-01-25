@@ -47,7 +47,7 @@ class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers
   private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
   private val appConfig = new AppConfig(configuration, env)
   private implicit val mat: Materializer = app.materializer
-  private val controller = new DataMigrationUploadController(migrationService, messageApi, appConfig)
+  private val controller = new DataMigrationUploadController(new SuccessfulAuthenticatedAction, migrationService, messageApi, appConfig)
 
   "GET /" should {
     "return 200" in {

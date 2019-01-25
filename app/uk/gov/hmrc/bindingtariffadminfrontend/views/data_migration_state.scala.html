@@ -16,10 +16,10 @@
 
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes._
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.{Migration, MigrationCounts, MigrationStatus}
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Migration, MigrationCounts, MigrationStatus}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{form_button, migration_status_table}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
-@(migrations: Seq[Migration], counts: MigrationCounts)(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
+@(migrations: Seq[Migration], counts: MigrationCounts)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
 

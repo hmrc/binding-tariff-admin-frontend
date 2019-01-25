@@ -29,11 +29,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class DataMigrationStateController @Inject()(service: DataMigrationService,
-                                             val messagesApi: MessagesApi,
+class DataMigrationStateController @Inject()(authenticatedAction: AuthenticatedAction,
+                                             service: DataMigrationService,
+                                             override val messagesApi: MessagesApi,
                                              implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
 
-  def get: Action[AnyContent] = Action.async { implicit request =>
+  def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
     for {
       counts <- service.counts
       state <- service.getState
@@ -41,13 +42,13 @@ class DataMigrationStateController @Inject()(service: DataMigrationService,
     } yield Ok(view)
   }
 
-  def delete(status: Option[String]): Action[AnyContent] = Action.async { implicit request =>
+  def delete(status: Option[String]): Action[AnyContent] = authenticatedAction.async { implicit request =>
     val statusFilter = status.flatMap(MigrationStatus(_))
     service.clear(statusFilter)
       .map(_ => Redirect(routes.DataMigrationStateController.get()))
   }
 
-  def reset(): Action[AnyContent] = Action.async { implicit request =>
+  def reset(): Action[AnyContent] = authenticatedAction.async { implicit request =>
     if(appConfig.resetPermitted) {
       Future.successful(Ok(data_migration_reset_confirm()))
     } else {
@@ -55,7 +56,7 @@ class DataMigrationStateController @Inject()(service: DataMigrationService,
     }
   }
 
-  def resetConfirm(): Action[AnyContent] = Action.async { implicit request =>
+  def resetConfirm(): Action[AnyContent] = authenticatedAction.async { implicit request =>
     if(appConfig.resetPermitted) {
       service.resetEnvironment()
         .map(_ => Redirect(routes.DataMigrationStateController.get()))

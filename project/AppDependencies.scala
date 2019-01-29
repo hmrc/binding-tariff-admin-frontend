@@ -23,7 +23,7 @@ object AppDependencies {
     "com.typesafe.play"       %% "play-test"                % current                 % scope,
     "org.scalatestplus.play"  %% "scalatestplus-play"       % "2.0.1"                 % scope,
     "uk.gov.hmrc"             %% "hmrctest"                 % "3.4.0-play-25"         % scope,
-    "uk.gov.hmrc"             %% "service-integration-test" % "0.2.0"                 % scope,
+    "uk.gov.hmrc"             %% "service-integration-test" % "0.4.0-play-25"         % scope,
     "uk.gov.hmrc"             %% "reactivemongo-test"       % "3.1.0"                 % scope
   )
 

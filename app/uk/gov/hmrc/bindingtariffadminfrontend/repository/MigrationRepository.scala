@@ -50,6 +50,8 @@ trait MigrationRepository {
 
   def delete(c: Migration): Future[Boolean]
 
+  def delete(c: Seq[Migration]): Future[Boolean]
+
   def delete(status: Option[MigrationStatus]): Future[Boolean]
 
 }
@@ -119,6 +121,13 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
       case Some(_) => collection.remove(query.get).map(_.ok)
       case _ => removeAll().map(_.ok)
     }
+  }
+
+  override def delete(migrations: Seq[Migration]): Future[Boolean] = {
+    val references = migrations.map(_.`case`.reference)
+
+    val query = Json.obj("case.reference" -> Json.obj("$in" -> references))
+    collection.remove(query).map(_.ok)
   }
 
   private def byReference(reference: String): JsObject = {

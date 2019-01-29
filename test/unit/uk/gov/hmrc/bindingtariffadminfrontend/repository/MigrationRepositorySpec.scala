@@ -200,6 +200,22 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
     }
   }
 
+  "delete by migration" should {
+    val m1 = Migration(Cases.migratableCase.copy(reference = "1"), status = MigrationStatus.FAILED)
+    val m2 = Migration(Cases.migratableCase.copy(reference = "2"), status = MigrationStatus.SUCCESS)
+    val m3 = Migration(Cases.migratableCase.copy(reference = "3"), status = MigrationStatus.UNPROCESSED)
+
+    "remove documents from the collection" in {
+      await(repository.insert(Seq(m1, m2, m3))) shouldBe true
+      collectionSize shouldBe 3
+
+      await(repository.delete(Seq(m1, m2))) shouldBe true
+
+      collectionSize shouldBe 1
+      await(repository.collection.find(selectorByReference(m3)).one[Migration]) shouldBe Some(m3)
+    }
+  }
+
   "countByStatus" should {
     val aCase = Cases.migratableCase
     val migration1 = Migration(aCase.copy(reference = "1"), MigrationStatus.SUCCESS)

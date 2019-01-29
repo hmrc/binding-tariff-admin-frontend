@@ -80,11 +80,16 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val `case` = mock[MigratableCase]
 
     "Delegate to Repository" in {
+      given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
       given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
 
       await(service.prepareMigration(Seq(`case`))) shouldBe true
 
       theMigrationsCreated shouldBe Seq(
+        Migration(`case`, MigrationStatus.UNPROCESSED, None)
+      )
+
+      theMigrationsDeleted shouldBe Seq(
         Migration(`case`, MigrationStatus.UNPROCESSED, None)
       )
     }
@@ -103,6 +108,12 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     def theMigrationsCreated: Seq[Migration] = {
       val captor: ArgumentCaptor[Seq[Migration]] = ArgumentCaptor.forClass(classOf[Seq[Migration]])
       verify(repository).insert(captor.capture())
+      captor.getValue
+    }
+
+    def theMigrationsDeleted: Seq[Migration] = {
+      val captor: ArgumentCaptor[Seq[Migration]] = ArgumentCaptor.forClass(classOf[Seq[Migration]])
+      verify(repository).delete(captor.capture())
       captor.getValue
     }
   }

@@ -41,8 +41,12 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     repository.countByStatus
   }
 
-  def prepareMigration(migrations: Seq[MigratableCase]): Future[Boolean] = {
-    repository.insert(migrations.map(Migration(_)))
+  def prepareMigration(cases: Seq[MigratableCase]): Future[Boolean] = {
+    val migrations = cases.map(Migration(_))
+    for {
+      _ <- repository.delete(migrations)
+      result <- repository.insert(migrations)
+    } yield result
   }
 
   def getNextMigration: Future[Option[Migration]] = {

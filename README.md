@@ -26,7 +26,7 @@ This application runs on port 9584
 
 Run `sm --start BINDING_TARIFF_ADMIN_FRONTEND -r`
 
-Open `http://localhost:9581/binding-tariff-admin-frontend`
+Open `http://localhost:9584/binding-tariff-admin`
 
 ### Testing
 

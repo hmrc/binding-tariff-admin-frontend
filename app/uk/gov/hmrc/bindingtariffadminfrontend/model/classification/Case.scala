@@ -33,7 +33,8 @@ case class Case
   queueId: Option[String] = None,
   application: Application,
   decision: Option[Decision] = None,
-  attachments: Seq[Attachment]
+  attachments: Seq[Attachment],
+  keywords: Set[String]
 )
 
 object Case {

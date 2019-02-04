@@ -27,7 +27,6 @@ case class Decision
   effectiveEndDate: Instant,
   justification: String,
   goodsDescription: String,
-  keywords: Seq[String],
   methodSearch: Option[String] = None,
   methodCommercialDenomination: Option[String] = None,
   methodExclusion: Option[String] = None,

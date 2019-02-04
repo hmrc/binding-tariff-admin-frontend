@@ -41,7 +41,8 @@ class MigratableCaseTest extends UnitSpec with MockitoSugar {
         Some("queue"),
         application,
         Some(decision),
-        Seq.empty
+        Seq.empty,
+        Set("keyword1", "keyword2")
       ).toCase(Seq(attachment)) shouldBe Case(
         "ref",
         CaseStatus.SUPPRESSED,
@@ -53,7 +54,8 @@ class MigratableCaseTest extends UnitSpec with MockitoSugar {
         Some("queue"),
         application,
         Some(decision),
-        Seq(attachment)
+        Seq(attachment),
+        Set("keyword1", "keyword2")
       )
     }
   }

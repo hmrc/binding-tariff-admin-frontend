@@ -19,7 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.repository
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.{JsObject, JsString, Json}
-import reactivemongo.api.Cursor
+import reactivemongo.api.{Cursor, QueryOpts}
 import reactivemongo.api.indexes.Index
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.ImplicitBSONHandlers._
@@ -42,7 +42,7 @@ trait MigrationRepository {
 
   def get(status: MigrationStatus): Future[Option[Migration]]
 
-  def get(): Future[Seq[Migration]]
+  def get(page: Int, pageSize: Int): Future[Seq[Migration]]
 
   def update(c: Migration): Future[Option[Migration]]
 
@@ -74,10 +74,13 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
     Future.sequence(indexes.map(collection.indexesManager.ensure(_)))
   }
 
-  override def get(): Future[Seq[Migration]] = {
-    collection.find(Json.obj())
+  override def get(page: Int, pageSize: Int): Future[Seq[Migration]] = {
+    val actualPage = if(page > 1) page else 1
+    collection
+      .find(Json.obj())
+      .options(QueryOpts(skipN = (actualPage - 1) * pageSize, batchSizeN = pageSize))
       .cursor[Migration]()
-      .collect[Seq](-1, Cursor.FailOnError[Seq[Migration]]())
+      .collect[Seq](pageSize, Cursor.FailOnError[Seq[Migration]]())
   }
 
   override def get(reference: String): Future[Option[Migration]] = {

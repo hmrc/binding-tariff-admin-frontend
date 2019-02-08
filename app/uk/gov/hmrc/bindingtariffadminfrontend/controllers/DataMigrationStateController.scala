@@ -34,11 +34,11 @@ class DataMigrationStateController @Inject()(authenticatedAction: AuthenticatedA
                                              override val messagesApi: MessagesApi,
                                              implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
 
-  def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
+  def get(page: Int): Action[AnyContent] = authenticatedAction.async { implicit request =>
     for {
       counts <- service.counts
-      state <- service.getState
-      view = data_migration_state(state, counts)
+      state <- service.getState(page, appConfig.pageSize)
+      view = data_migration_state(state, counts, page, appConfig.pageSize)
     } yield Ok(view)
   }
 

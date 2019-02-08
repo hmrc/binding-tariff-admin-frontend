@@ -64,15 +64,15 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
     val migration = Migration(aCase)
 
     "retrieve the expected documents from the collection" in {
-
       await(repository.insert(migration))
       collectionSize shouldBe 1
 
-      await(repository.get()) contains Seq(migration)
+      await(repository.get(0, 1)) contains Seq(migration)
+      await(repository.get(1, 1)) contains Seq.empty
     }
 
     "return None when there are no documents in the collection" in {
-      await(repository.get()) shouldBe Seq.empty
+      await(repository.get(0, 1)) shouldBe Seq.empty
     }
 
   }

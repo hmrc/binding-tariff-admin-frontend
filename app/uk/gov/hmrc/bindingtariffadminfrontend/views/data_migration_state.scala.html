@@ -17,9 +17,9 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes._
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Migration, MigrationCounts, MigrationStatus}
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{form_button, migration_status_table}
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{form_button, migration_status_table, pager}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
-@(migrations: Seq[Migration], counts: MigrationCounts)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+@(migrations: Seq[Migration], counts: MigrationCounts, page: Int, pageSize: Int)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
 
@@ -68,6 +68,12 @@
 
  @migration_status_table(migrations)
 
+ @pager(
+  page = page,
+  pageSize = pageSize,
+  totalResultCount = counts.total,
+  changePage = DataMigrationStateController.get
+ )
 
  @if(counts.hasUnprocessed) {
   <script>

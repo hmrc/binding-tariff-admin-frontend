@@ -38,7 +38,7 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: 
   lazy val dataMigrationLockLifetime: FiniteDuration = getDuration("scheduler.data-migration.lock-lifetime").asInstanceOf[FiniteDuration]
   lazy val dataMigrationInterval: FiniteDuration = getDuration("scheduler.data-migration.interval").asInstanceOf[FiniteDuration]
   lazy val resetPermitted: Boolean = getBoolean("reset-permitted")
-
+  lazy val pageSize: Int = getInt("page-size")
   lazy val credentials: Seq[Credentials] = getString("auth.credentials")
     .split(",")
     .map(_.split(":") match {

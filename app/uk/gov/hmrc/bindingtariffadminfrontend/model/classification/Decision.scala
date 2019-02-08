@@ -23,8 +23,8 @@ import play.api.libs.json.{Json, OFormat}
 case class Decision
 (
   bindingCommodityCode: String,
-  effectiveStartDate: Instant,
-  effectiveEndDate: Instant,
+  effectiveStartDate: Option[Instant],
+  effectiveEndDate: Option[Instant],
   justification: String,
   goodsDescription: String,
   methodSearch: Option[String] = None,

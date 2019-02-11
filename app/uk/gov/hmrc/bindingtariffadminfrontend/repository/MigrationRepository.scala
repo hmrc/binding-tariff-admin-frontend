@@ -28,7 +28,6 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationSta
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Migration, MigrationCounts}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MongoIndexCreator.createSingleFieldAscendingIndex
 import uk.gov.hmrc.mongo.ReactiveRepository
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}

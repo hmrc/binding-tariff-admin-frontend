@@ -62,8 +62,8 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val migrations = Seq(migration)
 
     "Delegate to Repository" in {
-      given(repository.get(0, 1)) willReturn Future.successful(migrations)
-      await(service.getState(0, 1)) shouldBe migrations
+      given(repository.get(0, 1, Seq.empty)) willReturn Future.successful(migrations)
+      await(service.getState(0, 1, Seq.empty)) shouldBe migrations
     }
   }
 

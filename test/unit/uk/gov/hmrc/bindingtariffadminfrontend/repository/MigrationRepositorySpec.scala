@@ -60,19 +60,35 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
   }
 
   "getAll" should {
-    val aCase = Cases.migratableCase
-    val migration = Migration(aCase)
+
 
     "retrieve the expected documents from the collection" in {
+      val aCase = Cases.migratableCase
+      val migration = Migration(aCase)
       await(repository.insert(migration))
       collectionSize shouldBe 1
 
-      await(repository.get(0, 1)) contains Seq(migration)
-      await(repository.get(1, 1)) contains Seq.empty
+      await(repository.get(0, 1, Seq.empty)) contains Seq(migration)
+      await(repository.get(1, 1, Seq.empty)) contains Seq.empty
+    }
+
+    "retrieve the expected documents from the collection by status" in {
+      val case1 = Cases.migratableCase.copy(reference = "1")
+      val case2 = Cases.migratableCase.copy(reference = "2")
+      val migration1 = Migration(case1, status = MigrationStatus.SUCCESS)
+      val migration2 = Migration(case2, status = MigrationStatus.UNPROCESSED)
+      await(repository.insert(migration1))
+      await(repository.insert(migration2))
+      collectionSize shouldBe 2
+
+      await(repository.get(0, 1, Seq(MigrationStatus.SUCCESS, MigrationStatus.UNPROCESSED))) contains Seq(migration1, migration2)
+      await(repository.get(0, 1, Seq(MigrationStatus.SUCCESS))) contains Seq(migration1)
+      await(repository.get(0, 1, Seq(MigrationStatus.UNPROCESSED))) contains Seq(migration2)
+      await(repository.get(0, 1, Seq(MigrationStatus.FAILED))) contains Seq.empty
     }
 
     "return None when there are no documents in the collection" in {
-      await(repository.get(0, 1)) shouldBe Seq.empty
+      await(repository.get(0, 1, Seq.empty)) shouldBe Seq.empty
     }
 
   }

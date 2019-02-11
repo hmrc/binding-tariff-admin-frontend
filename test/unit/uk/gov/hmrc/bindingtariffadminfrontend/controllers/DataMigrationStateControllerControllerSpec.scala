@@ -69,24 +69,24 @@ class DataMigrationStateControllerControllerSpec extends WordSpec
   "GET /state" should {
     "return 200 when not in progress" in {
       given(migrationService.counts) willReturn Future.successful(new MigrationCounts(Map()))
-      given(migrationService.getState(0, 1)) willReturn Future.successful(Seq.empty)
-      val result: Result = await(controller.get(0)(newFakeGETRequestWithCSRF))
+      given(migrationService.getState(0, 1, Seq(MigrationStatus.SUCCESS))) willReturn Future.successful(Seq.empty)
+      val result: Result = await(controller.get(0, Seq(MigrationStatus.SUCCESS.toString))(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
       bodyOf(result) should include("Upload")
     }
 
     "return 200 when in progress" in {
       given(migrationService.counts) willReturn Future.successful(new MigrationCounts(Map(MigrationStatus.UNPROCESSED -> 1)))
-      given(migrationService.getState(0, 1)) willReturn Future.successful(Seq.empty)
-      val result: Result = await(controller.get(0)(newFakeGETRequestWithCSRF))
+      given(migrationService.getState(0, 1, Seq(MigrationStatus.SUCCESS))) willReturn Future.successful(Seq.empty)
+      val result: Result = await(controller.get(0, Seq(MigrationStatus.SUCCESS.toString))(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
       bodyOf(result) should include("In Progress")
     }
 
     "paginates" in {
       given(migrationService.counts) willReturn Future.successful(new MigrationCounts(Map()))
-      given(migrationService.getState(0, 1)) willReturn Future.successful(Seq.empty)
-      val result: Result = await(controller.get(0)(newFakeGETRequestWithCSRF))
+      given(migrationService.getState(0, 1, Seq(MigrationStatus.SUCCESS))) willReturn Future.successful(Seq.empty)
+      val result: Result = await(controller.get(0, Seq(MigrationStatus.SUCCESS.toString))(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
       bodyOf(result) should include("Upload")
     }

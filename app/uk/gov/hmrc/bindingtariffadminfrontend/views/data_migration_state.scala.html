@@ -19,7 +19,7 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Migration, MigrationCounts, MigrationStatus}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{form_button, migration_status_table, pager}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
-@(migrations: Seq[Migration], counts: MigrationCounts, page: Int, pageSize: Int)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+@(migrations: Seq[Migration], counts: MigrationCounts, page: Int, pageSize: Int, changePage: Int => Call)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
 
@@ -49,18 +49,18 @@
 
  <div class="grid-row mt-30 mb-15 align-center">
   <div class="column-one-third">
-   <div class="bold-xlarge">@{counts.processed}/@{counts.total}</div>
-   <div class="bold-xsmall">Processed</div>
+   <div class="bold-xlarge">@{counts.processed} / @{counts.total}</div>
+   <a class="bold-xsmall" href="@DataMigrationStateController.get()">Processed</a>
   </div>
 
   <div class="column-one-third">
-   <div class="bold-xlarge">@{counts.get(MigrationStatus.SUCCESS) + counts.get(MigrationStatus.PARTIAL_SUCCESS)}/@{counts.total}</div>
-   <div class="bold-xsmall">Successful</div>
+   <div class="bold-xlarge">@{counts.get(MigrationStatus.SUCCESS) + counts.get(MigrationStatus.PARTIAL_SUCCESS)} / @{counts.total}</div>
+   <a class="bold-xsmall" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.SUCCESS.toString, MigrationStatus.PARTIAL_SUCCESS.toString))">Successful</a>
   </div>
 
   <div class="column-one-third">
-   <div class="bold-xlarge">@{counts.get(MigrationStatus.FAILED)}/@{counts.total}</div>
-   <div class="bold-xsmall">Failed</div>
+   <div class="bold-xlarge">@{counts.get(MigrationStatus.FAILED)} / @{counts.total}</div>
+   <a class="bold-xsmall" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.FAILED.toString))">Failed</a>
   </div>
  </div>
 
@@ -72,7 +72,7 @@
   page = page,
   pageSize = pageSize,
   totalResultCount = counts.total,
-  changePage = DataMigrationStateController.get
+  changePage = changePage
  )
 
  @if(counts.hasUnprocessed) {

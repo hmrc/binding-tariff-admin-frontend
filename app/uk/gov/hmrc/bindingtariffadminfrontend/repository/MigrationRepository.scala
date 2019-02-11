@@ -42,7 +42,7 @@ trait MigrationRepository {
 
   def get(status: MigrationStatus): Future[Option[Migration]]
 
-  def get(page: Int, pageSize: Int): Future[Seq[Migration]]
+  def get(page: Int, pageSize: Int, status: Seq[MigrationStatus]): Future[Seq[Migration]]
 
   def update(c: Migration): Future[Option[Migration]]
 
@@ -74,10 +74,11 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
     Future.sequence(indexes.map(collection.indexesManager.ensure(_)))
   }
 
-  override def get(page: Int, pageSize: Int): Future[Seq[Migration]] = {
+  override def get(page: Int, pageSize: Int, status: Seq[MigrationStatus]): Future[Seq[Migration]] = {
+    val filter = if(status.isEmpty) Json.obj() else Json.obj("status" -> Json.obj("$in" -> status))
     val actualPage = if(page > 1) page else 1
     collection
-      .find(Json.obj())
+      .find(filter)
       .options(QueryOpts(skipN = (actualPage - 1) * pageSize, batchSizeN = pageSize))
       .cursor[Migration]()
       .collect[Seq](pageSize, Cursor.FailOnError[Seq[Migration]]())

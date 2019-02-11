@@ -26,16 +26,16 @@
  @if(counts.hasUnprocessed) {
   <h1 class="heading-xlarge">Data Migration In Progress</h1>
 
-  @form_button(call = DataMigrationStateController.delete(Some(MigrationStatus.UNPROCESSED.toString)), label = "Clear Queue")
+  @form_button(call = DataMigrationStateController.delete(Some(MigrationStatus.UNPROCESSED.toString)), label = "Clear Remaining Queue", css = "button-warn")
  } else {
    <h1 class="heading-xlarge">Data Migration Complete</h1>
 
    <div>
     <div class="inline-block">
-      @form_button(call = DataMigrationStateController.delete(None), label = "Clear Migration Log", disabled = counts.isEmpty)
+     <a class="button inline-block" href="@DataMigrationUploadController.get()">Upload Another</a>
     </div>
     <div class="inline-block">
-      <a class="button inline-block" href="@DataMigrationUploadController.get()">Upload Another</a>
+      @form_button(call = DataMigrationStateController.delete(None), label = "Clear Migration Log", disabled = counts.isEmpty, css = "button-warn")
     </div>
     @if(appConfig.resetPermitted) {
      <div class="inline-block">
@@ -50,21 +50,32 @@
  <div class="grid-row mt-30 mb-15 align-center">
   <div class="column-one-third">
    <div class="bold-xlarge">@{counts.processed} / @{counts.total}</div>
-   <a class="bold-xsmall" href="@DataMigrationStateController.get()">Processed</a>
+   <span class="bold-xsmall">Processed</span>
   </div>
 
   <div class="column-one-third">
    <div class="bold-xlarge">@{counts.get(MigrationStatus.SUCCESS) + counts.get(MigrationStatus.PARTIAL_SUCCESS)} / @{counts.total}</div>
-   <a class="bold-xsmall" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.SUCCESS.toString, MigrationStatus.PARTIAL_SUCCESS.toString))">Successful</a>
+   <span class="bold-xsmall">Successful</span>
   </div>
 
   <div class="column-one-third">
    <div class="bold-xlarge">@{counts.get(MigrationStatus.FAILED)} / @{counts.total}</div>
-   <a class="bold-xsmall" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.FAILED.toString))">Failed</a>
+   <span class="bold-xsmall">Failed</span>
   </div>
  </div>
 
  <hr/>
+
+ <div class="grid-row align-center mb-30">
+  <a class="bold-xsmall column-one-sixth" href="@DataMigrationStateController.get()">All</a>
+  <a class="bold-xsmall column-one-sixth" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.UNPROCESSED.toString))">Unprocessed</a>
+  <a class="bold-xsmall column-one-sixth" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.SUCCESS.toString, MigrationStatus.PARTIAL_SUCCESS.toString, MigrationStatus.FAILED.toString))">Processed</a>
+  <a class="bold-xsmall column-one-sixth" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.SUCCESS.toString))">Successful</a>
+  <a class="bold-xsmall column-one-sixth" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.PARTIAL_SUCCESS.toString))">Partially Successful</a>
+  <a class="bold-xsmall column-one-sixth" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.FAILED.toString))">Failed</a>
+ </div>
+
+
 
  @migration_status_table(migrations)
 

@@ -22,8 +22,19 @@
   margin-bottom: 10px !important;
 }
 
+.column-one-sixth {
+  width: 16.6%;
+  float: left;
+  padding: 0 15px;
+  box-sizing: border-box;
+}
+
 .align-center {
   text-align: center;
+}
+
+.vertical-align-center {
+  vertical-align: center;
 }
 
 .align-right {

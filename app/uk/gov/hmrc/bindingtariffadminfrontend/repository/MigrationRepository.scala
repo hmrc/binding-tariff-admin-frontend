@@ -62,8 +62,7 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
   extends ReactiveRepository[Migration, BSONObjectID](
     collectionName = "CaseMigration",
     mongo = mongoDbProvider.mongo,
-    domainFormat = Migration.format,
-    idFormat = ReactiveMongoFormats.objectIdFormats) with MigrationRepository {
+    domainFormat = Migration.format) with MigrationRepository {
 
   override lazy val indexes: Seq[Index] = Seq(
     createSingleFieldAscendingIndex("case.reference", isUnique = true),
@@ -142,4 +141,5 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
   private def byStatus(status: MigrationStatus): JsObject = {
     Json.obj("status" -> status)
   }
+
 }

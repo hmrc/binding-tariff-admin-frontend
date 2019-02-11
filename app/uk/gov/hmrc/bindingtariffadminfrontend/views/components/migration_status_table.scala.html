@@ -27,7 +27,7 @@
    </tr>
   </thead>
   <tbody class="max-height-960 overflow-y">
-   @for(migration: Migration <- migrations.sortBy(_.status)) {
+   @for(migration: Migration <- migrations) {
     <tr>
      <td>@{migration.`case`.reference}</td>
      <td>

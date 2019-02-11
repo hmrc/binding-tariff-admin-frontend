@@ -79,6 +79,7 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
     val actualPage = if(page > 1) page else 1
     collection
       .find(filter)
+      .sort(Json.obj("status" -> -1))
       .options(QueryOpts(skipN = (actualPage - 1) * pageSize, batchSizeN = pageSize))
       .cursor[Migration]()
       .collect[Seq](pageSize, Cursor.FailOnError[Seq[Migration]]())

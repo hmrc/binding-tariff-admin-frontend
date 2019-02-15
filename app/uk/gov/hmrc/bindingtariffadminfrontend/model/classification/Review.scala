@@ -16,23 +16,15 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import java.time.Instant
-
 import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ReviewStatus.ReviewStatus
 
-case class Decision
+
+case class Review
 (
-  bindingCommodityCode: String,
-  effectiveStartDate: Option[Instant],
-  effectiveEndDate: Option[Instant],
-  justification: String,
-  goodsDescription: String,
-  methodSearch: Option[String] = None,
-  methodCommercialDenomination: Option[String] = None,
-  methodExclusion: Option[String] = None,
-  appeal: Option[Appeal] = None
+  status: ReviewStatus
 )
 
-object Decision {
-  implicit val outboundFormat: OFormat[Decision] = Json.format[Decision]
+object Review {
+  implicit val outboundFormat: OFormat[Review] = Json.format[Review]
 }

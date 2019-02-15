@@ -16,23 +16,12 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import java.time.Instant
+import play.api.libs.json.Format
+import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
 
-import play.api.libs.json.{Json, OFormat}
-
-case class Decision
-(
-  bindingCommodityCode: String,
-  effectiveStartDate: Option[Instant],
-  effectiveEndDate: Option[Instant],
-  justification: String,
-  goodsDescription: String,
-  methodSearch: Option[String] = None,
-  methodCommercialDenomination: Option[String] = None,
-  methodExclusion: Option[String] = None,
-  appeal: Option[Appeal] = None
-)
-
-object Decision {
-  implicit val outboundFormat: OFormat[Decision] = Json.format[Decision]
+object AppealStatus extends Enumeration {
+  type AppealStatus = Value
+  val IN_PROGRESS, ALLOWED, DISMISSED = Value
+  implicit val format: Format[AppealStatus.Value] = EnumJson.format(AppealStatus)
 }
+

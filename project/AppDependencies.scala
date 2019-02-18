@@ -18,7 +18,7 @@ object AppDependencies {
   val test: Seq[ModuleID] = Seq(
     "com.github.tomakehurst"  %  "wiremock"                 % "2.20.0"                % scope,
     "com.typesafe.play"       %% "play-test"                % current                 % scope,
-    "org.mockito"             %  "mockito-core"             % "2.24.0"                % scope,
+    "org.mockito"             %  "mockito-core"             % "2.24.5"                % scope,
     "org.pegdown"             %  "pegdown"                  % "1.6.0"                 % scope,
     "org.scalatest"           %% "scalatest"                % "3.0.4"                 % scope,
     "org.scalatestplus.play"  %% "scalatestplus-play"       % "2.0.1"                 % scope,

@@ -111,6 +111,7 @@ var fileMigration = {
             $.ajax({
                 type: "POST",
                 url: template.href,
+                crossDomain: true,
                 data: form,
                 processData: false,
                 contentType: false,

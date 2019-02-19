@@ -26,15 +26,15 @@
  <a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
 
  @if(counts.hasUnprocessed) {
-  <h1 class="heading-xlarge">Data Migration In Progress</h1>
+  <h1 id="data_migration_state-in_progress-heading" class="heading-xlarge">Data Migration In Progress</h1>
 
   @form_button(call = routes.DataMigrationStateController.delete(Some(MigrationStatus.UNPROCESSED.toString)), label = "Clear Remaining Queue", css = "button-warn")
  } else {
-   <h1 class="heading-xlarge">Data Migration Complete</h1>
+   <h1 id="data_migration_state-complete-heading" class="heading-xlarge">Data Migration Complete</h1>
 
    <div>
     <div class="inline-block">
-     <a class="button inline-block" href="@routes.CaseMigrationUploadController.get()">Upload Another</a>
+     <a class="button inline-block" href="@routes.FileMigrationUploadController.get()">Migrate More</a>
     </div>
     <div class="inline-block">
       @form_button(call = routes.DataMigrationStateController.delete(None), label = "Clear Migration Log", disabled = counts.isEmpty, css = "button-warn")

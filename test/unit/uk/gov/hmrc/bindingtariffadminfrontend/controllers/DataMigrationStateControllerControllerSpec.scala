@@ -72,7 +72,7 @@ class DataMigrationStateControllerControllerSpec extends WordSpec
       given(migrationService.getState(0, 1, Seq(MigrationStatus.SUCCESS))) willReturn Future.successful(Seq.empty)
       val result: Result = await(controller.get(0, Seq(MigrationStatus.SUCCESS.toString))(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
-      bodyOf(result) should include("Upload")
+      bodyOf(result) should include("data_migration_state-complete-heading")
     }
 
     "return 200 when in progress" in {
@@ -80,7 +80,7 @@ class DataMigrationStateControllerControllerSpec extends WordSpec
       given(migrationService.getState(0, 1, Seq(MigrationStatus.SUCCESS))) willReturn Future.successful(Seq.empty)
       val result: Result = await(controller.get(0, Seq(MigrationStatus.SUCCESS.toString))(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
-      bodyOf(result) should include("In Progress")
+      bodyOf(result) should include("data_migration_state-in_progress-heading")
     }
 
     "paginates" in {
@@ -88,7 +88,6 @@ class DataMigrationStateControllerControllerSpec extends WordSpec
       given(migrationService.getState(0, 1, Seq(MigrationStatus.SUCCESS))) willReturn Future.successful(Seq.empty)
       val result: Result = await(controller.get(0, Seq(MigrationStatus.SUCCESS.toString))(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
-      bodyOf(result) should include("Upload")
     }
   }
 

@@ -32,12 +32,12 @@
 
  <div class="form-group mt-15">
   @helper.CSRF.formField
-  <input name="files" id="files" type="file" multiple=""/>
+  <input name="files" id="files" type="file" multiple="" accept="image/*,audio/*,video/*,application/pdf,application/msword,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.txt,.doc,.docx,.xls"/>
  </div>
 
  <div>
   <button id="upload-button" class="button" type="button" onclick="fileMigration.uploadAll('@{routes.FileMigrationUploadController.post().url}')">Upload</button>
-  <a class="secondary-link" href="@routes.CaseMigrationUploadController.get()">Skip to Case Migration</a>
+  <a class="button" href="@routes.CaseMigrationUploadController.get()">Continue to Case Migration</a>
  </div>
 
  <div class="display-none mt-30" id="progress">

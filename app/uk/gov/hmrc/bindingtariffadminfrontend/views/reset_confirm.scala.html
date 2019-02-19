@@ -15,13 +15,15 @@
  *@
 
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-@import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes._
+@import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.form_button
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
 @()(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
+
+ <a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
 
  <h3 class="heading-xlarge">Are You Sure?</h3>
 
@@ -36,10 +38,10 @@
 
  <div>
   <div class="inline-block">
-   @form_button(call = DataMigrationStateController.resetConfirm(), label = "I'm Sure, Reset", css = "button-warn")
+   @form_button(call = routes.DataMigrationStateController.resetConfirm(), label = "I'm Sure, Reset", css = "button-warn")
   </div>
   <div class="inline-block">
-   <a class="secondary-link" href="@IndexController.get()">Back to safety</a>
+   <a class="secondary-link" href="@routes.IndexController.get()">Back to safety</a>
   </div>
  </div>
 

@@ -42,18 +42,22 @@
 
  <div class="display-none mt-30" id="progress">
   <hr/>
-  <p>Uploaded <span id="progress-count">0</span> of <span id="progress-total">0</span> successfully</p>
+  <p><span id="progress-state">Uploading</span> <span class="total-count">0</span> files</p>
   <hr/>
  </div>
 
  <div id="failed-table-container" class="display-none mt-30">
-  <h3 class="heading-small">Failed Uploads</h3>
+  <h3 class="heading-small">
+   Failed Uploads  <span class="failed-count">0</span>/<span class="total-count">0</span>
+  </h3>
   <table id="failed-table">
   </table>
  </div>
 
  <div id="success-table-container" class="display-none mt-30">
-  <h3 class="heading-small">Successful Uploads</h3>
+  <h3 class="heading-small">
+   Successful Uploads <span class="success-count">0</span>/<span class="total-count">0</span>
+  </h3>
   <table id="success-table"></table>
  </div>
 

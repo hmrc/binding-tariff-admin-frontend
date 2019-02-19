@@ -11,12 +11,34 @@ var fileMigration = {
                 .then(function (response) {
                     fileMigration.uploadToS3(response.file, response.template)
                         .then(function () {
-                            incrementCount();
+                            incrementSuccessCount();
                             appendToSuccessTable(response.file);
                         })
-                        .catch(function(err){appendErrorToFailedTable(err)})
+                        .catch(function(err){
+                            incrementFailureCount();
+                            appendErrorToFailedTable(err);
+                        })
+                        .finally(updateState)
                 })
-                .catch(function(err){appendErrorToFailedTable(err)})
+                .catch(function(err){
+                    incrementFailureCount();
+                    appendErrorToFailedTable(err);
+                })
+                .finally(updateState)
+        }
+
+        function updateState(){
+            var state = document.getElementById("progress-state");
+
+            var success = parseInt(document.getElementsByClassName("success-count")[0].innerHTML);
+            var failed = parseInt(document.getElementsByClassName("failed-count")[0].innerHTML);
+            var total = parseInt(document.getElementsByClassName("total-count")[0].innerHTML);
+
+            if(total === success + failed){
+                state.innerHTML = "Uploaded";
+            } else {
+                state.innerHTML = "Uploading";
+            }
         }
 
         function showProgress() {
@@ -24,14 +46,25 @@ var fileMigration = {
             progress.classList.remove("display-none");
         }
 
-        function incrementCount() {
-            var progressCount = document.getElementById("progress-count");
-            progressCount.innerHTML = parseInt(progressCount.innerHTML) + 1;
+        function incrementSuccessCount() {
+            var counts = document.getElementsByClassName("success-count");
+            for(var i=0; i<counts.length; i++) {
+                counts[i].innerHTML = parseInt(counts[i].innerHTML) + 1;
+            }
+        }
+
+        function incrementFailureCount() {
+            var counts = document.getElementsByClassName("failed-count");
+            for(var i=0; i<counts.length; i++) {
+                counts[i].innerHTML = parseInt(counts[i].innerHTML) + 1;
+            }
         }
 
         function incrementTotal(count) {
-            var progressTotal = document.getElementById("progress-total");
-            progressTotal.innerHTML = parseInt(progressTotal.innerHTML) + count;
+            var counts = document.getElementsByClassName("total-count");
+            for(var i=0; i<counts.length; i++) {
+                counts[i].innerHTML = parseInt(counts[i].innerHTML) + count;
+            }
         }
 
         function appendToSuccessTable(file) {

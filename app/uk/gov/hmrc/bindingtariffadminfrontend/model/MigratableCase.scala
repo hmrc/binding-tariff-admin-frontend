@@ -34,10 +34,10 @@ case class MigratableCase
   queueId: Option[String] = None,
   application: Application,
   decision: Option[Decision] = None,
-  attachments: Seq[MigratableAttachment],
+  attachments: Seq[MigratedAttachment],
   keywords: Set[String]
 ) {
-  def toCase(attachments: Seq[Attachment]): Case = {
+  def toCase: Case = {
     Case(
       reference,
       status,
@@ -49,8 +49,8 @@ case class MigratableCase
       queueId,
       application,
       decision,
-      attachments,
-      keywords
+      attachments = attachments.map(m => m.asAttachment),
+      keywords = keywords
     )
   }
 }

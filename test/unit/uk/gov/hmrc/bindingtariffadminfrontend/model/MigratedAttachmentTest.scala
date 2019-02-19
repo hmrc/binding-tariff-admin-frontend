@@ -29,16 +29,15 @@ class MigratedAttachmentTest extends UnitSpec with MockitoSugar {
 
     "Convert to attachment" in {
       MigratedAttachment(
-        id = "id",
-        filestoreId = "filestore-id",
         public = true,
         name = "name",
         mimeType = "type",
-        user = Some(operator),
+        operator = Some(operator),
         timestamp = Instant.EPOCH
       ).asAttachment shouldBe Attachment(
-        id = "filestore-id",
+        id = "name",
         public = true,
+        operator = Some(operator),
         timestamp = Instant.EPOCH
       )
     }

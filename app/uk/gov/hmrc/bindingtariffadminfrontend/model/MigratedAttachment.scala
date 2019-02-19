@@ -18,19 +18,23 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model
 
 import java.time.Instant
 
+import play.api.libs.json.Format
+import play.json.extra.Jsonx
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Operator}
 
 case class MigratedAttachment
 (
-  id: String,
-  filestoreId: String,
   public: Boolean = false,
   name: String,
   mimeType: String,
-  user: Option[Operator] = None,
+  operator: Option[Operator] = None,
   timestamp: Instant
 ) {
   def asAttachment: Attachment = {
-    Attachment(filestoreId, public, timestamp)
+    Attachment(id = name, public = public, operator = operator, timestamp = timestamp)
   }
+}
+
+object MigratedAttachment {
+  implicit val format: Format[MigratedAttachment] = Jsonx.formatCaseClass[MigratedAttachment]
 }

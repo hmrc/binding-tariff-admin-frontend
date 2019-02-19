@@ -2,11 +2,15 @@
 
 GET        /assets/*file        controllers.Assets.at(path="/public", file)
 
-GET        /                    @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.get
-POST       /                    @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.post
+GET        /                    @uk.gov.hmrc.bindingtariffadminfrontend.controllers.IndexController.get
+
+GET        /case-migration      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.CaseMigrationUploadController.get
+POST       /case-migration      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.CaseMigrationUploadController.post
+GET        /file-migration      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.FileMigrationUploadController.get
+POST       /file-migration      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.FileMigrationUploadController.post
+
 GET        /state               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.get(page: Int ?= 1, status: Seq[String] ?= Seq.empty)
-# Browsers cant handle DELETE types so it has to be a POST or a GET
 POST       /state               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.delete(status: Option[String])
 
-GET        /reset              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.reset()
-POST       /reset              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.resetConfirm()
+GET        /reset               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.reset()
+POST       /reset               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.resetConfirm()

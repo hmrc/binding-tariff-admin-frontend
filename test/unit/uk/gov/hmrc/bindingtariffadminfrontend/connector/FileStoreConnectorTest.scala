@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
-import java.time.Instant
-
 import akka.actor.ActorSystem
 import com.github.tomakehurst.wiremock.client.WireMock._
 import org.mockito.BDDMockito.given
@@ -25,11 +23,9 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import play.api.Environment
 import play.api.http.Status
-import play.api.libs.Files.TemporaryFile
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigratableAttachment, MigrationFailedException}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.audit.DefaultAuditConnector
 import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
@@ -83,85 +79,64 @@ class FileStoreConnectorTest extends UnitSpec with WithFakeApplication with Wire
     }
   }
 
-  "Connector Upload" should {
+  "Connector Initiate" should {
     "POST to the File Store" in {
       stubFor(
         post("/file")
+          .withHeader("Content-Type", equalTo("application/json"))
           .willReturn(
             aResponse()
               .withStatus(Status.ACCEPTED)
-              .withBody(fromResource("filestore-upload_response.json"))
+              .withBody(fromResource("filestore-initiate_response.json"))
           )
       )
 
-      val url = TemporaryFile("example.txt").file.toURI.toURL.toString
-      val file = MigratableAttachment(
-        name = "file-name.txt",
-        mimeType = "text/plain",
-        url = url,
-        timestamp = Instant.EPOCH
+      val file = UploadRequest(id = "name", fileName = "name", mimeType = "type")
+      val response = await(connector.initiate(file))
+
+      response shouldBe UploadTemplate("url", Map("field" -> "value"))
+    }
+  }
+
+  "Connector Get" should {
+
+    "GET from the File Store" in {
+      stubFor(
+        get("/file/id")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+              .withBody(fromResource("filestore-publish_response.json"))
+          )
       )
 
-      await(connector.upload(file)) shouldBe FileUploaded(
+      await(connector.get("id")) shouldBe FileUploaded(
         id = "id",
         fileName = "file-name.txt",
-        mimeType = "text/plain"
-      )
-      verify(
-        postRequestedFor(urlEqualTo("/file"))
-          .withAnyRequestBodyPart(aMultipart("file"))
+        mimeType = "text/plain",
+        published = true
       )
     }
+  }
 
-    "Handle FileNotFound" in {
-      val file = MigratableAttachment(
-        name = "file-name.txt",
-        mimeType = "text/plain",
-        url = "http://google.com/image.png",
-        timestamp = Instant.EPOCH
+  "Connector Get Many" should {
+
+    "GET from the File Store" in {
+      stubFor(
+        get("/file?id=id")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+              .withBody(fromResource("filestore-search_response.json"))
+          )
       )
 
-      intercept[MigrationFailedException] {
-        await(connector.upload(file)) shouldBe FileUploaded(
-          id = "id",
-          fileName = "file-name.txt",
-          mimeType = "text/plain"
-        )
-      }.getMessage shouldBe "File didnt exist at [http://google.com/image.png]"
-    }
-
-    "Handle Malformed URL" in {
-      val file = MigratableAttachment(
-        name = "file-name.txt",
+      await(connector.get(Seq("id"))) shouldBe Seq(FileUploaded(
+        id = "id",
+        fileName = "file-name.txt",
         mimeType = "text/plain",
-        url = "some url",
-        timestamp = Instant.EPOCH
-      )
-
-      intercept[MigrationFailedException] {
-        await(connector.upload(file)) shouldBe FileUploaded(
-          id = "id",
-          fileName = "file-name.txt",
-          mimeType = "text/plain"
-        )
-      }.getMessage shouldBe "File had invalid URL [some url]"
-    }
-
-    "Handle Error" in {
-      val file = MigratableAttachment(
-        name = "file-name.txt",
-        mimeType = "text/plain",
-        url = "http://localhost:123/image.png",
-        timestamp = Instant.EPOCH
-      )
-
-      intercept[MigrationFailedException] {
-        await(connector.upload(file)) shouldBe FileUploaded(
-          id = "id",
-          fileName = "file-name.txt",
-          mimeType = "text/plain"
-        )
-      }.getMessage shouldBe "File was inaccessible [http://localhost:123/image.png] due to [Connection refused (Connection refused)]"
+        published = true
+      ))
     }
   }
 

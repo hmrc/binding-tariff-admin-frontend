@@ -15,7 +15,7 @@
  *@
 
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-@import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes._
+@import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Migration, MigrationCounts, MigrationStatus}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{form_button, migration_status_table, pager}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
@@ -23,23 +23,25 @@
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
 
+ <a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
+
  @if(counts.hasUnprocessed) {
   <h1 class="heading-xlarge">Data Migration In Progress</h1>
 
-  @form_button(call = DataMigrationStateController.delete(Some(MigrationStatus.UNPROCESSED.toString)), label = "Clear Remaining Queue", css = "button-warn")
+  @form_button(call = routes.DataMigrationStateController.delete(Some(MigrationStatus.UNPROCESSED.toString)), label = "Clear Remaining Queue", css = "button-warn")
  } else {
    <h1 class="heading-xlarge">Data Migration Complete</h1>
 
    <div>
     <div class="inline-block">
-     <a class="button inline-block" href="@DataMigrationUploadController.get()">Upload Another</a>
+     <a class="button inline-block" href="@routes.CaseMigrationUploadController.get()">Upload Another</a>
     </div>
     <div class="inline-block">
-      @form_button(call = DataMigrationStateController.delete(None), label = "Clear Migration Log", disabled = counts.isEmpty, css = "button-warn")
+      @form_button(call = routes.DataMigrationStateController.delete(None), label = "Clear Migration Log", disabled = counts.isEmpty, css = "button-warn")
     </div>
     @if(appConfig.resetPermitted) {
      <div class="inline-block">
-      <a class="button button-warn inline-block" href="@DataMigrationStateController.reset()">Reset Services</a>
+      <a class="button button-warn inline-block" href="@routes.DataMigrationStateController.reset()">Reset Services</a>
      </div>
     }
    </div>
@@ -67,12 +69,12 @@
  <hr/>
 
  <div class="grid-row align-center mb-30">
-  <a class="bold-xsmall column-one-sixth" href="@DataMigrationStateController.get()">All</a>
-  <a class="bold-xsmall column-one-sixth" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.UNPROCESSED.toString))">Unprocessed</a>
-  <a class="bold-xsmall column-one-sixth" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.SUCCESS.toString, MigrationStatus.PARTIAL_SUCCESS.toString, MigrationStatus.FAILED.toString))">Processed</a>
-  <a class="bold-xsmall column-one-sixth" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.SUCCESS.toString))">Successful</a>
-  <a class="bold-xsmall column-one-sixth" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.PARTIAL_SUCCESS.toString))">Partially Successful</a>
-  <a class="bold-xsmall column-one-sixth" href="@DataMigrationStateController.get(status = Seq(MigrationStatus.FAILED.toString))">Failed</a>
+  <a class="bold-xsmall column-one-sixth" href="@routes.DataMigrationStateController.get()">All</a>
+  <a class="bold-xsmall column-one-sixth" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.UNPROCESSED.toString))">Unprocessed</a>
+  <a class="bold-xsmall column-one-sixth" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.SUCCESS.toString, MigrationStatus.PARTIAL_SUCCESS.toString, MigrationStatus.FAILED.toString))">Processed</a>
+  <a class="bold-xsmall column-one-sixth" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.SUCCESS.toString))">Successful</a>
+  <a class="bold-xsmall column-one-sixth" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.PARTIAL_SUCCESS.toString))">Partially Successful</a>
+  <a class="bold-xsmall column-one-sixth" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.FAILED.toString))">Failed</a>
  </div>
 
 

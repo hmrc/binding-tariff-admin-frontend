@@ -18,6 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model
 
 import java.time.Instant
 
+import org.mockito.BDDMockito.given
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.play.test.UnitSpec
@@ -27,8 +28,12 @@ class MigratableCaseTest extends UnitSpec with MockitoSugar {
   private val application = mock[Application]
   private val decision = mock[Decision]
   private val attachment = mock[Attachment]
+  private val migratedAttachment = mock[MigratedAttachment]
 
   "Migratable Case" should {
+
+    given(migratedAttachment.asAttachment) willReturn attachment
+
     "Convert To Case" in {
       MigratableCase(
         "ref",
@@ -41,9 +46,9 @@ class MigratableCaseTest extends UnitSpec with MockitoSugar {
         Some("queue"),
         application,
         Some(decision),
-        Seq.empty,
+        Seq(migratedAttachment),
         Set("keyword1", "keyword2")
-      ).toCase(Seq(attachment)) shouldBe Case(
+      ).toCase shouldBe Case(
         "ref",
         CaseStatus.SUPPRESSED,
         Instant.EPOCH,

@@ -16,22 +16,10 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
-import java.io.FileNotFoundException
-import java.net.{MalformedURLException, URL}
-
-import akka.stream.IOResult
-import akka.stream.scaladsl.{FileIO, Source}
-import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
-import org.apache.commons.io.FileUtils
-import play.api.libs.Files.TemporaryFile
-import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
-import play.api.mvc.MultipartFormData
-import play.api.mvc.MultipartFormData.FilePart
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigratableAttachment, MigrationFailedException}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
@@ -49,25 +37,17 @@ class FileStoreConnector @Inject()(configuration: AppConfig, client: WSClient, h
     http.DELETE(s"${configuration.filestoreUrl}/file/$id").map(_ => Unit)
   }
 
-  def upload(file: MigratableAttachment): Future[FileUploaded] = {
-    val tmp = TemporaryFile(file.name, "")
-    try {
-      FileUtils.copyURLToFile(new URL(file.url), tmp.file)
-      val filePart: MultipartFormData.Part[Source[ByteString, Future[IOResult]]] = FilePart(
-        "file",
-        file.name,
-        Some(file.mimeType),
-        FileIO.fromPath(tmp.file.toPath)
-      )
+  def get(id: String)(implicit hc: HeaderCarrier): Future[FileUploaded] = {
+    http.GET[FileUploaded](s"${configuration.filestoreUrl}/file/$id")
+  }
 
-      client.url(s"${configuration.filestoreUrl}/file")
-        .post(Source(List(filePart)))
-        .map(response => Json.fromJson[FileUploaded](Json.parse(response.body)).get)
-    } catch {
-      case _: FileNotFoundException => Future.failed(new MigrationFailedException(s"File didnt exist at [${file.url}]"))
-      case _: MalformedURLException => Future.failed(new MigrationFailedException(s"File had invalid URL [${file.url}]"))
-      case t: Throwable => Future.failed(new MigrationFailedException(s"File was inaccessible [${file.url}] due to [${t.getMessage}]"))
-    }
+  def get(ids: Seq[String])(implicit hc: HeaderCarrier): Future[Seq[FileUploaded]] = {
+    val params = ids.map(id => s"id=$id").mkString("&")
+    http.GET[Seq[FileUploaded]](s"${configuration.filestoreUrl}/file?$params")
+  }
+
+  def initiate(file: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] = {
+    http.POST[UploadRequest, UploadTemplate](s"${configuration.filestoreUrl}/file", file)
   }
 
   def publish(id: String)(implicit hc: HeaderCarrier): Future[FileUploaded] = {

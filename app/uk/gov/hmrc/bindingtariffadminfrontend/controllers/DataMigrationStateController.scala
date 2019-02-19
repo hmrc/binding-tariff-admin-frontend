@@ -22,7 +22,7 @@ import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
-import uk.gov.hmrc.bindingtariffadminfrontend.views.html.{data_migration_reset_confirm, data_migration_state}
+import uk.gov.hmrc.bindingtariffadminfrontend.views.html.{reset_confirm, data_migration_state}
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -50,7 +50,7 @@ class DataMigrationStateController @Inject()(authenticatedAction: AuthenticatedA
 
   def reset(): Action[AnyContent] = authenticatedAction.async { implicit request =>
     if(appConfig.resetPermitted) {
-      Future.successful(Ok(data_migration_reset_confirm()))
+      Future.successful(Ok(reset_confirm()))
     } else {
       Future.successful(Redirect(routes.DataMigrationStateController.get()))
     }

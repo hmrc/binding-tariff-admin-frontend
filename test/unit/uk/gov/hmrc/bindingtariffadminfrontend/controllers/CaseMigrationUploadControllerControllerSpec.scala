@@ -38,7 +38,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers with UnitSpec with MockitoSugar with GuiceOneAppPerSuite {
+class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers with UnitSpec with MockitoSugar with GuiceOneAppPerSuite {
 
   private val fakeRequest = FakeRequest()
   private val env = Environment.simple()
@@ -47,13 +47,13 @@ class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers
   private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
   private val appConfig = new AppConfig(configuration, env)
   private implicit val mat: Materializer = app.materializer
-  private val controller = new DataMigrationUploadController(new SuccessfulAuthenticatedAction, migrationService, messageApi, appConfig)
+  private val controller = new CaseMigrationUploadController(new SuccessfulAuthenticatedAction, migrationService, messageApi, appConfig)
 
   "GET /" should {
     "return 200" in {
       val result: Result = await(controller.get()(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
-      bodyOf(result) should include("Data Migration Upload")
+      bodyOf(result) should include("case_migration_upload-heading")
     }
   }
 
@@ -88,7 +88,7 @@ class DataMigrationUploadControllerControllerSpec extends WordSpec with Matchers
 
       val result: Result = await(controller.post(postRequest))
       status(result) shouldBe SEE_OTHER
-      locationOf(result) shouldBe Some("/binding-tariff-admin")
+      locationOf(result) shouldBe Some("/binding-tariff-admin/case-migration")
     }
 
   }

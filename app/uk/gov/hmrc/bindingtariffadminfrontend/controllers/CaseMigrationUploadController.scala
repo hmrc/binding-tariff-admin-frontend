@@ -35,7 +35,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
 @Singleton
-class DataMigrationUploadController @Inject()(authenticatedAction: AuthenticatedAction,
+class CaseMigrationUploadController @Inject()(authenticatedAction: AuthenticatedAction,
                                               service: DataMigrationService,
                                               override val messagesApi: MessagesApi,
                                               implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
@@ -43,7 +43,7 @@ class DataMigrationUploadController @Inject()(authenticatedAction: Authenticated
   private lazy val form = Form("file" -> Forms.text)
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
-    successful(Ok(views.html.data_migration_upload(form)))
+    successful(Ok(views.html.case_migration_upload(form)))
   }
 
   def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
@@ -55,10 +55,10 @@ class DataMigrationUploadController @Inject()(authenticatedAction: Authenticated
             service.prepareMigration(migrations)
               .map(_ => Redirect(routes.DataMigrationStateController.get()))
           case JsError(errs) =>
-            successful(Ok(views.html.data_migration_file_error(errs)))
+            successful(Ok(views.html.case_migration_file_error(errs)))
         }
       case None =>
-        successful(Redirect(routes.DataMigrationUploadController.get()))
+        successful(Redirect(routes.CaseMigrationUploadController.get()))
     }
   }
 

@@ -14,26 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model
+package uk.gov.hmrc.bindingtariffadminfrontend.model.filestore
 
-import java.time.Instant
-import java.util.UUID
+import play.api.libs.json.{Json, OFormat}
 
-import play.api.libs.json.Format
-import play.json.extra.Jsonx
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Operator
+case class UploadTemplate(href: String, fields: Map[String, String])
 
-case class MigratableAttachment
-(
-  id: String = UUID.randomUUID().toString,
-  public: Boolean = false,
-  url: String,
-  name: String,
-  mimeType: String,
-  user: Option[Operator] = None,
-  timestamp: Instant
-)
-
-object MigratableAttachment {
-  implicit val format: Format[MigratableAttachment] = Jsonx.formatCaseClass[MigratableAttachment]
+object UploadTemplate {
+  implicit val format: OFormat[UploadTemplate] = Json.format
 }

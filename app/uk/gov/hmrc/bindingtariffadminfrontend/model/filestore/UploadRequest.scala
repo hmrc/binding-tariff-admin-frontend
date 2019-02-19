@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
-
-import java.time.Instant
+package uk.gov.hmrc.bindingtariffadminfrontend.model.filestore
 
 import play.api.libs.json.{Json, OFormat}
 
-case class Attachment
+case class UploadRequest
 (
   id: String,
-  public: Boolean,
-  operator: Option[Operator] = None,
-  timestamp: Instant = Instant.now()
+  fileName: String,
+  mimeType: String
 )
 
-object Attachment {
-  implicit val outboundFormat: OFormat[Attachment] = Json.format[Attachment]
+object UploadRequest {
+  implicit val format: OFormat[UploadRequest] = Json.format[UploadRequest]
 }

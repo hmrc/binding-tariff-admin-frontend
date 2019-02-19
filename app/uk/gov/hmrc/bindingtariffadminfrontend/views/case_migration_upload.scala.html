@@ -15,7 +15,7 @@
  *@
 
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-@import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes._
+@import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{error_summary, input_file, submit_button}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
@@ -24,15 +24,11 @@
 @(form: Form[_])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
- <h1 class="heading-xlarge">Data Migration Upload</h1>
+ <a href="@routes.FileMigrationUploadController.get()" class="link-back">Back to File Migration</a>
 
- <hr/>
+ <h1 id="case_migration_upload-heading" class="heading-xlarge">Step 2: Case Migration</h1>
 
- <p class="font-xsmall mb-30">Alternately, <a href="@DataMigrationStateController.get()">view the current state of migrations</a></p>
-
- <hr/>
-
- @helpers.form(action = DataMigrationUploadController.post(), 'enctype -> "multipart/form-data", 'autoComplete -> "off") {
+ @helpers.form(action = routes.CaseMigrationUploadController.post(), 'enctype -> "multipart/form-data", 'autoComplete -> "off") {
 
   @error_summary(form.errors)
 

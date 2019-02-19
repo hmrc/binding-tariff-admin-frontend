@@ -27,7 +27,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, client: HttpClient) {
+class BindingTariffClassificationConnector @Inject()(configuration: AppConfig,
+                                                     client: HttpClient) {
 
   def upsertCase(c: Case)(implicit hc: HeaderCarrier): Future[Case] = {
     val url = s"${configuration.classificationBackendUrl}/cases/${c.reference}"
@@ -41,12 +42,12 @@ class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, c
 
   def deleteCases()(implicit hc: HeaderCarrier): Future[Unit] = {
     val url = s"${configuration.classificationBackendUrl}/cases"
-    client.DELETE(url = url).map(_ => Unit)
+    client.DELETE(url = url).map(_ => ())
   }
 
   def deleteEvents()(implicit hc: HeaderCarrier): Future[Unit] = {
     val url = s"${configuration.classificationBackendUrl}/events"
-    client.DELETE(url = url).map(_ => Unit)
+    client.DELETE(url = url).map(_ => ())
   }
 
 }

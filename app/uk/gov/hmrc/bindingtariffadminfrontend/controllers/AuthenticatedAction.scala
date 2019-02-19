@@ -22,6 +22,7 @@ import com.google.common.io.BaseEncoding
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.Results._
 import play.api.mvc.{ActionBuilder, Request, Result}
+import play.mvc.Http.HeaderNames.{AUTHORIZATION, WWW_AUTHENTICATE}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Credentials}
 
@@ -34,12 +35,12 @@ class AuthenticatedAction @Inject()(appConfig: AppConfig) extends ActionBuilder[
   private lazy val credentials: Seq[Credentials] = appConfig.credentials
 
   override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] = {
-    request.headers.get("Authorization")
+    request.headers.get(AUTHORIZATION)
       .map(decode)
       .filter(_.isSuccess)
       .filter(decoded => credentials.contains(decoded.get))
       .map(c => block(AuthenticatedRequest(c.get.username, request)))
-      .getOrElse(Future.successful(Unauthorized.withHeaders("WWW-Authenticate" -> "Basic realm=Unauthorized")))
+      .getOrElse(Future.successful(Unauthorized.withHeaders(WWW_AUTHENTICATE -> "Basic realm=Unauthorized")))
   }
 
   private def decode(authorization: String): Try[Credentials] = Try {

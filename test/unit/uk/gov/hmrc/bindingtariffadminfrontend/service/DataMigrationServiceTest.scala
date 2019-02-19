@@ -34,6 +34,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
+import scala.util.Failure
 
 class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
@@ -324,7 +325,6 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       val template = UploadTemplate("href", Map())
 
       given(fileConnector.initiate(request)) willReturn Future.successful(template)
-
       await(service.initiateFileMigation(request)) shouldBe template
     }
   }

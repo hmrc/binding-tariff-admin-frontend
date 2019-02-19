@@ -48,17 +48,14 @@ class CaseMigrationUploadController @Inject()(authenticatedAction: Authenticated
 
   def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
     request.body.file("file").filter(_.filename.nonEmpty).map(_.ref.file) match {
-      case Some(file: File) =>
-        val result = toJson(file)
+      case None => successful(Redirect(routes.CaseMigrationUploadController.get()))
+      case Some(f: File) =>
+        val result = toJson(f)
         result match {
+          case JsError(errs) => successful(Ok(views.html.case_migration_file_error(errs)))
           case JsSuccess(migrations, _) =>
-            service.prepareMigration(migrations)
-              .map(_ => Redirect(routes.DataMigrationStateController.get()))
-          case JsError(errs) =>
-            successful(Ok(views.html.case_migration_file_error(errs)))
+            service.prepareMigration(migrations).map(_ => Redirect(routes.DataMigrationStateController.get()))
         }
-      case None =>
-        successful(Redirect(routes.CaseMigrationUploadController.get()))
     }
   }
 

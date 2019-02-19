@@ -17,7 +17,6 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
 import play.api.data.{Form, Forms}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json._
@@ -26,7 +25,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadRequest
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
-import uk.gov.hmrc.http.{Upstream4xxResponse, Upstream5xxResponse}
+import uk.gov.hmrc.http.Upstream4xxResponse
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -51,7 +50,6 @@ class FileMigrationUploadController @Inject()(authenticatedAction: Authenticated
 
   private def handlingError: PartialFunction[Throwable, Result] = {
     case e: Upstream4xxResponse => new Status(e.upstreamResponseCode)
-    case _: Upstream5xxResponse => BadGateway
     case e: Throwable => InternalServerError(e.getMessage)
   }
 

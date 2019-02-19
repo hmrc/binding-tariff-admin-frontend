@@ -45,4 +45,3 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: 
       case Array(username, hash) => Credentials(username.trim, hash.trim)
     })
 }
-

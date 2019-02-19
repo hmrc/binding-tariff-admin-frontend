@@ -73,7 +73,7 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
   }
 
   override def get(page: Int, pageSize: Int, status: Seq[MigrationStatus]): Future[Seq[Migration]] = {
-    val filter = if(status.isEmpty) Json.obj() else Json.obj("status" -> Json.obj("$in" -> status))
+    val filter = if (status.isEmpty) Json.obj() else Json.obj("status" -> Json.obj("$in" -> status))
     val actualPage = if(page > 1) page else 1
     collection
       .find(filter)
@@ -109,13 +109,15 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
   }
 
   def countByStatus: Future[MigrationCounts] = {
+
     import collection.BatchCommands.AggregationFramework.{Group, SumAll}
+
     val group = Group(JsString("$status"))("count" -> SumAll)
-    collection.aggregate(group).map(_.firstBatch.map(json => {
+    collection.aggregate(group).map(_.firstBatch.map { json =>
       val status = json.value("_id").as[MigrationStatus]
       val count = json.value("count").as[Int]
       (status, count)
-    })).map(list => new MigrationCounts(list.toMap))
+    }).map(list => new MigrationCounts(list.toMap))
   }
 
   override def delete(status: Option[MigrationStatus]): Future[Boolean] = {

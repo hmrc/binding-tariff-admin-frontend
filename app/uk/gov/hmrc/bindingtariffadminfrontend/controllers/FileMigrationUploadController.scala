@@ -46,7 +46,7 @@ class FileMigrationUploadController @Inject()(authenticatedAction: Authenticated
 
   def post: Action[JsValue] = authenticatedAction.async(parse.json) { implicit request =>
     val upload: UploadRequest = request.body.as[UploadRequest]
-    service.initiateFileMigation(upload).map(template => Ok(Json.toJson(template).toString())) recover handlingError
+    service.initiateFileMigration(upload).map(template => Ok(Json.toJson(template).toString())) recover handlingError
   }
 
   private def handlingError: PartialFunction[Throwable, Result] = {

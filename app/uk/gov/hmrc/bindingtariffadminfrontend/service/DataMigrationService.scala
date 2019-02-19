@@ -126,7 +126,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     }
   }
 
-  def initiateFileMigation(file: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] = {
+  def initiateFileMigration(file: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] = {
     fileConnector.initiate(file)
   }
 

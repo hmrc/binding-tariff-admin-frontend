@@ -325,7 +325,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       given(fileConnector.initiate(request)) willReturn Future.successful(template)
 
-      await(service.initiateFileMigation(request)) shouldBe template
+      await(service.initiateFileMigration(request)) shouldBe template
     }
   }
 

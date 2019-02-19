@@ -68,7 +68,7 @@ class FileMigrationUploadControllerControllerSpec extends WordSpec with Matchers
     )
 
     "Initiate Upload" in {
-      given(migrationService.initiateFileMigation(refEq(request))(any[HeaderCarrier])) willReturn Future.successful(template)
+      given(migrationService.initiateFileMigration(refEq(request))(any[HeaderCarrier])) willReturn Future.successful(template)
 
 
       val body = Json.toJson(request)
@@ -79,7 +79,7 @@ class FileMigrationUploadControllerControllerSpec extends WordSpec with Matchers
     }
 
     "Handle 4xx Errors" in {
-      given(migrationService.initiateFileMigation(refEq(request))(any[HeaderCarrier])) willReturn Future.failed(Upstream4xxResponse("error", 409, 0))
+      given(migrationService.initiateFileMigration(refEq(request))(any[HeaderCarrier])) willReturn Future.failed(Upstream4xxResponse("error", 409, 0))
 
       val body = Json.toJson(request)
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(body)))
@@ -88,7 +88,7 @@ class FileMigrationUploadControllerControllerSpec extends WordSpec with Matchers
     }
 
     "Handle 5xx Errors" in {
-      given(migrationService.initiateFileMigation(refEq(request))(any[HeaderCarrier])) willReturn Future.failed(Upstream5xxResponse("error", 500, 0))
+      given(migrationService.initiateFileMigration(refEq(request))(any[HeaderCarrier])) willReturn Future.failed(Upstream5xxResponse("error", 500, 0))
 
       val body = Json.toJson(request)
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(body)))

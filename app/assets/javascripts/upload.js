@@ -1,7 +1,10 @@
 var fileMigration = {
     uploadAll: function upload(url) {
-
         var input = document.getElementById("files");
+        if(input.files.length === 0){
+            return;
+        }
+
         incrementTotal(input.files.length);
         showProgress();
 

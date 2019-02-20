@@ -18,30 +18,33 @@
 @(page: Int, pageSize: Int, totalResultCount: Int, changePage: Int => Call)
 
 @defining(Math.ceil(totalResultCount.toDouble/pageSize).toInt) { pageCount: Int =>
- <div class="grid-row mt-30">
-  <div class="column-one-third">
-   @if(page > 1) {
-    <a class="button" href="@changePage(page - 1)">Previous Page</a>
-   }
-   @if(page == 1) {
-    <span class="button disabled">Previous Page</span>
-   }
-  </div>
+ @if(pageCount > 1) {
+  <div class="grid-row mt-30">
+   <div class="column-one-third">
+    @if(page > 1) {
+     <a class="button" href="@changePage(page - 1)">Previous Page</a>
+    }
+    @if(page == 1) {
+     <span class="button disabled">Previous Page</span>
+    }
+   </div>
 
-  <div class="column-one-third align-center">
-   <span>Page @page of @pageCount</span>
-  </div>
+   <div class="column-one-third align-center">
+    <span>Page @page of @pageCount</span>
+   </div>
 
-  <div class="column-one-third align-right">
+   <div class="column-one-third align-right">
 
-   @if(page < pageCount) {
-    <a class="button" href="@changePage(page + 1)">Next Page</a>
-   }
-   @if(page == pageCount) {
-    <span class="button disabled">Next Page</span>
-   }
+    @if(page < pageCount) {
+     <a class="button" href="@changePage(page + 1)">Next Page</a>
+    }
+    @if(page == pageCount) {
+     <span class="button disabled">Next Page</span>
+    }
+   </div>
   </div>
- </div>
+ }
+
 }
 
 

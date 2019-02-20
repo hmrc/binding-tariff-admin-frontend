@@ -84,6 +84,9 @@ class FileStoreConnectorTest extends UnitSpec with WithFakeApplication with Wire
       stubFor(
         post("/file")
           .withHeader("Content-Type", equalTo("application/json"))
+          .withRequestBody(matchingJsonPath("id", equalTo("file_name_jpg")))
+          .withRequestBody(matchingJsonPath("fileName", equalTo("file name.jpg")))
+          .withRequestBody(matchingJsonPath("mimeType", equalTo("type")))
           .willReturn(
             aResponse()
               .withStatus(Status.ACCEPTED)
@@ -91,7 +94,7 @@ class FileStoreConnectorTest extends UnitSpec with WithFakeApplication with Wire
           )
       )
 
-      val file = UploadRequest(id = "name", fileName = "name", mimeType = "type")
+      val file = UploadRequest(fileName = "file name.jpg", mimeType = "type")
       val response = await(connector.initiate(file))
 
       response shouldBe UploadTemplate("url", Map("field" -> "value"))

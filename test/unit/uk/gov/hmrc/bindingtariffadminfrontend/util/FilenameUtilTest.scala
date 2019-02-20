@@ -14,22 +14,16 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model.filestore
+package uk.gov.hmrc.bindingtariffadminfrontend.util
 
-import play.api.libs.json._
-import uk.gov.hmrc.bindingtariffadminfrontend.util.FilenameUtil
+import uk.gov.hmrc.play.test.UnitSpec
 
-case class UploadRequest
-(
-  fileName: String,
-  mimeType: String
-)
+class FilenameUtilTest extends UnitSpec {
 
-object UploadRequest {
-  val writes: Writes[UploadRequest] = Writes(upload => Json.obj(
-    "id" -> FilenameUtil.toID(upload.fileName),
-    "fileName" -> upload.fileName,
-    "mimeType" -> upload.mimeType
-  ))
-  implicit val format: Format[UploadRequest] = Format(Json.reads[UploadRequest], writes)
+  "Filename Util" should {
+    "Convert String to ID" in {
+      FilenameUtil.toID("a file-name.jpg") shouldBe "a_file-name_jpg"
+    }
+  }
+
 }

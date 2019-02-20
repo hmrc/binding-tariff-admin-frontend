@@ -30,7 +30,8 @@ case class Decision
   methodSearch: Option[String] = None,
   methodCommercialDenomination: Option[String] = None,
   methodExclusion: Option[String] = None,
-  appeal: Option[Appeal] = None
+  appeal: Option[Appeal] = None,
+  review: Option[Review] = None
 )
 
 object Decision {

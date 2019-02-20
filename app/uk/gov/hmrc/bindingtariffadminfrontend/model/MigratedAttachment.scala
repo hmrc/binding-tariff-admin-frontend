@@ -21,6 +21,7 @@ import java.time.Instant
 import play.api.libs.json.Format
 import play.json.extra.Jsonx
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Operator}
+import uk.gov.hmrc.bindingtariffadminfrontend.util.FilenameUtil
 
 case class MigratedAttachment
 (
@@ -30,8 +31,10 @@ case class MigratedAttachment
   operator: Option[Operator] = None,
   timestamp: Instant
 ) {
+  def id: String = FilenameUtil.toID(name)
+
   def asAttachment: Attachment = {
-    Attachment(id = name, public = public, operator = operator, timestamp = timestamp)
+    Attachment(id = id, public = public, operator = operator, timestamp = timestamp)
   }
 }
 

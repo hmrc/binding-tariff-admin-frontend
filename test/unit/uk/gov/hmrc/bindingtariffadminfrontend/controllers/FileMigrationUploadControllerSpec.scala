@@ -37,7 +37,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-class FileMigrationUploadControllerControllerSpec extends WordSpec with Matchers
+class FileMigrationUploadControllerSpec extends WordSpec with Matchers
   with UnitSpec with MockitoSugar with GuiceOneAppPerSuite {
 
   private val env = Environment.simple()
@@ -60,7 +60,6 @@ class FileMigrationUploadControllerControllerSpec extends WordSpec with Matchers
 
   "POST /" should {
     val request = UploadRequest(
-      id = "id",
       fileName = "filename",
       mimeType = "text/plain"
     )
@@ -97,6 +96,15 @@ class FileMigrationUploadControllerControllerSpec extends WordSpec with Matchers
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(body)))
 
       status(result) shouldBe 502
+    }
+
+    "Handle unknown Errors" in {
+      given(migrationService.initiateFileMigration(refEq(request))(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("error"))
+
+      val body = Json.toJson(request)
+      val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(body)))
+
+      status(result) shouldBe 500
     }
 
   }

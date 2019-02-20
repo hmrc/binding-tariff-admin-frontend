@@ -106,7 +106,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
   }
 
   private def publish(attachment: MigratedAttachment)(implicit hc: HeaderCarrier): Future[Try[MigratedAttachment]] = {
-    fileConnector.publish(attachment.name).map(_ => Try(attachment)).recover {
+    fileConnector.publish(attachment.id).map(_ => Success(attachment)).recover {
       case e => Failure(e)
     }
   }
@@ -117,8 +117,8 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       case Some(c) =>
         for {
           files <- if (c.attachments.nonEmpty) fileConnector.get(c.attachments.map(_.id)) else successful(Seq.empty)
-          newAttachmentNames = migration.`case`.attachments.map(_.name)
-          missingFiles: Seq[FileUploaded] = files.filterNot(f => newAttachmentNames.contains(f.fileName))
+          newAttachmentIDs = migration.`case`.attachments.map(_.id)
+          missingFiles: Seq[FileUploaded] = files.filterNot(f => newAttachmentIDs.contains(f.id))
           _ <- sequence(missingFiles.map(f => fileConnector.delete(f.id)))
         } yield ()
     }

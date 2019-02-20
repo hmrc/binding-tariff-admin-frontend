@@ -115,7 +115,6 @@ var fileMigration = {
                     "CSRF-token": csrf.value
                 },
                 data: JSON.stringify({
-                    id: filename,
                     fileName: filename,
                     mimeType: type
                 }),

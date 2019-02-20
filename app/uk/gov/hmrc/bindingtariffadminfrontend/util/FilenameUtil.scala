@@ -14,22 +14,10 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model.filestore
+package uk.gov.hmrc.bindingtariffadminfrontend.util
 
-import play.api.libs.json._
-import uk.gov.hmrc.bindingtariffadminfrontend.util.FilenameUtil
-
-case class UploadRequest
-(
-  fileName: String,
-  mimeType: String
-)
-
-object UploadRequest {
-  val writes: Writes[UploadRequest] = Writes(upload => Json.obj(
-    "id" -> FilenameUtil.toID(upload.fileName),
-    "fileName" -> upload.fileName,
-    "mimeType" -> upload.mimeType
-  ))
-  implicit val format: Format[UploadRequest] = Format(Json.reads[UploadRequest], writes)
+object FilenameUtil {
+  def toID(filename: String): String = {
+    filename.replaceAll("[\\s\\.]", "_")
+  }
 }

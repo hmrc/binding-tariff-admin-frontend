@@ -27,15 +27,25 @@ class MigratedAttachmentTest extends UnitSpec with MockitoSugar {
   "MigratedAttachment" should {
     val operator = mock[Operator]
 
+    "Generate ID" in {
+      MigratedAttachment(
+        public = true,
+        name = "file name.jpg",
+        mimeType = "type",
+        operator = Some(operator),
+        timestamp = Instant.EPOCH
+      ).id shouldBe "file_name_jpg"
+    }
+
     "Convert to attachment" in {
       MigratedAttachment(
         public = true,
-        name = "name",
+        name = "file name",
         mimeType = "type",
         operator = Some(operator),
         timestamp = Instant.EPOCH
       ).asAttachment shouldBe Attachment(
-        id = "name",
+        id = "file_name",
         public = true,
         operator = Some(operator),
         timestamp = Instant.EPOCH

@@ -27,6 +27,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.Future.{sequence, successful}
 import scala.util.{Failure, Success, Try}
 
 class DataMigrationService @Inject()(repository: MigrationRepository,
@@ -68,7 +69,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       _ <- caseConnector.upsertCase(migration.`case`.toCase)
 
       //Publish The Files
-      publishedUploads <- Future.sequence(migration.`case`.attachments.map(publish))
+      publishedUploads <- sequence(migration.`case`.attachments.map(publish))
 
     } yield publishedUploads
 
@@ -91,6 +92,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
   }
 
   def resetEnvironment()(implicit hc: HeaderCarrier): Future[Unit] = {
+
     def loggingAWarning: PartialFunction[Throwable, Unit] = {
       case t: Throwable => Logger.warn("Failed to clear Service", t)
     }
@@ -100,29 +102,25 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       _ <- caseConnector.deleteCases() recover loggingAWarning
       _ <- caseConnector.deleteEvents() recover loggingAWarning
       _ <- clear() recover loggingAWarning
-    } yield Unit
+    } yield ()
   }
 
   private def publish(attachment: MigratedAttachment)(implicit hc: HeaderCarrier): Future[Try[MigratedAttachment]] = {
-    fileConnector.publish(attachment.name) map {
-      _ => Success(attachment)
-    } recover {
-      case error => Failure(error)
+    fileConnector.publish(attachment.name).map(_ => Try(attachment)).recover {
+      case e => Failure(e)
     }
   }
 
   private def deleteMissingAttachments(migration: Migration)(implicit hc: HeaderCarrier): Future[Unit] = {
     caseConnector.getCase(migration.`case`.reference) flatMap {
+      case None => successful(())
       case Some(c) =>
         for {
-          files <- if(c.attachments.nonEmpty) fileConnector.get(c.attachments.map(_.id)) else Future.successful(Seq.empty)
+          files <- if (c.attachments.nonEmpty) fileConnector.get(c.attachments.map(_.id)) else successful(Seq.empty)
           newAttachmentNames = migration.`case`.attachments.map(_.name)
           missingFiles: Seq[FileUploaded] = files.filterNot(f => newAttachmentNames.contains(f.fileName))
-          _ <- Future.sequence(missingFiles.map(f => fileConnector.delete(f.id)))
-        } yield Unit
-
-      case None =>
-        Future.successful(Unit)
+          _ <- sequence(missingFiles.map(f => fileConnector.delete(f.id)))
+        } yield ()
     }
   }
 

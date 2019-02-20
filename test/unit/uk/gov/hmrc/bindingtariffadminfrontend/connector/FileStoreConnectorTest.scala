@@ -40,7 +40,7 @@ class FileStoreConnectorTest extends UnitSpec with WithFakeApplication with Wire
   private val hmrcWsClient = new DefaultHttpClient(fakeApplication.configuration, auditConnector, wsClient, actorSystem)
   private implicit val headers: HeaderCarrier = HeaderCarrier()
 
-  private val connector = new FileStoreConnector(config, wsClient, hmrcWsClient)
+  private val connector = new FileStoreConnector(config, hmrcWsClient)
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

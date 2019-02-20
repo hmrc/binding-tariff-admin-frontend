@@ -27,14 +27,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class FileStoreConnector @Inject()(configuration: AppConfig, client: WSClient, http: HttpClient) {
+class FileStoreConnector @Inject()(configuration: AppConfig,
+                                   http: HttpClient) {
 
   def delete()(implicit hc: HeaderCarrier): Future[Unit] = {
-    http.DELETE(s"${configuration.filestoreUrl}/file").map(_ => Unit)
+    http.DELETE(s"${configuration.filestoreUrl}/file").map(_ => ())
   }
 
   def delete(id: String)(implicit hc: HeaderCarrier): Future[Unit] = {
-    http.DELETE(s"${configuration.filestoreUrl}/file/$id").map(_ => Unit)
+    http.DELETE(s"${configuration.filestoreUrl}/file/$id").map(_ => ())
   }
 
   def get(id: String)(implicit hc: HeaderCarrier): Future[FileUploaded] = {

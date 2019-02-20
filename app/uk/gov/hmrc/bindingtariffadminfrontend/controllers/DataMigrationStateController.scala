@@ -26,7 +26,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.views.html.{reset_confirm, data_mi
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.Future.successful
 
 @Singleton
 class DataMigrationStateController @Inject()(authenticatedAction: AuthenticatedAction,
@@ -38,32 +38,29 @@ class DataMigrationStateController @Inject()(authenticatedAction: AuthenticatedA
     for {
       counts <- service.counts
       state <- service.getState(page, appConfig.pageSize, status.flatMap(MigrationStatus(_)))
-      view = data_migration_state(state, counts, page, appConfig.pageSize, p => routes.DataMigrationStateController.get(p, status))
+      view = data_migration_state(state, counts, page, appConfig.pageSize, routes.DataMigrationStateController.get(_, status))
     } yield Ok(view)
   }
 
   def delete(status: Option[String]): Action[AnyContent] = authenticatedAction.async { implicit request =>
     val statusFilter = status.flatMap(MigrationStatus(_))
-    service.clear(statusFilter)
-      .map(_ => Redirect(routes.DataMigrationStateController.get()))
+    service.clear(statusFilter).map(_ => Redirect(routes.DataMigrationStateController.get()))
   }
 
   def reset(): Action[AnyContent] = authenticatedAction.async { implicit request =>
-    if(appConfig.resetPermitted) {
-      Future.successful(Ok(reset_confirm()))
+    if (appConfig.resetPermitted) {
+      successful(Ok(reset_confirm()))
     } else {
-      Future.successful(Redirect(routes.DataMigrationStateController.get()))
+      successful(Redirect(routes.DataMigrationStateController.get()))
     }
   }
 
   def resetConfirm(): Action[AnyContent] = authenticatedAction.async { implicit request =>
-    if(appConfig.resetPermitted) {
-      service.resetEnvironment()
-        .map(_ => Redirect(routes.DataMigrationStateController.get()))
+    if (appConfig.resetPermitted) {
+      service.resetEnvironment().map(_ => Redirect(routes.DataMigrationStateController.get()))
     } else {
-      Future.successful(Redirect(routes.DataMigrationStateController.get()))
+      successful(Redirect(routes.DataMigrationStateController.get()))
     }
-
   }
 
 }

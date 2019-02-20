@@ -27,6 +27,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class Scheduler @Inject()(actorSystem: ActorSystem, job: ScheduledJob) {
 
   Logger.info("Starting Scheduler")
+
   actorSystem.scheduler.schedule(
     initialDelay = job.initialDelay,
     interval = job.interval,
@@ -36,4 +37,5 @@ class Scheduler @Inject()(actorSystem: ActorSystem, job: ScheduledJob) {
       }
     }
   )
+
 }

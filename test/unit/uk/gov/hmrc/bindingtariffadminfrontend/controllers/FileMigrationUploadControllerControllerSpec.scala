@@ -37,7 +37,8 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-class FileMigrationUploadControllerControllerSpec extends WordSpec with Matchers with UnitSpec with MockitoSugar with GuiceOneAppPerSuite {
+class FileMigrationUploadControllerControllerSpec extends WordSpec with Matchers
+  with UnitSpec with MockitoSugar with GuiceOneAppPerSuite {
 
   private val env = Environment.simple()
   private val configuration = Configuration.load(env)
@@ -45,7 +46,9 @@ class FileMigrationUploadControllerControllerSpec extends WordSpec with Matchers
   private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
   private val appConfig = new AppConfig(configuration, env)
   private implicit val mat: Materializer = app.materializer
-  private val controller = new FileMigrationUploadController(new SuccessfulAuthenticatedAction, migrationService, messageApi, appConfig)
+  private val controller = new FileMigrationUploadController(
+    new SuccessfulAuthenticatedAction, migrationService, messageApi, appConfig
+  )
 
   "GET /" should {
     "return 200" in {

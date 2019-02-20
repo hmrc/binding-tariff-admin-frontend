@@ -31,7 +31,9 @@ import uk.gov.hmrc.play.scheduling.LockedScheduledJob
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
-class MigrationJob @Inject()(appConfig: AppConfig, service: DataMigrationService, override val lockRepository: LockRepository) extends LockedScheduledJob {
+class MigrationJob @Inject()(appConfig: AppConfig,
+                             service: DataMigrationService,
+                             override val lockRepository: LockRepository) extends LockedScheduledJob {
 
   private implicit val headers: HeaderCarrier = HeaderCarrier()
 
@@ -45,21 +47,17 @@ class MigrationJob @Inject()(appConfig: AppConfig, service: DataMigrationService
 
   override def executeInLock(implicit ec: ExecutionContext): Future[Result] = {
     Logger.debug(s"Running Job [$name]")
-    process()
-      .map(count => Result(s"Processed $count migrations"))
+    process().map(count => Result(s"Processed $count migrations"))
   }
 
   private def process(count: Int = 0)(implicit ctx: ExecutionContext): Future[Int] = {
     service.getNextMigration flatMap {
       case Some(migration) if count < 100 =>
-        process(migration)
-          .flatMap {
-            result =>
-              Logger.info(result.message)
-              process(count + 1)
-          }
-      case _ =>
-        Future.successful(count)
+        process(migration).flatMap { result =>
+          Logger.info(result.message)
+          process(count + 1)
+        }
+      case _ => Future.successful(count)
     }
   }
 

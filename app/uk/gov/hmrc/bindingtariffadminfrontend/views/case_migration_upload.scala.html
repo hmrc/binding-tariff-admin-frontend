@@ -40,6 +40,11 @@
    accept = Some(".json")
   )
 
-  @submit_button()
+  <div>
+   @submit_button()
+   <a class="button button-info" href="@routes.DataMigrationStateController.get()">Continue to Migration Progress</a>
+  </div>
+
+
  }
 }

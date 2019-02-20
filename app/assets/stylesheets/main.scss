@@ -76,13 +76,26 @@
 .button-warn {
   background-color: #F47738;
 
-
   &:visited {
     background-color: #F47738;
   }
 
   &:hover, :focus, :active, :visited:hover {
     background-color: #f44710;
+  }
+
+}
+
+.button-info {
+  background-color: #2B8CC4;
+
+
+  &:visited {
+    background-color: #2B8CC4;
+  }
+
+  &:hover, :focus, :active, :visited:hover {
+    background-color: #005EA5;
   }
 
 }

@@ -18,7 +18,8 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 
 import javax.inject.Inject
 import play.api.Logger
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector}
+import play.api.libs.Files.TemporaryFile
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadRequest, UploadTemplate}
@@ -32,6 +33,7 @@ import scala.util.{Failure, Success, Try}
 
 class DataMigrationService @Inject()(repository: MigrationRepository,
                                      fileConnector: FileStoreConnector,
+                                     upscanS3Connector: UpscanS3Connector,
                                      caseConnector: BindingTariffClassificationConnector) {
 
   def getState(page: Int, pageSize: Int, status: Seq[MigrationStatus]): Future[Seq[Migration]] = {
@@ -124,8 +126,15 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     }
   }
 
-  def initiateFileMigration(file: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] = {
-    fileConnector.initiate(file)
+  def initiateFileMigration(upload: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] = {
+    fileConnector.initiate(upload)
+  }
+
+  def upload(upload: UploadRequest, file: TemporaryFile)(implicit hc: HeaderCarrier): Future[Unit] = {
+    for {
+      template <- fileConnector.initiate(upload)
+      _ <- upscanS3Connector.upload(template, file)
+    } yield ()
   }
 
 }

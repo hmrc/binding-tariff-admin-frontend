@@ -24,7 +24,8 @@ import org.mockito.Mockito.verify
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector}
+import play.api.libs.Files.TemporaryFile
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Cases.btiApplicationExample
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Case, CaseStatus}
@@ -40,7 +41,8 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   private val repository = mock[MigrationRepository]
   private val caseConnector = mock[BindingTariffClassificationConnector]
   private val fileConnector = mock[FileStoreConnector]
-  private val service = new DataMigrationService(repository, fileConnector, caseConnector)
+  private val upscanS3Connector = mock[UpscanS3Connector]
+  private val service = new DataMigrationService(repository, fileConnector, upscanS3Connector, caseConnector)
   private implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
   override protected def afterEach(): Unit = {
@@ -319,11 +321,24 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   }
 
   "Service initiate" should {
-    "Delegate to repository" in {
+    "Delegate to connector" in {
       val request = UploadRequest("name", "type")
       val template = UploadTemplate("href", Map())
 
       given(fileConnector.initiate(request)) willReturn Future.successful(template)
+
+      await(service.initiateFileMigration(request)) shouldBe template
+    }
+  }
+
+  "Service upload" should {
+    "Delegate to connector" in {
+      val request = UploadRequest("name", "type")
+      val template = UploadTemplate("href", Map())
+      val file = mock[TemporaryFile]
+
+      given(fileConnector.initiate(request)) willReturn Future.successful(template)
+      given(upscanS3Connector.upload(template, file)) willReturn Future.successful(())
 
       await(service.initiateFileMigration(request)) shouldBe template
     }

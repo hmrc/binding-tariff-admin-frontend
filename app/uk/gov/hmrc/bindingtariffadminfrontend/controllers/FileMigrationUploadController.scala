@@ -17,9 +17,10 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
-import play.api.data.{Form, Forms}
+import play.api.data.Form
+import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.json._
+import play.api.libs.Files.TemporaryFile
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadRequest
@@ -27,6 +28,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.http.{Upstream4xxResponse, Upstream5xxResponse}
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
+
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
@@ -37,15 +39,30 @@ class FileMigrationUploadController @Inject()(authenticatedAction: Authenticated
                                               override val messagesApi: MessagesApi,
                                               implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
 
-  private lazy val form = Form("file" -> Forms.text)
+  private lazy val form = Form[UploadRequest](
+    mapping[UploadRequest, String, String](
+      "filename" -> text,
+      "mimetype" -> text
+    )(UploadRequest.apply)(UploadRequest.unapply)
+  )
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
     successful(Ok(views.html.file_migration_upload(form)))
   }
 
-  def post: Action[JsValue] = authenticatedAction.async(parse.json) { implicit request =>
-    val upload: UploadRequest = request.body.as[UploadRequest]
-    service.initiateFileMigration(upload).map(template => Ok(Json.toJson(template).toString())) recover handlingError
+  def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
+    form.bindFromRequest.fold(
+      _ => successful(BadRequest),
+
+      uploadRequest  => {
+        val file = request.body.files.find(_.filename.nonEmpty)
+        if (file.isDefined) {
+          service.upload(uploadRequest, file.get.ref).map(_ => Accepted) recover handlingError
+        } else {
+          successful(BadRequest)
+        }
+      }
+    )
   }
 
   private def handlingError: PartialFunction[Throwable, Result] = {

@@ -19,7 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 import javax.inject.Inject
 import play.api.Logger
 import play.api.libs.Files.TemporaryFile
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, UpscanS3Connector}
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadRequest, UploadTemplate}
@@ -34,6 +34,7 @@ import scala.util.{Failure, Success, Try}
 class DataMigrationService @Inject()(repository: MigrationRepository,
                                      fileConnector: FileStoreConnector,
                                      upscanS3Connector: UpscanS3Connector,
+                                     rulingConnector: RulingConnector,
                                      caseConnector: BindingTariffClassificationConnector) {
 
   def getState(page: Int, pageSize: Int, status: Seq[MigrationStatus]): Future[Seq[Migration]] = {
@@ -70,6 +71,9 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       // Create or Update The Case
       _ <- caseConnector.upsertCase(migration.`case`.toCase)
 
+      // Notify The Ruling Store
+      _ <- rulingConnector.notify(migration.`case`.reference) recover loggingARulingErrorFor(migration.`case`.reference)
+
       //Publish The Files
       publishedUploads <- sequence(migration.`case`.attachments.map(publish))
 
@@ -87,6 +91,10 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
         val errorMessage = s"${failedAttachments.size}/${migration.`case`.attachments.size} Attachments Failed [${failedAttachments.map(_.name).mkString(", ")}]"
         migration.copy(status = MigrationStatus.PARTIAL_SUCCESS, message = Some(errorMessage))
     }
+  }
+
+  private def loggingARulingErrorFor(reference: String): PartialFunction[Throwable, Unit] = {
+    case t: Throwable => Logger.error(s"Failed to notify the ruling store for case $reference", t)
   }
 
   def clear(status: Option[MigrationStatus] = None): Future[Boolean] = {

@@ -27,6 +27,8 @@ import scala.concurrent.duration.FiniteDuration
 @Singleton
 class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: Environment) extends ServicesConfig {
 
+
+
   override protected def mode: Mode = environment.mode
 
   private def loadConfig(key: String) = runModeConfiguration.getString(key).getOrElse(throw new Exception(s"Missing configuration key: $key"))
@@ -35,6 +37,7 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: 
   lazy val analyticsHost: String = loadConfig("google-analytics.host")
   lazy val filestoreUrl: String = baseUrl("binding-tariff-filestore")
   lazy val classificationBackendUrl: String = baseUrl("binding-tariff-classification")
+  lazy val rulingUrl: String = baseUrl("binding-tariff-ruling-frontend")
   lazy val dataMigrationLockLifetime: FiniteDuration = getDuration("scheduler.data-migration.lock-lifetime").asInstanceOf[FiniteDuration]
   lazy val dataMigrationInterval: FiniteDuration = getDuration("scheduler.data-migration.interval").asInstanceOf[FiniteDuration]
   lazy val resetPermitted: Boolean = getBoolean("reset-permitted")

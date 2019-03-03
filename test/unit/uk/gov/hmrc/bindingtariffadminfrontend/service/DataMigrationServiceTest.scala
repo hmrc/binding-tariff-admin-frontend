@@ -25,7 +25,7 @@ import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import play.api.libs.Files.TemporaryFile
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, UpscanS3Connector}
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Cases.btiApplicationExample
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Case, CaseStatus}
@@ -41,8 +41,9 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   private val repository = mock[MigrationRepository]
   private val caseConnector = mock[BindingTariffClassificationConnector]
   private val fileConnector = mock[FileStoreConnector]
+  private val rulingConnector = mock[RulingConnector]
   private val upscanS3Connector = mock[UpscanS3Connector]
-  private val service = new DataMigrationService(repository, fileConnector, upscanS3Connector, caseConnector)
+  private val service = new DataMigrationService(repository, fileConnector, upscanS3Connector, rulingConnector, caseConnector)
   private implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
   override protected def afterEach(): Unit = {
@@ -207,6 +208,22 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturns(aCase)
       givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
+      givenNotifyingTheRulingStoreSucceeds()
+
+      val migrated = await(service.process(anUnprocessedMigration))
+      migrated.status shouldBe MigrationStatus.SUCCESS
+      migrated.message shouldBe None
+
+      theCaseCreated shouldBe aCase
+    }
+
+    "Migrate new Case with Ruling Store failure" in {
+      val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None)
+
+      givenTheCaseDoesNotAlreadyExist()
+      givenUpsertingTheCaseReturns(aCase)
+      givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
+      givenNotifyingTheRulingStoreFails()
 
       val migrated = await(service.process(anUnprocessedMigration))
       migrated.status shouldBe MigrationStatus.SUCCESS
@@ -219,6 +236,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturns(aCase)
       givenPublishingTheFileFails()
+      givenNotifyingTheRulingStoreSucceeds()
 
       val migrated = await(service.process(anUnprocessedMigration))
       migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
@@ -233,6 +251,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       givenTheCaseExistsWithoutAttachments()
       givenUpsertingTheCaseReturns(aCase)
       givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
+      givenNotifyingTheRulingStoreSucceeds()
 
       val migrated = await(service.process(anUnprocessedMigration))
       migrated.status shouldBe MigrationStatus.SUCCESS
@@ -247,6 +266,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       givenTheCaseExistsWithAttachment("attachment-id")
       givenUpsertingTheCaseReturns(aCase)
       givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
+      givenNotifyingTheRulingStoreSucceeds()
 
       val migrated = await(service.process(anUnprocessedMigration))
       migrated.status shouldBe MigrationStatus.SUCCESS
@@ -258,7 +278,6 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
     "Throw Exception on Upsert Failure" in {
       givenTheCaseDoesNotAlreadyExist()
-      givenUpsertingTheCaseReturns(aCase)
       givenUpsertingTheCaseFails()
 
       intercept[RuntimeException] {
@@ -286,6 +305,14 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
     def givenPublishingTheFileFails() = {
       given(fileConnector.publish(anyString())(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Publish Error"))
+    }
+
+    def givenNotifyingTheRulingStoreFails() = {
+      given(rulingConnector.notify(anyString())(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Publish Error"))
+    }
+
+    def givenNotifyingTheRulingStoreSucceeds() = {
+      given(rulingConnector.notify(anyString())(any[HeaderCarrier])) willReturn Future.successful(())
     }
 
     def givenUpsertingTheCaseReturns(aCase: Case) = {

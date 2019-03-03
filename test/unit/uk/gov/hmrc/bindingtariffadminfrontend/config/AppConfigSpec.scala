@@ -46,6 +46,15 @@ class AppConfigSpec extends UnitSpec with GuiceOneAppPerSuite {
       ).filestoreUrl shouldBe "http://localhost:8080"
     }
 
+    "Build Ruling URL" in {
+      configWith(
+        "microservice.services.binding-tariff-ruling-frontend.port" -> "8080",
+        "microservice.services.binding-tariff-ruling-frontend.host" -> "localhost",
+        "microservice.services.binding-tariff-ruling-frontend.protocol" -> "http"
+      ).rulingUrl shouldBe "http://localhost:8080"
+    }
+
+
     "Build Classification Backend URL" in {
       configWith(
         "microservice.services.binding-tariff-classification.port" -> "8080",

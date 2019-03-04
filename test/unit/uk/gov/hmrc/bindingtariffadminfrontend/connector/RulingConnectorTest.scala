@@ -52,7 +52,7 @@ class RulingConnectorTest extends UnitSpec with WithFakeApplication with Wiremoc
 
     "POST to the Ruling Store" in {
       stubFor(
-        post("binding-tariff-rulings/ruling/id")
+        post("/binding-tariff-rulings/ruling/id")
           .withHeader("X-Api-Token", equalTo("auth"))
           .willReturn(
             aResponse()
@@ -63,7 +63,7 @@ class RulingConnectorTest extends UnitSpec with WithFakeApplication with Wiremoc
       await(connector.notify("id"))
 
       verify(
-        postRequestedFor(urlEqualTo("binding-tariff-rulings/ruling/id"))
+        postRequestedFor(urlEqualTo("/binding-tariff-rulings/ruling/id"))
           .withHeader("X-Api-Token", equalTo("auth"))
       )
     }
@@ -73,7 +73,7 @@ class RulingConnectorTest extends UnitSpec with WithFakeApplication with Wiremoc
 
     "POST to the Ruling Store" in {
       stubFor(
-        delete("binding-tariff-rulings/ruling")
+        delete("/binding-tariff-rulings/ruling")
           .withHeader("X-Api-Token", equalTo("auth"))
           .willReturn(
             aResponse()
@@ -84,7 +84,7 @@ class RulingConnectorTest extends UnitSpec with WithFakeApplication with Wiremoc
       await(connector.delete())
 
       verify(
-        deleteRequestedFor(urlEqualTo("binding-tariff-rulings/ruling"))
+        deleteRequestedFor(urlEqualTo("/binding-tariff-rulings/ruling"))
           .withHeader("X-Api-Token", equalTo("auth"))
       )
     }

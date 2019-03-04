@@ -84,6 +84,10 @@ class AppConfigSpec extends UnitSpec with GuiceOneAppPerSuite {
       configWith("auth.credentials" -> "x : y , a : b").credentials shouldBe Seq(Credentials("x", "y"), Credentials("a", "b"))
       configWith("auth.credentials" -> "x:y,a:b").credentials shouldBe Seq(Credentials("x", "y"), Credentials("a", "b"))
     }
+
+    "Build API Token" in {
+      configWith("auth.api-token" -> "token").apiToken shouldBe "token"
+    }
   }
 
 }

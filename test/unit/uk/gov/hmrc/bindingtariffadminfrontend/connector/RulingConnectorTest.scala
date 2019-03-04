@@ -45,13 +45,15 @@ class RulingConnectorTest extends UnitSpec with WithFakeApplication with Wiremoc
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     given(config.rulingUrl).willReturn(wireMockUrl)
+    given(config.apiToken).willReturn("auth")
   }
 
   "Connector Publish" should {
 
     "POST to the Ruling Store" in {
       stubFor(
-        post("/ruling/id/notify")
+        post("binding-tariff-rulings/ruling/id")
+          .withHeader("X-Api-Token", equalTo("auth"))
           .willReturn(
             aResponse()
               .withStatus(Status.ACCEPTED)
@@ -60,7 +62,10 @@ class RulingConnectorTest extends UnitSpec with WithFakeApplication with Wiremoc
 
       await(connector.notify("id"))
 
-      verify(postRequestedFor(urlEqualTo("/ruling/id/notify")))
+      verify(
+        postRequestedFor(urlEqualTo("binding-tariff-rulings/ruling/id"))
+          .withHeader("X-Api-Token", equalTo("auth"))
+      )
     }
   }
 
@@ -68,7 +73,8 @@ class RulingConnectorTest extends UnitSpec with WithFakeApplication with Wiremoc
 
     "POST to the Ruling Store" in {
       stubFor(
-        delete("/ruling")
+        delete("binding-tariff-rulings/ruling")
+          .withHeader("X-Api-Token", equalTo("auth"))
           .willReturn(
             aResponse()
               .withStatus(Status.NO_CONTENT)
@@ -77,7 +83,10 @@ class RulingConnectorTest extends UnitSpec with WithFakeApplication with Wiremoc
 
       await(connector.delete())
 
-      verify(deleteRequestedFor(urlEqualTo("/ruling")))
+      verify(
+        deleteRequestedFor(urlEqualTo("binding-tariff-rulings/ruling"))
+          .withHeader("X-Api-Token", equalTo("auth"))
+      )
     }
   }
 

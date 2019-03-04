@@ -33,4 +33,8 @@ class RulingConnector @Inject()(configuration: AppConfig,
     http.POSTEmpty(s"${configuration.rulingUrl}/ruling/$id/notify").map(_ => ())
   }
 
+  def delete()(implicit hc: HeaderCarrier): Future[Unit] = {
+    http.DELETE(s"${configuration.rulingUrl}/ruling").map(_ => ())
+  }
+
 }

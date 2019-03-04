@@ -64,4 +64,21 @@ class RulingConnectorTest extends UnitSpec with WithFakeApplication with Wiremoc
     }
   }
 
+  "Connector Delete" should {
+
+    "POST to the Ruling Store" in {
+      stubFor(
+        delete("/ruling")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.NO_CONTENT)
+          )
+      )
+
+      await(connector.delete())
+
+      verify(deleteRequestedFor(urlEqualTo("/ruling")))
+    }
+  }
+
 }

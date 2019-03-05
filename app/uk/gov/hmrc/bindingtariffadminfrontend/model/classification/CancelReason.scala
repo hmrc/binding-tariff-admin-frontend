@@ -16,25 +16,15 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import java.time.Instant
+import play.api.libs.json.Format
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification
+import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
 
-import play.api.libs.json.{Json, OFormat}
+object CancelReason extends Enumeration {
+  type CancelReason = Value
 
-case class Decision
-(
-  bindingCommodityCode: String,
-  effectiveStartDate: Option[Instant],
-  effectiveEndDate: Option[Instant],
-  justification: String,
-  goodsDescription: String,
-  methodSearch: Option[String] = None,
-  methodCommercialDenomination: Option[String] = None,
-  methodExclusion: Option[String] = None,
-  appeal: Option[Appeal] = None,
-  review: Option[Review] = None,
-  cancellation: Option[Cancellation] = None
-)
+  val ANNULLED, INVALIDATED_CODE_CHANGE, INVALIDATED_EU_MEASURE, INVALIDATED_NATIONAL_MEASURE,
+  INVALIDATED_WRONG_CLASSIFICATION, INVALIDATED_OTHER = Value
 
-object Decision {
-  implicit val outboundFormat: OFormat[Decision] = Json.format[Decision]
+  implicit val format: Format[classification.CancelReason.Value] = EnumJson.format(CancelReason)
 }

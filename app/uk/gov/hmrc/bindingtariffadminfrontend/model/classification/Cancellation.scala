@@ -16,25 +16,15 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import java.time.Instant
+import play.api.libs.json.Json
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CancelReason.CancelReason
 
-import play.api.libs.json.{Json, OFormat}
-
-case class Decision
+case class Cancellation
 (
-  bindingCommodityCode: String,
-  effectiveStartDate: Option[Instant],
-  effectiveEndDate: Option[Instant],
-  justification: String,
-  goodsDescription: String,
-  methodSearch: Option[String] = None,
-  methodCommercialDenomination: Option[String] = None,
-  methodExclusion: Option[String] = None,
-  appeal: Option[Appeal] = None,
-  review: Option[Review] = None,
-  cancellation: Option[Cancellation] = None
+  reason: CancelReason,
+  applicationForExtendedUse: Boolean = false
 )
 
-object Decision {
-  implicit val outboundFormat: OFormat[Decision] = Json.format[Decision]
+object Cancellation {
+  implicit val format = Json.format[Cancellation]
 }

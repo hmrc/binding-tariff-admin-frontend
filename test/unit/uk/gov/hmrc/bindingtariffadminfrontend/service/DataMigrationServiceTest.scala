@@ -18,22 +18,25 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 
 import java.time.Instant
 
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.{any, anyString}
 import org.mockito.BDDMockito.given
-import org.mockito.Mockito.verify
-import org.mockito.{ArgumentCaptor, Mockito}
+import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import play.api.libs.Files.TemporaryFile
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Cases.btiApplicationExample
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Case, CaseStatus}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 import uk.gov.hmrc.play.test.UnitSpec
 
+import scala.collection.JavaConverters
 import scala.concurrent.Future
 
 class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
@@ -48,7 +51,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    Mockito.reset(repository, caseConnector, fileConnector, rulingConnector)
+    reset(repository, caseConnector, fileConnector, rulingConnector)
   }
 
   "Service 'Counts'" should {
@@ -221,18 +224,21 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
   "Service 'Process'" should {
     val migratableAttachment = MigratedAttachment(public = true, name = "name", mimeType = "text/plain", timestamp = Instant.EPOCH)
-    val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(migratableAttachment), Set("keyword1", "keyword2"))
+    val migratableEvent1 = Event(Note("note"), Operator("id"), "1", Instant.now())
+    val migratableEvent2 = Event(Note("other"), Operator("id"), "1", Instant.now())
+    val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(migratableAttachment), Seq(migratableEvent1, migratableEvent2), Set("keyword1", "keyword2"))
 
     val attachment = Attachment(id = "name", public = true, timestamp = Instant.EPOCH)
     val aCase = Case("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(attachment), Set("keyword1", "keyword2"))
 
     val anUnprocessedMigration = Migration(migratableCase)
 
-    "Migrate new Case with Attachments" in {
+    "Migrate new Case with Attachments & Events" in {
       val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None)
 
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturns(aCase)
+      givenCreatingAnEventReturnsItself()
       givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
       givenNotifyingTheRulingStoreSucceeds()
 
@@ -241,6 +247,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       migrated.message shouldBe None
 
       theCaseCreated shouldBe aCase
+      theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
     }
 
     "Migrate new Case with Ruling Store failure" in {
@@ -248,6 +255,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturns(aCase)
+      givenCreatingAnEventReturnsItself()
       givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
       givenNotifyingTheRulingStoreFails()
 
@@ -256,11 +264,13 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       migrated.message shouldBe None
 
       theCaseCreated shouldBe aCase
+      theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
     }
 
     "Migrate new Case with Attachments - with publish failure" in {
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturns(aCase)
+      givenCreatingAnEventReturnsItself()
       givenPublishingTheFileFails()
       givenNotifyingTheRulingStoreSucceeds()
 
@@ -269,13 +279,16 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       migrated.message shouldBe Some("1/1 Attachments Failed [name]")
 
       theCaseCreated shouldBe aCase
+      theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
     }
 
     "Migrate existing Case with Attachments" in {
       val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None)
 
       givenTheCaseExistsWithoutAttachments()
+      givenTheCaseExistsWithoutEvents()
       givenUpsertingTheCaseReturns(aCase)
+      givenCreatingAnEventReturnsItself()
       givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
       givenNotifyingTheRulingStoreSucceeds()
 
@@ -284,13 +297,16 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       migrated.message shouldBe None
 
       theCaseCreated shouldBe aCase
+      theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
     }
 
     "Migrate existing case with Attachments - removing missing attachments" in {
       val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None)
 
       givenTheCaseExistsWithAttachment("attachment-id")
+      givenTheCaseExistsWithoutEvents()
       givenUpsertingTheCaseReturns(aCase)
+      givenCreatingAnEventReturnsItself()
       givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
       givenNotifyingTheRulingStoreSucceeds()
 
@@ -300,6 +316,25 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       verify(fileConnector).delete("attachment-id")
       theCaseCreated shouldBe aCase
+      theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
+    }
+
+    "Migrate existing Case with existing Events" in {
+      val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None)
+
+      givenTheCaseExistsWithoutAttachments()
+      givenTheCaseExistsWithEvents(migratableEvent1)
+      givenUpsertingTheCaseReturns(aCase)
+      givenCreatingAnEventReturnsItself()
+      givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
+      givenNotifyingTheRulingStoreSucceeds()
+
+      val migrated = await(service.process(anUnprocessedMigration))
+      migrated.status shouldBe MigrationStatus.SUCCESS
+      migrated.message shouldBe None
+
+      theCaseCreated shouldBe aCase
+      theEventsCreated shouldBe Seq(migratableEvent2)
     }
 
     "Throw Exception on Upsert Failure" in {
@@ -313,6 +348,20 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
     def givenTheCaseExistsWithoutAttachments(): Unit = {
       given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(Some(aCase.copy(attachments = Seq())))
+    }
+
+    def givenTheCaseExistsWithoutEvents(): Unit = {
+      given(caseConnector.getEvents(any[String])(any[HeaderCarrier])) willReturn Future.successful(Seq.empty[Event])
+    }
+
+    def givenCreatingAnEventReturnsItself(): Unit = {
+      given(caseConnector.createEvent(anyString(), any[Event])(any[HeaderCarrier])) will new Answer[Future[Event]] {
+        override def answer(invocation: InvocationOnMock): Future[Event] = Future.successful(invocation.getArgument(1))
+      }
+    }
+
+    def givenTheCaseExistsWithEvents(event: Event*): Unit = {
+      given(caseConnector.getEvents(any[String])(any[HeaderCarrier])) willReturn Future.successful(event.toSeq)
     }
 
     def givenTheCaseExistsWithAttachment(id: String): Unit = {
@@ -351,6 +400,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
     def givenTheCaseDoesNotAlreadyExist() = {
       given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(None)
+      given(caseConnector.getEvents(any[String])(any[HeaderCarrier])) willReturn Future.failed(new NotFoundException("events not found"))
     }
 
     def theCaseCreated: Case = {
@@ -358,6 +408,18 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(caseConnector).upsertCase(captor.capture())(any())
       captor.getValue
     }
+
+    def theEventsCreated: Seq[Event] = {
+      val captor: ArgumentCaptor[Event] = ArgumentCaptor.forClass(classOf[Event])
+      verify(caseConnector, atLeastOnce()).createEvent(any[String], captor.capture())(any())
+      captor.getAllValues
+    }
+
+    def verifyNoEventsCreated = {
+      verify(caseConnector, never()).createEvent(anyString(), any[Event])(any[HeaderCarrier])
+    }
+
+    implicit def list2seq[T]: java.util.List[T] => Seq[T] = JavaConverters.asScalaBufferConverter(_).asScala.toSeq
 
   }
 

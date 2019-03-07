@@ -22,6 +22,7 @@ import play.api.libs.Files.TemporaryFile
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Event
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
 import uk.gov.hmrc.http.HeaderCarrier
@@ -70,6 +71,12 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
 
       // Create or Update The Case
       _ <- caseConnector.upsertCase(migration.`case`.toCase)
+
+      // Filter out any events that already exist on the case
+      events <- filterOutExistingEvents(migration)
+
+      // Create the events
+      _ <- sequence(events.map(caseConnector.createEvent(migration.`case`.reference, _)))
 
       // Notify The Ruling Store
       _ <- rulingConnector.notify(migration.`case`.reference) recover loggingARulingErrorFor(migration.`case`.reference)
@@ -133,6 +140,17 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
           _ <- sequence(missingFiles.map(f => fileConnector.delete(f.id)))
         } yield ()
     }
+  }
+
+  private def filterOutExistingEvents(migration: Migration)(implicit hc: HeaderCarrier): Future[Seq[Event]] = {
+    caseConnector.getEvents(migration.`case`.reference) recover withResponse(Seq.empty[Event]) map { existingEvents: Seq[Event] =>
+      val updatedEvents: Seq[Event] = migration.`case`.events
+      updatedEvents.filterNot(existingEvents.contains)
+    }
+  }
+
+  private def withResponse[T](response: T): PartialFunction[Throwable, T] = {
+    case _ => response
   }
 
   def initiateFileMigration(upload: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] = {

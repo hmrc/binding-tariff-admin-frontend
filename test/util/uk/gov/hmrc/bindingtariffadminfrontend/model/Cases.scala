@@ -33,6 +33,6 @@ object Cases {
   val btiCaseExample = Case("1", CaseStatus.OPEN, Instant.now(), 0, None, None, None, None, btiApplicationExample, Some(decision), Seq.empty, Set("k1", "k2"))
 
   val migratedAttachment = MigratedAttachment(public = true, name = "name", mimeType = "text/plain", operator = Some(Operator("id", Some("operator-name"))), timestamp = Instant.now())
-  val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.now(), 0, None, None, None, None, btiApplicationExample, Some(decision), Seq.empty, Set("k1", "k2"))
+  val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.now(), 0, None, None, None, None, btiApplicationExample, Some(decision), Seq.empty, Seq.empty, Set("k1", "k2"))
 
 }

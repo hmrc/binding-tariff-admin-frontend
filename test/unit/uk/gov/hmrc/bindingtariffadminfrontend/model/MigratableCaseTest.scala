@@ -29,6 +29,7 @@ class MigratableCaseTest extends UnitSpec with MockitoSugar {
   private val decision = mock[Decision]
   private val attachment = mock[Attachment]
   private val migratedAttachment = mock[MigratedAttachment]
+  private val event = mock[Event]
 
   "Migratable Case" should {
 
@@ -36,31 +37,32 @@ class MigratableCaseTest extends UnitSpec with MockitoSugar {
 
     "Convert To Case" in {
       MigratableCase(
-        "ref",
-        CaseStatus.SUPPRESSED,
-        Instant.EPOCH,
-        10,
-        Some(Instant.EPOCH),
-        Some("case-boards-number"),
-        Some(Operator("operator")),
-        Some("queue"),
-        application,
-        Some(decision),
-        Seq(migratedAttachment),
-        Set("keyword1", "keyword2")
+        reference = "ref",
+        status = CaseStatus.SUPPRESSED,
+        createdDate = Instant.EPOCH,
+        daysElapsed = 10,
+        closedDate = Some(Instant.EPOCH),
+        caseBoardsFileNumber = Some("case-boards-number"),
+        assignee = Some(Operator("operator")),
+        queueId = Some("queue"),
+        application = application,
+        decision = Some(decision),
+        attachments = Seq(migratedAttachment),
+        events = Seq(event),
+        keywords = Set("keyword1", "keyword2")
       ).toCase shouldBe Case(
         "ref",
-        CaseStatus.SUPPRESSED,
-        Instant.EPOCH,
-        10,
-        Some(Instant.EPOCH),
-        Some("case-boards-number"),
-        Some(Operator("operator")),
-        Some("queue"),
-        application,
-        Some(decision),
-        Seq(attachment),
-        Set("keyword1", "keyword2")
+        status = CaseStatus.SUPPRESSED,
+        createdDate = Instant.EPOCH,
+        daysElapsed = 10,
+        closedDate = Some(Instant.EPOCH),
+        caseBoardsFileNumber = Some("case-boards-number"),
+        assignee = Some(Operator("operator")),
+        queueId = Some("queue"),
+        application = application,
+        decision = Some(decision),
+        attachments = Seq(attachment),
+        keywords = Set("keyword1", "keyword2")
       )
     }
   }

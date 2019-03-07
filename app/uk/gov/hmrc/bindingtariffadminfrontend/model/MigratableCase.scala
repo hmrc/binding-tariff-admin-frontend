@@ -34,8 +34,9 @@ case class MigratableCase
   queueId: Option[String] = None,
   application: Application,
   decision: Option[Decision] = None,
-  attachments: Seq[MigratedAttachment],
-  keywords: Set[String]
+  attachments: Seq[MigratedAttachment] = Seq.empty,
+  events: Seq[Event] = Seq.empty,
+  keywords: Set[String] = Set.empty
 ) {
   def toCase: Case = {
     Case(

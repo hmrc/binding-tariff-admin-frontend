@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
+import java.time.Instant
+
 import akka.actor.ActorSystem
 import com.github.tomakehurst.wiremock.client.WireMock._
 import org.apache.http.HttpStatus
@@ -27,7 +29,8 @@ import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Cases
-import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Event, Note, Operator}
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, Upstream5xxResponse}
 import uk.gov.hmrc.play.bootstrap.audit.DefaultAuditConnector
 import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
@@ -78,6 +81,66 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
 
       intercept[Upstream5xxResponse] {
         await(connector.upsertCase(request))
+      }
+    }
+  }
+
+  "Connector 'Create Event'" should {
+    val event = Event(Note("note"), Operator("id"), "ref", Instant.now())
+    val requestJSON = Json.toJson(event).toString()
+
+    "Create valid event" in {
+      val responseJSON = Json.toJson(event).toString()
+
+      stubFor(post(urlEqualTo(s"/cases/ref/events"))
+        .withRequestBody(equalToJson(requestJSON))
+        .willReturn(aResponse()
+          .withStatus(HttpStatus.SC_OK)
+          .withBody(responseJSON)
+        )
+      )
+
+      await(connector.createEvent("ref", event)) shouldBe event
+    }
+
+    "propagate errors" in {
+      stubFor(post(urlEqualTo(s"/cases/ref/events"))
+        .willReturn(aResponse()
+          .withStatus(HttpStatus.SC_BAD_GATEWAY)
+        )
+      )
+
+      intercept[Upstream5xxResponse] {
+        await(connector.createEvent("ref", event))
+      }
+    }
+  }
+
+  "Connector 'GET Events'" should {
+    val event = Event(Note("note"), Operator("id"), "ref", Instant.now())
+
+    "Get valid events" in {
+      val responseJSON = Json.toJson(Seq(event)).toString()
+
+      stubFor(get(urlEqualTo(s"/cases/ref/events"))
+        .willReturn(aResponse()
+          .withStatus(HttpStatus.SC_OK)
+          .withBody(responseJSON)
+        )
+      )
+
+      await(connector.getEvents("ref")) shouldBe Seq(event)
+    }
+
+    "Return failed for 404" in {
+      stubFor(get(urlEqualTo(s"/cases/ref/events"))
+        .willReturn(aResponse()
+          .withStatus(HttpStatus.SC_NOT_FOUND)
+        )
+      )
+
+      intercept[NotFoundException] {
+        await(connector.getEvents("ref"))
       }
     }
   }

@@ -65,7 +65,7 @@ class MigrationJob @Inject()(appConfig: AppConfig,
     service.process(migration) recover {
       case t: Throwable =>
         Logger.error(s"Migration with reference [${migration.`case`.reference}] failed", t)
-        migration.copy(status = MigrationStatus.FAILED, message = Some(t.getMessage))
+        migration.copy(status = MigrationStatus.FAILED, message = migration.message :+ t.getMessage)
     } flatMap {
       service.update
     } map {

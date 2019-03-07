@@ -17,10 +17,10 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
 import play.api.libs.json.Format
-import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
+import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 
 object ReviewStatus extends Enumeration {
   type ReviewStatus = Value
   val IN_PROGRESS, UPHELD, OVERTURNED = Value
-  implicit val format: Format[ReviewStatus.Value] = EnumJson.format(ReviewStatus)
+  implicit val format: Format[ReviewStatus.Value] = JsonUtil.format(ReviewStatus)
 }

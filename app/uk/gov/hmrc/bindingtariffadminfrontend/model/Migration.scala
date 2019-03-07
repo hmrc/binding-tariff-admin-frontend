@@ -23,7 +23,7 @@ case class Migration
 (
   `case`: MigratableCase,
   status: MigrationStatus = MigrationStatus.UNPROCESSED,
-  message: Option[String] = None
+  message: Seq[String] = Seq.empty
 )
 
 object Migration {

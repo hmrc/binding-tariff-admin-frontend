@@ -92,11 +92,11 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       await(service.prepareMigration(Seq(`case`))) shouldBe true
 
       theMigrationsCreated shouldBe Seq(
-        Migration(`case`, MigrationStatus.UNPROCESSED, None)
+        Migration(`case`, MigrationStatus.UNPROCESSED)
       )
 
       theMigrationsDeleted shouldBe Seq(
-        Migration(`case`, MigrationStatus.UNPROCESSED, None)
+        Migration(`case`, MigrationStatus.UNPROCESSED)
       )
     }
 
@@ -244,7 +244,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       val migrated = await(service.process(anUnprocessedMigration))
       migrated.status shouldBe MigrationStatus.SUCCESS
-      migrated.message shouldBe None
+      migrated.message shouldBe Seq.empty
 
       theCaseCreated shouldBe aCase
       theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
@@ -261,7 +261,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       val migrated = await(service.process(anUnprocessedMigration))
       migrated.status shouldBe MigrationStatus.SUCCESS
-      migrated.message shouldBe None
+      migrated.message shouldBe Seq.empty
 
       theCaseCreated shouldBe aCase
       theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
@@ -276,7 +276,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       val migrated = await(service.process(anUnprocessedMigration))
       migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
-      migrated.message shouldBe Some("1/1 Attachments Failed [name]")
+      migrated.message shouldBe Seq("1/1 Attachments Failed", "File [name] failed due to [Publish Error]")
 
       theCaseCreated shouldBe aCase
       theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
@@ -294,7 +294,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       val migrated = await(service.process(anUnprocessedMigration))
       migrated.status shouldBe MigrationStatus.SUCCESS
-      migrated.message shouldBe None
+      migrated.message shouldBe Seq.empty
 
       theCaseCreated shouldBe aCase
       theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
@@ -312,7 +312,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       val migrated = await(service.process(anUnprocessedMigration))
       migrated.status shouldBe MigrationStatus.SUCCESS
-      migrated.message shouldBe None
+      migrated.message shouldBe Seq.empty
 
       verify(fileConnector).delete("attachment-id")
       theCaseCreated shouldBe aCase
@@ -331,7 +331,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       val migrated = await(service.process(anUnprocessedMigration))
       migrated.status shouldBe MigrationStatus.SUCCESS
-      migrated.message shouldBe None
+      migrated.message shouldBe Seq.empty
 
       theCaseCreated shouldBe aCase
       theEventsCreated shouldBe Seq(migratableEvent2)

@@ -17,7 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
 import play.api.libs.json.Format
-import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
+import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 
 object MigrationStatus extends Enumeration {
   type MigrationStatus = Value
@@ -27,5 +27,5 @@ object MigrationStatus extends Enumeration {
     values.find(_.toString == string)
   }
 
-  implicit val format: Format[MigrationStatus.Value] = EnumJson.format(MigrationStatus)
+  implicit val format: Format[MigrationStatus.Value] = JsonUtil.format(MigrationStatus)
 }

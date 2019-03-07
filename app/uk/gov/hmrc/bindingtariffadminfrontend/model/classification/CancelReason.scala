@@ -18,7 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
 import play.api.libs.json.Format
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification
-import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
+import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 
 object CancelReason extends Enumeration {
   type CancelReason = Value
@@ -26,5 +26,5 @@ object CancelReason extends Enumeration {
   val ANNULLED, INVALIDATED_CODE_CHANGE, INVALIDATED_EU_MEASURE, INVALIDATED_NATIONAL_MEASURE,
   INVALIDATED_WRONG_CLASSIFICATION, INVALIDATED_OTHER = Value
 
-  implicit val format: Format[classification.CancelReason.Value] = EnumJson.format(CancelReason)
+  implicit val format: Format[classification.CancelReason.Value] = JsonUtil.format(CancelReason)
 }

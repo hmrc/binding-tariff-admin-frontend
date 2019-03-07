@@ -24,7 +24,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.AppealStatus.
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.CaseStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.EventType.EventType
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ReviewStatus.ReviewStatus
-import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
+import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 import uk.gov.hmrc.play.json.Union
 
 
@@ -141,5 +141,5 @@ object Note {
 object EventType extends Enumeration {
   type EventType = Value
   val CASE_STATUS_CHANGE, APPEAL_STATUS_CHANGE, REVIEW_STATUS_CHANGE, EXTENDED_USE_STATUS_CHANGE, ASSIGNMENT_CHANGE, NOTE = Value
-  implicit val format: Format[classification.EventType.Value] = EnumJson.format(EventType)
+  implicit val format: Format[classification.EventType.Value] = JsonUtil.format(EventType)
 }

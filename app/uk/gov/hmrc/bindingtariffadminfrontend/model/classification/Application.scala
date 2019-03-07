@@ -21,7 +21,7 @@ import java.time.ZonedDateTime
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ApplicationType.ApplicationType
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.LiabilityStatus.LiabilityStatus
-import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
+import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 import uk.gov.hmrc.play.json.Union
 
 
@@ -79,11 +79,11 @@ object LiabilityOrder {
 object LiabilityStatus extends Enumeration {
   type LiabilityStatus = Value
   val LIVE, NON_LIVE = Value
-  implicit val format: Format[LiabilityStatus.Value] = EnumJson.format(LiabilityStatus)
+  implicit val format: Format[LiabilityStatus.Value] = JsonUtil.format(LiabilityStatus)
 }
 
 object ApplicationType extends Enumeration {
   type ApplicationType = Value
   val BTI, LIABILITY_ORDER = Value
-  implicit val format: Format[LiabilityStatus.Value] = EnumJson.format(LiabilityStatus)
+  implicit val format: Format[LiabilityStatus.Value] = JsonUtil.format(LiabilityStatus)
 }

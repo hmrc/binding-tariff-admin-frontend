@@ -18,9 +18,11 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model
 
 import java.time.Instant
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.OFormat
+import play.json.extra.Jsonx
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.CaseStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
+import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil._
 
 case class MigratableCase
 (
@@ -57,5 +59,5 @@ case class MigratableCase
 }
 
 object MigratableCase {
-  implicit val format: OFormat[MigratableCase] = Json.format[MigratableCase]
+  implicit val format: OFormat[MigratableCase] = oFormatOf(Jsonx.formatCaseClass[MigratableCase])
 }

@@ -17,11 +17,11 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
 import play.api.libs.json.Format
-import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
+import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 
 object AppealStatus extends Enumeration {
   type AppealStatus = Value
   val IN_PROGRESS, ALLOWED, DISMISSED = Value
-  implicit val format: Format[AppealStatus.Value] = EnumJson.format(AppealStatus)
+  implicit val format: Format[AppealStatus.Value] = JsonUtil.format(AppealStatus)
 }
 

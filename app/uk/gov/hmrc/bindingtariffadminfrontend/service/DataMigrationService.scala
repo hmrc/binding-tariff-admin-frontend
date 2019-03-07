@@ -25,7 +25,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Event
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -65,7 +65,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
   def process(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
     Logger.info(s"Case Migration with reference [${migration.`case`.reference}]: Starting")
 
-    val uploads: Future[Seq[Try[MigratedAttachment]]] = for {
+    val uploads: Future[Seq[(MigratedAttachment, Option[String])]] = for {
       // Delete any existing attachments that aren't in the migration
       _ <- deleteMissingAttachments(migration)
 
@@ -88,15 +88,14 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
 
     uploads map {
       // All Uploads were successful
-      case u: Seq[Try[MigratedAttachment]] if u.count(_.isSuccess) == migration.`case`.attachments.size =>
+      case u: Seq[(MigratedAttachment, Option[String])] if u.count(_._2.isEmpty) == migration.`case`.attachments.size =>
         migration.copy(status = MigrationStatus.SUCCESS)
 
       // Not all Uploads were successful
-      case u: Seq[Try[MigratedAttachment]] =>
-        val successfulAttachments = u.filter(_.isSuccess).map(_.get.name)
-        val failedAttachments = migration.`case`.attachments.filterNot(att => successfulAttachments.contains(att.name))
-        val errorMessage = s"${failedAttachments.size}/${migration.`case`.attachments.size} Attachments Failed [${failedAttachments.map(_.name).mkString(", ")}]"
-        migration.copy(status = MigrationStatus.PARTIAL_SUCCESS, message = Some(errorMessage))
+      case u: Seq[(MigratedAttachment, Option[String])] =>
+        val failedAttachments = u.filter(_._2.isDefined)
+        val errorMessages = s"${failedAttachments.size}/${migration.`case`.attachments.size} Attachments Failed" +: failedAttachments.map(a => s"File [${a._1.name}] failed due to [${a._2.get}]")
+        migration.copy(status = MigrationStatus.PARTIAL_SUCCESS, message = migration.message ++ errorMessages)
     }
   }
 
@@ -123,9 +122,10 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     } yield ()
   }
 
-  private def publish(attachment: MigratedAttachment)(implicit hc: HeaderCarrier): Future[Try[MigratedAttachment]] = {
-    fileConnector.publish(attachment.id).map(_ => Success(attachment)).recover {
-      case e => Failure(e)
+  private def publish(attachment: MigratedAttachment)(implicit hc: HeaderCarrier): Future[(MigratedAttachment, Option[String])] = {
+    fileConnector.publish(attachment.id).map(_ => (attachment, None)).recover {
+      case _: NotFoundException => (attachment, Some("Not found"))
+      case e: Throwable => (attachment, Some(e.getMessage))
     }
   }
 

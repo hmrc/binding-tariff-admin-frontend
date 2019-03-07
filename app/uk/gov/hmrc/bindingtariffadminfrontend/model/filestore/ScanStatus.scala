@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.filestore
 
-import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
+import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 
 object ScanStatus extends Enumeration {
   type ScanStatus = Value
   val READY, FAILED = Value
 
-  implicit val format = EnumJson.format(ScanStatus)
+  implicit val format = JsonUtil.format(ScanStatus)
 }

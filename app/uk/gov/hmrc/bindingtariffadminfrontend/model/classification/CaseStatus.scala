@@ -17,10 +17,10 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
 import play.api.libs.json.Format
-import uk.gov.hmrc.bindingtariffadminfrontend.util.EnumJson
+import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 
 object CaseStatus extends Enumeration {
   type CaseStatus = Value
   val DRAFT, NEW, OPEN, SUPPRESSED, REFERRED, REJECTED, CANCELLED, SUSPENDED, COMPLETED, REVOKED, ANNULLED = Value
-  implicit val format: Format[CaseStatus.Value] = EnumJson.format(CaseStatus)
+  implicit val format: Format[CaseStatus.Value] = JsonUtil.format(CaseStatus)
 }

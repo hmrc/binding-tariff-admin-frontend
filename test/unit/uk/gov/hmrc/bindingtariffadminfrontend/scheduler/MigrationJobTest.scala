@@ -135,7 +135,7 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       await(job.execute).message shouldBe "Job with DataMigration run and completed with result Processed 1 migrations"
 
       verify(service).process(refEq(migration))(any[HeaderCarrier])
-      verify(service).update(Migration(`case`, status = MigrationStatus.FAILED, message = Some("Error")))
+      verify(service).update(Migration(`case`, status = MigrationStatus.FAILED, message = Seq("Error")))
     }
 
     "Handle No Migrations Remaining" in {

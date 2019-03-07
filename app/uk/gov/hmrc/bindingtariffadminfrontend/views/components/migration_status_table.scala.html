@@ -35,7 +35,11 @@
       @{migration.status.toString.replaceAll("_", " ")}
       </strong>
      </td>
-     <td>@{migration.message.getOrElse("-")}</td>
+     <td>
+      @for(m <- migration.message) {
+       <div>@{m}</div>
+      }
+     </td>
     </tr>
    }
    @if(migrations.isEmpty){

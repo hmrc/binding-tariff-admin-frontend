@@ -260,8 +260,8 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       givenNotifyingTheRulingStoreFails()
 
       val migrated = await(service.process(anUnprocessedMigration))
-      migrated.status shouldBe MigrationStatus.SUCCESS
-      migrated.message shouldBe Seq.empty
+      migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
+      migrated.message shouldBe Seq("Failed to notify the ruling store [Notify Error]")
 
       theCaseCreated shouldBe aCase
       theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
@@ -276,7 +276,10 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       val migrated = await(service.process(anUnprocessedMigration))
       migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
-      migrated.message shouldBe Seq("1/1 Attachments Failed", "File [name] failed due to [Publish Error]")
+      migrated.message shouldBe Seq(
+        "Failed to migrate 1/1 attachments",
+        "Failed to migrate file [name] because [Publish Error]"
+      )
 
       theCaseCreated shouldBe aCase
       theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
@@ -337,6 +340,27 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       theEventsCreated shouldBe Seq(migratableEvent2)
     }
 
+    "Migrate new Case with failures" in {
+      givenTheCaseDoesNotAlreadyExist()
+      givenUpsertingTheCaseReturns(aCase)
+      givenCreatingAnEventFails()
+      givenPublishingTheFileFails()
+      givenNotifyingTheRulingStoreFails()
+
+      val migrated = await(service.process(anUnprocessedMigration))
+      migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
+      migrated.message shouldBe Seq(
+        "Failed to migrate 2/2 events",
+        "Failed to migrate event [NOTE] because [Create Event Failure]",
+        "Failed to migrate event [NOTE] because [Create Event Failure]",
+        "Failed to notify the ruling store [Notify Error]",
+        "Failed to migrate 1/1 attachments",
+        "Failed to migrate file [name] because [Publish Error]"
+      )
+
+      theCaseCreated shouldBe aCase
+    }
+
     "Throw Exception on Upsert Failure" in {
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseFails()
@@ -358,6 +382,10 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       given(caseConnector.createEvent(anyString(), any[Event])(any[HeaderCarrier])) will new Answer[Future[Event]] {
         override def answer(invocation: InvocationOnMock): Future[Event] = Future.successful(invocation.getArgument(1))
       }
+    }
+
+    def givenCreatingAnEventFails(): Unit = {
+      given(caseConnector.createEvent(anyString(), any[Event])(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Create Event Failure"))
     }
 
     def givenTheCaseExistsWithEvents(event: Event*): Unit = {
@@ -383,7 +411,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     }
 
     def givenNotifyingTheRulingStoreFails() = {
-      given(rulingConnector.notify(anyString())(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Publish Error"))
+      given(rulingConnector.notify(anyString())(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Notify Error"))
     }
 
     def givenNotifyingTheRulingStoreSucceeds() = {

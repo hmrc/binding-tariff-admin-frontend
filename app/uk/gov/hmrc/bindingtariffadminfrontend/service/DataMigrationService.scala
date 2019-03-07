@@ -21,7 +21,7 @@ import play.api.Logger
 import play.api.libs.Files.TemporaryFile
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
-import uk.gov.hmrc.bindingtariffadminfrontend.model._
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Event
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
@@ -62,47 +62,6 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     repository.update(migration)
   }
 
-  def process(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
-    Logger.info(s"Case Migration with reference [${migration.`case`.reference}]: Starting")
-
-    val uploads: Future[Seq[(MigratedAttachment, Option[String])]] = for {
-      // Delete any existing attachments that aren't in the migration
-      _ <- deleteMissingAttachments(migration)
-
-      // Create or Update The Case
-      _ <- caseConnector.upsertCase(migration.`case`.toCase)
-
-      // Filter out any events that already exist on the case
-      events <- filterOutExistingEvents(migration)
-
-      // Create the events
-      _ <- sequence(events.map(caseConnector.createEvent(migration.`case`.reference, _)))
-
-      // Notify The Ruling Store
-      _ <- rulingConnector.notify(migration.`case`.reference) recover loggingARulingErrorFor(migration.`case`.reference)
-
-      //Publish The Files
-      publishedUploads <- sequence(migration.`case`.attachments.map(publish))
-
-    } yield publishedUploads
-
-    uploads map {
-      // All Uploads were successful
-      case u: Seq[(MigratedAttachment, Option[String])] if u.count(_._2.isEmpty) == migration.`case`.attachments.size =>
-        migration.copy(status = MigrationStatus.SUCCESS)
-
-      // Not all Uploads were successful
-      case u: Seq[(MigratedAttachment, Option[String])] =>
-        val failedAttachments = u.filter(_._2.isDefined)
-        val errorMessages = s"${failedAttachments.size}/${migration.`case`.attachments.size} Attachments Failed" +: failedAttachments.map(a => s"File [${a._1.name}] failed due to [${a._2.get}]")
-        migration.copy(status = MigrationStatus.PARTIAL_SUCCESS, message = migration.message ++ errorMessages)
-    }
-  }
-
-  private def loggingARulingErrorFor(reference: String): PartialFunction[Throwable, Unit] = {
-    case t: Throwable => Logger.error(s"Failed to notify the ruling store for case $reference", t)
-  }
-
   def clear(status: Option[MigrationStatus] = None): Future[Boolean] = {
     repository.delete(status)
   }
@@ -122,10 +81,91 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     } yield ()
   }
 
-  private def publish(attachment: MigratedAttachment)(implicit hc: HeaderCarrier): Future[(MigratedAttachment, Option[String])] = {
-    fileConnector.publish(attachment.id).map(_ => (attachment, None)).recover {
-      case _: NotFoundException => (attachment, Some("Not found"))
-      case e: Throwable => (attachment, Some(e.getMessage))
+  def initiateFileMigration(upload: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] = {
+    fileConnector.initiate(upload)
+  }
+
+  def upload(upload: UploadRequest, file: TemporaryFile)(implicit hc: HeaderCarrier): Future[Unit] = {
+    for {
+      template <- fileConnector.initiate(upload)
+      _ <- upscanS3Connector.upload(template, file)
+    } yield ()
+  }
+
+  def process(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
+    Logger.info(s"Case Migration with reference [${migration.`case`.reference}]: Starting")
+
+    for {
+      // Delete any existing attachments that aren't in the migration
+      _ <- deleteMissingAttachments(migration)
+
+      // Create or Update The Case
+      _ <- caseConnector.upsertCase(migration.`case`.toCase)
+
+      // Filter out any events that already exist on the case
+      updated <- filterOutExistingEvents(migration)
+
+      // Create the events
+      updated <- createEvents(updated)
+
+      // Notify The Ruling Store
+      updated <- notifyRulingStore(updated)
+
+      //Publish The Files
+      updated <- publishUploads(updated)
+
+      status = if(updated.message.isEmpty) MigrationStatus.SUCCESS else MigrationStatus.PARTIAL_SUCCESS
+
+    } yield updated.copy(status = status)
+  }
+
+  private def notifyRulingStore(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
+    rulingConnector
+      .notify(migration.`case`.reference)
+      .map(Success(_))
+      .recover(withFailure(()))
+      .map {
+        case MigrationFailure(_, t: Throwable) => migration.copy(message = migration.message :+ s"Failed to notify the ruling store [${t.getMessage}]")
+        case _ => migration
+      }
+  }
+
+  private def createEvents(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
+    sequence(
+      migration.`case`.events map { event =>
+        caseConnector.createEvent(migration.`case`.reference, event).map(MigrationSuccess(_)) recover withFailure(event)
+      }
+    ) map {
+      case migrations: Seq[MigrationState[Event]] if migrations.exists(_.isFailure) =>
+        val messages = migration.message
+        val failedMigrations = migrations.filter(_.isFailure).map(_.asFailure)
+        val summaryMessage = s"Failed to migrate ${failedMigrations.size}/${migrations.size} events"
+        val failureMessages = failedMigrations.map (f => s"Failed to migrate event [${f.subject.details.`type`}] because [${f.cause.getMessage}]")
+
+        migration.copy(message = (messages :+ summaryMessage) ++ failureMessages)
+      case _ =>
+        migration
+    }
+  }
+
+  private def publishUploads(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
+    sequence(
+      migration.`case`.attachments.map { a =>
+        fileConnector.publish(a.id).map(_ => MigrationSuccess(a)) recover withFailure(a, {
+          case _: NotFoundException => new MigrationFailedException("Not found")
+          case t => t
+        })
+      }
+    ) map {
+      case migrations: Seq[MigrationState[MigratedAttachment]] if migrations.exists(_.isFailure) =>
+        val messages = migration.message
+        val failedMigrations = migrations.filter(_.isFailure).map(_.asFailure)
+        val summaryMessage = s"Failed to migrate ${failedMigrations.size}/${migrations.size} attachments"
+        val failureMessages = failedMigrations.map (f => s"Failed to migrate file [${f.subject.name}] because [${f.cause.getMessage}]")
+
+        migration.copy(message = (messages :+ summaryMessage) ++ failureMessages)
+      case _ =>
+        migration
     }
   }
 
@@ -142,26 +182,21 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     }
   }
 
-  private def filterOutExistingEvents(migration: Migration)(implicit hc: HeaderCarrier): Future[Seq[Event]] = {
+  private def filterOutExistingEvents(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
     caseConnector.getEvents(migration.`case`.reference) recover withResponse(Seq.empty[Event]) map { existingEvents: Seq[Event] =>
       val updatedEvents: Seq[Event] = migration.`case`.events
-      updatedEvents.filterNot(existingEvents.contains)
+      val newEvents = updatedEvents.filterNot(existingEvents.contains)
+      val updatedCase = migration.`case`.copy(events = newEvents)
+      migration.copy(updatedCase)
     }
+  }
+
+  private def withFailure[T](subject: T, mapping: Throwable => Throwable = t => t): PartialFunction[Throwable, MigrationState[T]] = {
+    case t: Throwable => MigrationFailure(subject, mapping(t))
   }
 
   private def withResponse[T](response: T): PartialFunction[Throwable, T] = {
     case _ => response
-  }
-
-  def initiateFileMigration(upload: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] = {
-    fileConnector.initiate(upload)
-  }
-
-  def upload(upload: UploadRequest, file: TemporaryFile)(implicit hc: HeaderCarrier): Future[Unit] = {
-    for {
-      template <- fileConnector.initiate(upload)
-      _ <- upscanS3Connector.upload(template, file)
-    } yield ()
   }
 
 }

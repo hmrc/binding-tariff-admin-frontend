@@ -86,7 +86,7 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
   }
 
   "Connector 'Create Event'" should {
-    val event = Event(Note("note"), Operator("id"), "ref", Instant.now())
+    val event = Event(Note("note"), Operator("id"), Instant.now())
     val requestJSON = Json.toJson(event).toString()
 
     "Create valid event" in {
@@ -117,7 +117,7 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
   }
 
   "Connector 'GET Events'" should {
-    val event = Event(Note("note"), Operator("id"), "ref", Instant.now())
+    val event = Event(Note("note"), Operator("id"), Instant.now())
 
     "Get valid events" in {
       val responseJSON = Json.toJson(Seq(event)).toString()

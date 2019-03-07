@@ -224,8 +224,8 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
   "Service 'Process'" should {
     val migratableAttachment = MigratedAttachment(public = true, name = "name", mimeType = "text/plain", timestamp = Instant.EPOCH)
-    val migratableEvent1 = Event(Note("note"), Operator("id"), "1", Instant.now())
-    val migratableEvent2 = Event(Note("other"), Operator("id"), "1", Instant.now())
+    val migratableEvent1 = Event(Note("note"), Operator("id"), Instant.now())
+    val migratableEvent2 = Event(Note("other"), Operator("id"), Instant.now())
     val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(migratableAttachment), Seq(migratableEvent1, migratableEvent2), Set("keyword1", "keyword2"))
 
     val attachment = Attachment(id = "name", public = true, timestamp = Instant.EPOCH)

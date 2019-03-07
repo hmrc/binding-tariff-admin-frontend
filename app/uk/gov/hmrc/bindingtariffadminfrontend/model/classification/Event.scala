@@ -33,7 +33,6 @@ case class Event
 (
   details: Details,
   operator: Operator,
-  caseReference: String,
   timestamp: Instant
 )
 

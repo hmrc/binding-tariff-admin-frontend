@@ -65,10 +65,8 @@ class AppConfigSpec extends UnitSpec with GuiceOneAppPerSuite {
 
     "Build Internal UI URL" in {
       configWith(
-        "microservice.services.tariff-classification-frontend.port" -> "8080",
-        "microservice.services.tariff-classification-frontend.host" -> "localhost",
-        "microservice.services.tariff-classification-frontend.protocol" -> "http"
-      ).internalServiceUrl shouldBe "http://localhost:8080"
+        "tariff-classification-frontend" -> "url"
+      ).internalServiceUrl shouldBe "url"
     }
 
     "Build Data Migration Lock Lifetime" in {

@@ -17,9 +17,13 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import java.io.{BufferedWriter, File, FileWriter}
+import java.time.{Instant, LocalDate, ZoneOffset}
 
 import akka.stream.Materializer
+import org.mockito.{ArgumentCaptor, ArgumentMatchers, Mockito}
+import org.mockito.ArgumentMatchers._
 import org.mockito.BDDMockito.given
+import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -33,10 +37,13 @@ import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.{Configuration, Environment}
 import play.filters.csrf.CSRF.{Token, TokenProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigratableCase, MigratedAttachment}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
+import scala.io.Source
 
 class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers with UnitSpec with MockitoSugar with GuiceOneAppPerSuite {
 
@@ -59,9 +66,9 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
 
   "POST /" should {
     "Prepare Upload and Redirect To Migration State Controller" in {
-      given(migrationService.prepareMigration(Seq.empty)) willReturn Future.successful(true)
+      given(migrationService.prepareMigration(any[Seq[MigratableCase]])) willReturn Future.successful(true)
 
-      val file = TemporaryFile(withJson("[]"))
+      val file = TemporaryFile(withJson(fromFile("migration.json")))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
@@ -69,6 +76,48 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
       val result: Result = await(controller.post(postRequest))
       status(result) shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
+
+      theMigrations shouldBe Seq(
+        MigratableCase(
+          reference = "reference",
+          status = CaseStatus.CANCELLED,
+          createdDate = "2018-01-01",
+          daysElapsed = 1,
+          closedDate = Some("2018-01-01"),
+          caseBoardsFileNumber = Some("Case Boards File Number"),
+          assignee = Some(Operator("Assignee Id", Some("Assignee"))),
+          queueId = Some("1"),
+          application = BTIApplication(
+            holder = EORIDetails("EORI", "Business Name", "Line 1", "Line 2", "Line 3", "Postcode", "GB"),
+            contact = Contact("Contact Name", "contact.name@host.com", Some("Phone")),
+            agent = None,
+            goodName =  "Good Name",
+            goodDescription = "Good Description",
+            confidentialInformation = Some("Confidential Information"),
+            otherInformation = Some("Other Information"),
+            reissuedBTIReference = Some("Reissued Reference"),
+            relatedBTIReference = Some("Related Reference"),
+            knownLegalProceedings = Some("Known Legal Proceedings"),
+            envisagedCommodityCode = Some("Envisaged Code")
+          ),
+          decision  = Some(Decision(
+            bindingCommodityCode = "391990",
+            effectiveStartDate = Some("2018-01-01"),
+            effectiveEndDate = Some("2021-01-01"),
+            justification = "Justification",
+            goodsDescription = "Decision Good Description",
+            methodSearch = Some("Method Search"),
+            methodCommercialDenomination = Some("Commercial Denomination"),
+            methodExclusion = Some("Method Exclusion"),
+            appeal =  None,
+            review = None,
+            cancellation = Some(Cancellation(CancelReason.ANNULLED))
+          )),
+          attachments = Seq(MigratedAttachment(public = false, "attachment.pdf", None, "2019-01-01")),
+          events =  Seq(Event(Note("Note"), Operator("Event Operator Id",  Some("Event Operator")), "2019-01-01")),
+          keywords = Set("Keyword")
+        )
+      )
     }
 
     "return 200 with Json Errors" in {
@@ -104,6 +153,12 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
 
   }
 
+  private def theMigrations: Seq[MigratableCase] = {
+    val captor = ArgumentCaptor.forClass(classOf[Seq[MigratableCase]])
+    verify(migrationService).prepareMigration(captor.capture())
+    captor.getValue
+  }
+
   private def newFakeGETRequestWithCSRF: FakeRequest[AnyContentAsEmpty.type] = {
     val tokenProvider: TokenProvider = app.injector.instanceOf[TokenProvider]
     val csrfTags = Map(Token.NameRequestTag -> "csrfToken", Token.RequestTag -> tokenProvider.generateToken)
@@ -121,5 +176,12 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
   private def locationOf(result: Result): Option[String] = {
     result.header.headers.get(LOCATION)
   }
+
+  private def fromFile(path: String): String = {
+    val url = getClass.getClassLoader.getResource(path)
+    Source.fromURL(url, "UTF-8").getLines().mkString
+  }
+
+  private implicit def str2instant: String => Instant = LocalDate.parse(_).atStartOfDay.toInstant(ZoneOffset.UTC)
 
 }

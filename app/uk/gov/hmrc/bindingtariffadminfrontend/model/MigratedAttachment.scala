@@ -27,7 +27,6 @@ case class MigratedAttachment
 (
   public: Boolean = false,
   name: String,
-  mimeType: String,
   operator: Option[Operator] = None,
   timestamp: Instant
 ) {

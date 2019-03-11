@@ -31,7 +31,6 @@ class MigratedAttachmentTest extends UnitSpec with MockitoSugar {
       MigratedAttachment(
         public = true,
         name = "file name.jpg",
-        mimeType = "type",
         operator = Some(operator),
         timestamp = Instant.EPOCH
       ).id shouldBe "file_name_jpg"
@@ -41,7 +40,6 @@ class MigratedAttachmentTest extends UnitSpec with MockitoSugar {
       MigratedAttachment(
         public = true,
         name = "file name",
-        mimeType = "type",
         operator = Some(operator),
         timestamp = Instant.EPOCH
       ).asAttachment shouldBe Attachment(

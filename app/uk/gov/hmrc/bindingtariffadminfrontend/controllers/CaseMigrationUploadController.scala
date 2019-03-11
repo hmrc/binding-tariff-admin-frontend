@@ -61,7 +61,8 @@ class CaseMigrationUploadController @Inject()(authenticatedAction: Authenticated
   }
 
   private def toJson(file: File): JsResult[Seq[MigratableCase]] =
-    Try(Json.parse(FileUtils.readFileToString(file)))
+    Try(FileUtils.readFileToString(file))
+      .flatMap(body => Try(Json.parse(body)))
       .map(Json.fromJson[Seq[MigratableCase]](_)) match {
       case Success(result) => result
       case Failure(throwable: Throwable) => JsError(JsPath(0), s"Invalid JSON: [${throwable.getMessage}]")

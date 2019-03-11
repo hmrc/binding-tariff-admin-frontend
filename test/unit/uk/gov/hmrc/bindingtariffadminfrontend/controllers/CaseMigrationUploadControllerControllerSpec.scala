@@ -82,6 +82,17 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
       bodyOf(result) should include("Data Migration Failed")
     }
 
+    "return 200 with Json Errors on invalid json" in {
+      val file = TemporaryFile(withJson("xyz"))
+      val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
+      val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(filePart), badParts = Seq.empty)
+      val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
+
+      val result: Result = await(controller.post(postRequest))
+      status(result) shouldBe OK
+      bodyOf(result) should include("Data Migration Failed")
+    }
+
     "Redirect to GET given no file" in {
       val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)

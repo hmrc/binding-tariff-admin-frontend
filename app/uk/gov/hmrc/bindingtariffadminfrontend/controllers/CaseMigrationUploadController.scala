@@ -33,6 +33,7 @@ import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class CaseMigrationUploadController @Inject()(authenticatedAction: AuthenticatedAction,
@@ -59,9 +60,11 @@ class CaseMigrationUploadController @Inject()(authenticatedAction: Authenticated
     }
   }
 
-  private def toJson(file: File): JsResult[Seq[MigratableCase]] = {
-    val jsonValue: JsValue = Json.parse(FileUtils.readFileToString(file))
-    Json.fromJson[Seq[MigratableCase]](jsonValue)
-  }
+  private def toJson(file: File): JsResult[Seq[MigratableCase]] =
+    Try(Json.parse(FileUtils.readFileToString(file)))
+      .map(Json.fromJson[Seq[MigratableCase]](_)) match {
+      case Success(result) => result
+      case Failure(throwable: Throwable) => JsError(JsPath(0), s"Invalid JSON: [${throwable.getMessage}]")
+    }
 
 }

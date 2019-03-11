@@ -1,25 +1,31 @@
 var fileMigration = {
     uploadAll: function upload(url) {
-        var input = document.getElementById("files");
-        if (input.files.length === 0) {
-            return;
-        }
+        var files = document.getElementById("files");
+        var folders = document.getElementById("folders");
+        uploadAll(files);
+        uploadAll(folders);
 
-        incrementTotal(input.files.length);
-        showProgress();
+        function uploadAll(input) {
+            if (input.files.length === 0) {
+                return;
+            }
 
-        for (var i = 0; i < input.files.length; i++) {
-            var file = input.files[i];
-            fileMigration.upload(url, file)
-                .then(function (response) {
-                    incrementSuccessCount();
-                    appendToSuccessTable(response.file);
-                })
-                .catch(function (err) {
-                    incrementFailureCount();
-                    appendErrorToFailedTable(err);
-                })
-                .finally(updateState)
+            incrementTotal(input.files.length);
+            showProgress();
+
+            for (var i = 0; i < input.files.length; i++) {
+                var file = input.files[i];
+                fileMigration.upload(url, file)
+                    .then(function (response) {
+                        incrementSuccessCount();
+                        appendToSuccessTable(response.file);
+                    })
+                    .catch(function (err) {
+                        incrementFailureCount();
+                        appendErrorToFailedTable(err);
+                    })
+                    .finally(updateState)
+            }
         }
 
         function updateState() {

@@ -28,11 +28,31 @@
 
  <h1 id="file_migration_upload-heading" class="heading-xlarge">Step 1: File Migration</h1>
 
- <label for="files" class="bold">Select which files to migrate</label>
-
- <div class="form-group mt-15">
+ <div class="form-group">
   @helper.CSRF.formField
-  <input name="files" id="files" type="file" multiple="" accept="image/*,audio/*,video/*,application/pdf,application/msword,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.txt,.doc,.docx,.xls"/>
+
+  <div class="mt-15">
+   <div>
+    <label for="files" class="bold">
+     Select which files to migrate
+    </label>
+   </div>
+
+   <input id="files" name="files" type="file" class="mt-15" multiple="" accept="image/*,audio/*,video/*,application/pdf,application/msword,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.txt,.doc,.docx,.xls"/>
+  </div>
+
+  <div class="mt-30">
+   <div>
+    <label for="folders">
+     <span class="bold">Select which folders to migrate</span>
+     <span class="form-hint">
+      This will select <span class="bold">all</span> files in each directory (including hidden files).
+     </span>
+    </label>
+   </div>
+
+   <input id="folders" name="folders" type="file" class="mt-15" multiple="" webkitdirectory/>
+  </div>
  </div>
 
  <div>

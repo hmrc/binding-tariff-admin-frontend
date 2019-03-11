@@ -24,7 +24,15 @@ case class Migration
   `case`: MigratableCase,
   status: MigrationStatus = MigrationStatus.UNPROCESSED,
   message: Seq[String] = Seq.empty
-)
+) {
+  def appendMessage(message: String): Migration = {
+    this.copy(message = this.message :+ message)
+  }
+
+  def appendMessage(message: Seq[String]): Migration = {
+    this.copy(message = this.message ++ message)
+  }
+}
 
 object Migration {
   implicit val format: OFormat[Migration] = Json.format[Migration]

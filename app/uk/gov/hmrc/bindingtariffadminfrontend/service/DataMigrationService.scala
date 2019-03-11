@@ -125,7 +125,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       .map(Success(_))
       .recover(withFailure(()))
       .map {
-        case MigrationFailure(_, t: Throwable) => migration.copy(message = migration.message :+ s"Failed to notify the ruling store [${t.getMessage}]")
+        case MigrationFailure(_, t: Throwable) => migration.appendMessage(s"Failed to notify the ruling store [${t.getMessage}]")
         case _ => migration
       }
   }
@@ -137,12 +137,13 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       }
     ) map {
       case migrations: Seq[MigrationState[Event]] if migrations.exists(_.isFailure) =>
-        val messages = migration.message
         val failedMigrations = migrations.filter(_.isFailure).map(_.asFailure)
         val summaryMessage = s"Failed to migrate ${failedMigrations.size}/${migrations.size} events"
         val failureMessages = failedMigrations.map (f => s"Failed to migrate event [${f.subject.details.`type`}] because [${f.cause.getMessage}]")
 
-        migration.copy(message = (messages :+ summaryMessage) ++ failureMessages)
+        migration
+          .appendMessage(summaryMessage)
+          .appendMessage(failureMessages)
       case _ =>
         migration
     }
@@ -158,12 +159,13 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       }
     ) map {
       case migrations: Seq[MigrationState[MigratedAttachment]] if migrations.exists(_.isFailure) =>
-        val messages = migration.message
         val failedMigrations = migrations.filter(_.isFailure).map(_.asFailure)
         val summaryMessage = s"Failed to migrate ${failedMigrations.size}/${migrations.size} attachments"
         val failureMessages = failedMigrations.map (f => s"Failed to migrate file [${f.subject.name}] because [${f.cause.getMessage}]")
 
-        migration.copy(message = (messages :+ summaryMessage) ++ failureMessages)
+        migration
+          .appendMessage(summaryMessage)
+          .appendMessage(failureMessages)
       case _ =>
         migration
     }

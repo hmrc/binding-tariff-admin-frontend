@@ -17,18 +17,15 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
 import javax.inject.{Inject, Singleton}
-import play.api.libs.ws.WSClient
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class FileStoreConnector @Inject()(configuration: AppConfig,
-                                   http: HttpClient) {
+class FileStoreConnector @Inject()(configuration: AppConfig, http: AuthenticatedHttpClient) {
 
   def delete()(implicit hc: HeaderCarrier): Future[Unit] = {
     http.DELETE(s"${configuration.filestoreUrl}/file").map(_ => ())

@@ -23,7 +23,6 @@ import org.mockito.Mockito
 import org.mockito.Mockito.{never, verify}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.HeaderNames.LOCATION
 import play.api.http.Status.{OK, SEE_OTHER}
 import play.api.i18n.{DefaultLangs, DefaultMessagesApi}
@@ -35,7 +34,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationCounts, MigrationStatus}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.Future
 
@@ -43,7 +42,7 @@ class DataMigrationStateControllerControllerSpec extends WordSpec
   with Matchers
   with UnitSpec
   with MockitoSugar
-  with GuiceOneAppPerSuite
+  with WithFakeApplication
   with BeforeAndAfterEach {
 
   private val env = Environment.simple()
@@ -51,7 +50,7 @@ class DataMigrationStateControllerControllerSpec extends WordSpec
   private val migrationService = mock[DataMigrationService]
   private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
   private val appConfig = mock[AppConfig]
-  private implicit val mat: Materializer = app.materializer
+  private implicit val mat: Materializer = fakeApplication.materializer
   private val controller = new DataMigrationStateController(new SuccessfulAuthenticatedAction, migrationService, messageApi, appConfig)
 
   override protected def beforeEach(): Unit = {
@@ -152,7 +151,7 @@ class DataMigrationStateControllerControllerSpec extends WordSpec
   }
 
   private def newFakeGETRequestWithCSRF: FakeRequest[AnyContentAsEmpty.type] = {
-    val tokenProvider: TokenProvider = app.injector.instanceOf[TokenProvider]
+    val tokenProvider: TokenProvider = fakeApplication.injector.instanceOf[TokenProvider]
     val csrfTags = Map(Token.NameRequestTag -> "csrfToken", Token.RequestTag -> tokenProvider.generateToken)
     FakeRequest("GET", "/", FakeHeaders(), AnyContentAsEmpty, tags = csrfTags)
   }

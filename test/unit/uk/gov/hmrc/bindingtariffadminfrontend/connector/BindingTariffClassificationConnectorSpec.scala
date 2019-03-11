@@ -18,40 +18,17 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
 import java.time.Instant
 
-import akka.actor.ActorSystem
 import com.github.tomakehurst.wiremock.client.WireMock._
 import org.apache.http.HttpStatus
-import org.mockito.BDDMockito._
-import org.scalatest.mockito.MockitoSugar
-import play.api.Environment
 import play.api.http.Status
 import play.api.libs.json.Json
-import play.api.libs.ws.WSClient
-import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Cases
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Event, Note, Operator}
-import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, Upstream5xxResponse}
-import uk.gov.hmrc.play.bootstrap.audit.DefaultAuditConnector
-import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import uk.gov.hmrc.http.{NotFoundException, Upstream5xxResponse}
 
+class BindingTariffClassificationConnectorSpec extends ConnectorTest {
 
-class BindingTariffClassificationConnectorSpec extends UnitSpec
-  with WiremockTestServer with MockitoSugar with WithFakeApplication {
-
-  private val configuration = mock[AppConfig]
-  private val actorSystem = ActorSystem.create("test")
-  private val wsClient: WSClient = fakeApplication.injector.instanceOf[WSClient]
-  private val auditConnector = new DefaultAuditConnector(fakeApplication.configuration, fakeApplication.injector.instanceOf[Environment])
-  private val client = new DefaultHttpClient(fakeApplication.configuration, auditConnector, wsClient, actorSystem)
-  private implicit val hc = HeaderCarrier()
-
-  private val connector = new BindingTariffClassificationConnector(configuration, client)
-
-  override protected def beforeEach(): Unit = {
-    super.beforeEach()
-    given(configuration.classificationBackendUrl).willReturn(wireMockUrl)
-  }
+  private val connector = new BindingTariffClassificationConnector(appConfig, authenticatedHttpClient)
 
   "Connector 'Create Case'" should {
     val request = Cases.btiCaseExample
@@ -70,6 +47,11 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
       )
 
       await(connector.upsertCase(request)) shouldBe response
+
+      verify(
+        putRequestedFor(urlEqualTo(s"/cases/${request.reference}"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
 
     "propagate errors" in {
@@ -82,6 +64,11 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
       intercept[Upstream5xxResponse] {
         await(connector.upsertCase(request))
       }
+
+      verify(
+        putRequestedFor(urlEqualTo(s"/cases/${request.reference}"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
   }
 
@@ -92,7 +79,7 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
     "Create valid event" in {
       val responseJSON = Json.toJson(event).toString()
 
-      stubFor(post(urlEqualTo(s"/cases/ref/events"))
+      stubFor(post(urlEqualTo("/cases/ref/events"))
         .withRequestBody(equalToJson(requestJSON))
         .willReturn(aResponse()
           .withStatus(HttpStatus.SC_OK)
@@ -101,10 +88,15 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
       )
 
       await(connector.createEvent("ref", event)) shouldBe event
+
+      verify(
+        postRequestedFor(urlEqualTo("/cases/ref/events"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
 
     "propagate errors" in {
-      stubFor(post(urlEqualTo(s"/cases/ref/events"))
+      stubFor(post(urlEqualTo("/cases/ref/events"))
         .willReturn(aResponse()
           .withStatus(HttpStatus.SC_BAD_GATEWAY)
         )
@@ -113,6 +105,11 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
       intercept[Upstream5xxResponse] {
         await(connector.createEvent("ref", event))
       }
+
+      verify(
+        postRequestedFor(urlEqualTo("/cases/ref/events"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
   }
 
@@ -122,7 +119,7 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
     "Get valid events" in {
       val responseJSON = Json.toJson(Seq(event)).toString()
 
-      stubFor(get(urlEqualTo(s"/cases/ref/events"))
+      stubFor(get(urlEqualTo("/cases/ref/events"))
         .willReturn(aResponse()
           .withStatus(HttpStatus.SC_OK)
           .withBody(responseJSON)
@@ -130,10 +127,15 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
       )
 
       await(connector.getEvents("ref")) shouldBe Seq(event)
+
+      verify(
+        getRequestedFor(urlEqualTo("/cases/ref/events"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
 
     "Return failed for 404" in {
-      stubFor(get(urlEqualTo(s"/cases/ref/events"))
+      stubFor(get(urlEqualTo("/cases/ref/events"))
         .willReturn(aResponse()
           .withStatus(HttpStatus.SC_NOT_FOUND)
         )
@@ -142,6 +144,11 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
       intercept[NotFoundException] {
         await(connector.getEvents("ref"))
       }
+
+      verify(
+        getRequestedFor(urlEqualTo("/cases/ref/events"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
   }
 
@@ -160,6 +167,11 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
       )
 
       await(connector.getCase(ref)) shouldBe Some(response)
+
+      verify(
+        getRequestedFor(urlEqualTo(s"/cases/$ref"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
 
     "Return None for 404" in {
@@ -170,6 +182,11 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
       )
 
       await(connector.getCase(ref)) shouldBe None
+
+      verify(
+        getRequestedFor(urlEqualTo(s"/cases/$ref"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
   }
 
@@ -185,7 +202,10 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
 
       await(connector.deleteCases)
 
-      verify(deleteRequestedFor(urlEqualTo("/cases")))
+      verify(
+        deleteRequestedFor(urlEqualTo("/cases"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
   }
 
@@ -201,7 +221,10 @@ class BindingTariffClassificationConnectorSpec extends UnitSpec
 
       await(connector.deleteEvents)
 
-      verify(deleteRequestedFor(urlEqualTo("/events")))
+      verify(
+        deleteRequestedFor(urlEqualTo("/events"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
   }
 

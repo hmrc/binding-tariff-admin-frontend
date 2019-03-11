@@ -27,14 +27,13 @@ import scala.concurrent.duration.FiniteDuration
 @Singleton
 class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: Environment) extends ServicesConfig {
 
-
-
   override protected def mode: Mode = environment.mode
 
   private def loadConfig(key: String) = runModeConfiguration.getString(key).getOrElse(throw new Exception(s"Missing configuration key: $key"))
 
   lazy val analyticsToken: String = loadConfig("google-analytics.token")
   lazy val analyticsHost: String = loadConfig("google-analytics.host")
+
   lazy val filestoreUrl: String = baseUrl("binding-tariff-filestore")
   lazy val classificationBackendUrl: String = baseUrl("binding-tariff-classification")
   lazy val rulingUrl: String = baseUrl("binding-tariff-ruling-frontend")
@@ -49,4 +48,5 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: 
     .map(_.split(":") match {
       case Array(username, hash) => Credentials(username.trim, hash.trim)
     })
+
 }

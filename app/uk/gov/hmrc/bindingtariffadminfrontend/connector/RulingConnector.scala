@@ -18,24 +18,20 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.http.{HeaderCarrier, HttpReads}
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class RulingConnector @Inject()(configuration: AppConfig,
-                                http: HttpClient) {
+class RulingConnector @Inject()(configuration: AppConfig, http: AuthenticatedHttpClient) {
 
   def notify(id: String)(implicit hc: HeaderCarrier): Future[Unit] = {
-    val authenticatedHeaders: HeaderCarrier = hc.withExtraHeaders("X-Api-Token" -> configuration.apiToken)
-    http.POSTEmpty(s"${configuration.rulingUrl}/binding-tariff-rulings/ruling/$id")(HttpReads.readRaw, authenticatedHeaders, global).map(_ => ())
+    http.POSTEmpty(s"${configuration.rulingUrl}/binding-tariff-rulings/ruling/$id").map(_ => ())
   }
 
   def delete()(implicit hc: HeaderCarrier): Future[Unit] = {
-    val authenticatedHeaders: HeaderCarrier = hc.withExtraHeaders("X-Api-Token" -> configuration.apiToken)
-    http.DELETE(s"${configuration.rulingUrl}/binding-tariff-rulings/ruling")(HttpReads.readRaw, authenticatedHeaders, global).map(_ => ())
+    http.DELETE(s"${configuration.rulingUrl}/binding-tariff-rulings/ruling").map(_ => ())
   }
 
 }

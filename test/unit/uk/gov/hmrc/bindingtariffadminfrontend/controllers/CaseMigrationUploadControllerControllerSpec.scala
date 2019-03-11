@@ -26,7 +26,6 @@ import org.mockito.BDDMockito.given
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.http.HeaderNames.LOCATION
 import play.api.http.Status.{OK, SEE_OTHER}
 import play.api.i18n.{DefaultLangs, DefaultMessagesApi}
@@ -40,12 +39,13 @@ import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigratableCase, MigratedAttachment}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.Future
 import scala.io.Source
 
-class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers with UnitSpec with MockitoSugar with GuiceOneAppPerSuite {
+class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
+  with UnitSpec with MockitoSugar with WithFakeApplication {
 
   private val fakeRequest = FakeRequest()
   private val env = Environment.simple()
@@ -53,7 +53,7 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
   private val migrationService = mock[DataMigrationService]
   private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
   private val appConfig = new AppConfig(configuration, env)
-  private implicit val mat: Materializer = app.materializer
+  private implicit val mat: Materializer = fakeApplication.materializer
   private val controller = new CaseMigrationUploadController(new SuccessfulAuthenticatedAction, migrationService, messageApi, appConfig)
 
   "GET /" should {
@@ -160,7 +160,7 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
   }
 
   private def newFakeGETRequestWithCSRF: FakeRequest[AnyContentAsEmpty.type] = {
-    val tokenProvider: TokenProvider = app.injector.instanceOf[TokenProvider]
+    val tokenProvider: TokenProvider = fakeApplication.injector.instanceOf[TokenProvider]
     val csrfTags = Map(Token.NameRequestTag -> "csrfToken", Token.RequestTag -> tokenProvider.generateToken)
     FakeRequest("GET", "/", FakeHeaders(), AnyContentAsEmpty, tags = csrfTags)
   }

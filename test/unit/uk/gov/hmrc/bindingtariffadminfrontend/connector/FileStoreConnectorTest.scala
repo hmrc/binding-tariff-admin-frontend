@@ -16,36 +16,13 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
-import akka.actor.ActorSystem
 import com.github.tomakehurst.wiremock.client.WireMock._
-import org.mockito.BDDMockito.given
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import play.api.Environment
 import play.api.http.Status
-import play.api.libs.ws.WSClient
-import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadRequest, UploadTemplate}
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.audit.DefaultAuditConnector
-import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
-class FileStoreConnectorTest extends UnitSpec with WithFakeApplication with WiremockTestServer with MockitoSugar with BeforeAndAfterEach with ResourceFiles {
+class FileStoreConnectorTest extends ConnectorTest {
 
-  private val config = mock[AppConfig]
-  private val wsClient: WSClient = fakeApplication.injector.instanceOf[WSClient]
-  private val auditConnector = new DefaultAuditConnector(fakeApplication.configuration, fakeApplication.injector.instanceOf[Environment])
-  private val actorSystem = ActorSystem.create("test")
-  private val hmrcWsClient = new DefaultHttpClient(fakeApplication.configuration, auditConnector, wsClient, actorSystem)
-  private implicit val headers: HeaderCarrier = HeaderCarrier()
-
-  private val connector = new FileStoreConnector(config, hmrcWsClient)
-
-  override protected def beforeEach(): Unit = {
-    super.beforeEach()
-    given(config.filestoreUrl).willReturn(wireMockUrl)
-  }
+  private val connector = new FileStoreConnector(appConfig, authenticatedHttpClient)
 
   "Connector Delete" should {
     "DELETE from the File Store" in {
@@ -59,7 +36,10 @@ class FileStoreConnectorTest extends UnitSpec with WithFakeApplication with Wire
 
       await(connector.delete("id"))
 
-      verify(deleteRequestedFor(urlEqualTo("/file/id")))
+      verify(
+        deleteRequestedFor(urlEqualTo("/file/id"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
   }
 
@@ -75,7 +55,10 @@ class FileStoreConnectorTest extends UnitSpec with WithFakeApplication with Wire
 
       await(connector.delete)
 
-      verify(deleteRequestedFor(urlEqualTo("/file")))
+      verify(
+        deleteRequestedFor(urlEqualTo("/file"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
   }
 
@@ -98,6 +81,11 @@ class FileStoreConnectorTest extends UnitSpec with WithFakeApplication with Wire
       val response = await(connector.initiate(file))
 
       response shouldBe UploadTemplate("url", Map("field" -> "value"))
+
+      verify(
+        postRequestedFor(urlEqualTo("/file"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
   }
 
@@ -118,6 +106,11 @@ class FileStoreConnectorTest extends UnitSpec with WithFakeApplication with Wire
         fileName = "file-name.txt",
         mimeType = "text/plain",
         published = true
+      )
+
+      verify(
+        getRequestedFor(urlEqualTo("/file/id"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }
   }
@@ -140,6 +133,11 @@ class FileStoreConnectorTest extends UnitSpec with WithFakeApplication with Wire
         mimeType = "text/plain",
         published = true
       ))
+
+      verify(
+        getRequestedFor(urlEqualTo("/file?id=id"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
     }
   }
 
@@ -160,6 +158,11 @@ class FileStoreConnectorTest extends UnitSpec with WithFakeApplication with Wire
         fileName = "file-name.txt",
         mimeType = "text/plain",
         published = true
+      )
+
+      verify(
+        postRequestedFor(urlEqualTo("/file/id/publish"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }
   }

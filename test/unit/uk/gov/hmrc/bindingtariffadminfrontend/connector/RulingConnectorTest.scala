@@ -16,44 +16,18 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
-import akka.actor.ActorSystem
 import com.github.tomakehurst.wiremock.client.WireMock._
-import org.mockito.BDDMockito.given
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
-import play.api.Environment
 import play.api.http.Status
-import play.api.libs.ws.WSClient
-import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadRequest, UploadTemplate}
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.audit.DefaultAuditConnector
-import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
-class RulingConnectorTest extends UnitSpec with WithFakeApplication with WiremockTestServer with MockitoSugar with BeforeAndAfterEach with ResourceFiles {
+class RulingConnectorTest extends ConnectorTest {
 
-  private val config = mock[AppConfig]
-  private val wsClient: WSClient = fakeApplication.injector.instanceOf[WSClient]
-  private val auditConnector = new DefaultAuditConnector(fakeApplication.configuration, fakeApplication.injector.instanceOf[Environment])
-  private val actorSystem = ActorSystem.create("test")
-  private val hmrcWsClient = new DefaultHttpClient(fakeApplication.configuration, auditConnector, wsClient, actorSystem)
-  private implicit val headers: HeaderCarrier = HeaderCarrier()
-
-  private val connector = new RulingConnector(config, hmrcWsClient)
-
-  override protected def beforeEach(): Unit = {
-    super.beforeEach()
-    given(config.rulingUrl).willReturn(wireMockUrl)
-    given(config.apiToken).willReturn("auth")
-  }
+  private val connector = new RulingConnector(appConfig, authenticatedHttpClient)
 
   "Connector Publish" should {
 
     "POST to the Ruling Store" in {
       stubFor(
         post("/binding-tariff-rulings/ruling/id")
-          .withHeader("X-Api-Token", equalTo("auth"))
           .willReturn(
             aResponse()
               .withStatus(Status.ACCEPTED)
@@ -64,7 +38,7 @@ class RulingConnectorTest extends UnitSpec with WithFakeApplication with Wiremoc
 
       verify(
         postRequestedFor(urlEqualTo("/binding-tariff-rulings/ruling/id"))
-          .withHeader("X-Api-Token", equalTo("auth"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }
   }
@@ -74,7 +48,6 @@ class RulingConnectorTest extends UnitSpec with WithFakeApplication with Wiremoc
     "POST to the Ruling Store" in {
       stubFor(
         delete("/binding-tariff-rulings/ruling")
-          .withHeader("X-Api-Token", equalTo("auth"))
           .willReturn(
             aResponse()
               .withStatus(Status.NO_CONTENT)
@@ -85,7 +58,7 @@ class RulingConnectorTest extends UnitSpec with WithFakeApplication with Wiremoc
 
       verify(
         deleteRequestedFor(urlEqualTo("/binding-tariff-rulings/ruling"))
-          .withHeader("X-Api-Token", equalTo("auth"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }
   }

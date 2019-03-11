@@ -16,10 +16,8 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
-import com.fasterxml.jackson.databind.introspect.TypeResolutionContext.Basic
 import com.google.common.base.Charsets
 import com.google.common.io.BaseEncoding
-import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers._
 import org.mockito.BDDMockito._
 import org.mockito.Mockito._

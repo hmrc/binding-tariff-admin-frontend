@@ -51,7 +51,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    reset(repository, caseConnector, fileConnector, rulingConnector)
+    reset(repository, caseConnector, fileConnector, rulingConnector, upscanS3Connector)
   }
 
   "Service 'Counts'" should {
@@ -226,20 +226,21 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val migratableAttachment = MigratedAttachment(public = true, name = "name", timestamp = Instant.EPOCH)
     val migratableEvent1 = Event(Note("note"), Operator("id"), Instant.now())
     val migratableEvent2 = Event(Note("other"), Operator("id"), Instant.now())
-    val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(migratableAttachment), Seq(migratableEvent1, migratableEvent2), Set("keyword1", "keyword2"))
+    val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq.empty, Seq.empty, Set("keyword1", "keyword2"))
+    val migratableCaseWithEvents = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq.empty, Seq(migratableEvent1, migratableEvent2), Set("keyword1", "keyword2"))
+    val migratableCaseWithAttachments = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(migratableAttachment), Seq.empty, Set("keyword1", "keyword2"))
 
     val attachment = Attachment(id = "name", public = true, timestamp = Instant.EPOCH)
-    val aCase = Case("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(attachment), Set("keyword1", "keyword2"))
+    val aCase = Case("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq.empty, Set("keyword1", "keyword2"))
+    val aCaseWithAttachments = Case("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(attachment), Set("keyword1", "keyword2"))
 
     val anUnprocessedMigration = Migration(migratableCase)
+    val anUnprocessedMigrationWithAttachments = Migration(migratableCaseWithAttachments)
+    val anUnprocessedMigrationWithEvents = Migration(migratableCaseWithEvents)
 
-    "Migrate new Case with Attachments & Events" in {
-      val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None)
-
+    "Migrate new Case" in {
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturns(aCase)
-      givenCreatingAnEventReturnsItself()
-      givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
       givenNotifyingTheRulingStoreSucceeds()
 
       val migrated = await(service.process(anUnprocessedMigration))
@@ -247,16 +248,11 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       migrated.message shouldBe Seq.empty
 
       theCaseCreated shouldBe aCase
-      theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
     }
 
-    "Migrate new Case with Ruling Store failure" in {
-      val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None)
-
+    "Migrate new Case - with Ruling Store failure" in {
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturns(aCase)
-      givenCreatingAnEventReturnsItself()
-      givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
       givenNotifyingTheRulingStoreFails()
 
       val migrated = await(service.process(anUnprocessedMigration))
@@ -264,52 +260,103 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       migrated.message shouldBe Seq("Failed to notify the ruling store [Notify Error]")
 
       theCaseCreated shouldBe aCase
-      theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
+    }
+
+    "Migrate new Case with Attachments - with find failure" in {
+      givenTheCaseDoesNotAlreadyExist()
+      givenUpsertingTheCaseReturns(aCase)
+      givenRetrievingTheUplodedFileFails()
+      givenNotifyingTheRulingStoreSucceeds()
+
+      val migrated = await(service.process(anUnprocessedMigrationWithAttachments))
+      migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
+      migrated.message shouldBe Seq(
+        "Failed to migrate 1/1 attachments",
+        "Failed to migrate file [name] because [Find Error]"
+      )
+
+      theCaseCreated shouldBe aCaseWithAttachments
+    }
+
+    "Migrate new Case with Attachments - with find returning None" in {
+      givenTheCaseDoesNotAlreadyExist()
+      givenUpsertingTheCaseReturns(aCase)
+      givenRetrievingTheUplodedFileReturnsNothing()
+      givenNotifyingTheRulingStoreSucceeds()
+
+      val migrated = await(service.process(anUnprocessedMigrationWithAttachments))
+      migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
+      migrated.message shouldBe Seq(
+        "Failed to migrate 1/1 attachments",
+        "Failed to migrate file [name] because [Not found]"
+      )
+
+      theCaseCreated shouldBe aCaseWithAttachments
     }
 
     "Migrate new Case with Attachments - with publish failure" in {
+      val aSuccessfullyUploadedFile = FileUploaded("id", "published", "text/plain", None, None)
+
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturns(aCase)
-      givenCreatingAnEventReturnsItself()
+      givenRetrievingTheUploadedFileReturns(aSuccessfullyUploadedFile)
       givenPublishingTheFileFails()
       givenNotifyingTheRulingStoreSucceeds()
 
-      val migrated = await(service.process(anUnprocessedMigration))
+      val migrated = await(service.process(anUnprocessedMigrationWithAttachments))
       migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
       migrated.message shouldBe Seq(
         "Failed to migrate 1/1 attachments",
         "Failed to migrate file [name] because [Publish Error]"
       )
 
-      theCaseCreated shouldBe aCase
-      theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
+      theCaseCreated shouldBe aCaseWithAttachments
+    }
+
+    "Migrate new Case with Attachments - with pre-published file" in {
+      val aSuccessfullyUploadedFile = FileUploaded("id", "published", "text/plain", None, None, published = true)
+
+      givenTheCaseDoesNotAlreadyExist()
+      givenUpsertingTheCaseReturns(aCase)
+      givenRetrievingTheUploadedFileReturns(aSuccessfullyUploadedFile)
+      givenPublishingTheFileFails()
+      givenNotifyingTheRulingStoreSucceeds()
+
+      val migrated = await(service.process(anUnprocessedMigrationWithAttachments))
+      migrated.status shouldBe MigrationStatus.SUCCESS
+      migrated.message shouldBe Seq.empty
+
+      theCaseCreated shouldBe aCaseWithAttachments
+
+      verify(fileConnector, never()).publish(any[String])(any[HeaderCarrier])
     }
 
     "Migrate existing Case with Attachments" in {
-      val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None)
+      val aSuccessfullyUploadedFile = FileUploaded("id", "published", "text/plain", None, None)
+      val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None, published = true)
 
       givenTheCaseExistsWithoutAttachments()
       givenTheCaseExistsWithoutEvents()
       givenUpsertingTheCaseReturns(aCase)
-      givenCreatingAnEventReturnsItself()
+      givenRetrievingTheUploadedFileReturns(aSuccessfullyUploadedFile)
       givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
       givenNotifyingTheRulingStoreSucceeds()
 
-      val migrated = await(service.process(anUnprocessedMigration))
+      val migrated = await(service.process(anUnprocessedMigrationWithAttachments))
       migrated.status shouldBe MigrationStatus.SUCCESS
       migrated.message shouldBe Seq.empty
 
-      theCaseCreated shouldBe aCase
-      theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
+      theCaseCreated shouldBe aCaseWithAttachments
     }
 
     "Migrate existing case with Attachments - removing missing attachments" in {
-      val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None)
+      val aSuccessfullyUploadedFile = FileUploaded("id", "published", "text/plain", None, None)
+      val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None, published = true)
 
       givenTheCaseExistsWithAttachment("attachment-id")
       givenTheCaseExistsWithoutEvents()
       givenUpsertingTheCaseReturns(aCase)
-      givenCreatingAnEventReturnsItself()
+      givenRetrievingTheUploadedFileReturns(aSuccessfullyUploadedFile)
       givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
       givenNotifyingTheRulingStoreSucceeds()
 
@@ -317,22 +364,18 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       migrated.status shouldBe MigrationStatus.SUCCESS
       migrated.message shouldBe Seq.empty
 
-      verify(fileConnector).delete("attachment-id")
       theCaseCreated shouldBe aCase
-      theEventsCreated shouldBe Seq(migratableEvent1, migratableEvent2)
+      verify(fileConnector).delete("attachment-id")
     }
 
-    "Migrate existing Case with existing Events" in {
-      val aSuccessfullyPublishedFile = FileUploaded("id", "published", "text/plain", None, None)
-
+    "Migrate existing Case with Events - ignoring existing events" in {
       givenTheCaseExistsWithoutAttachments()
       givenTheCaseExistsWithEvents(migratableEvent1)
       givenUpsertingTheCaseReturns(aCase)
       givenCreatingAnEventReturnsItself()
-      givenPublishingTheFileReturns(aSuccessfullyPublishedFile)
       givenNotifyingTheRulingStoreSucceeds()
 
-      val migrated = await(service.process(anUnprocessedMigration))
+      val migrated = await(service.process(anUnprocessedMigrationWithEvents))
       migrated.status shouldBe MigrationStatus.SUCCESS
       migrated.message shouldBe Seq.empty
 
@@ -340,22 +383,36 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       theEventsCreated shouldBe Seq(migratableEvent2)
     }
 
-    "Migrate new Case with failures" in {
+    "Migrate new Case with attachments - with partial failures" in {
+      givenTheCaseDoesNotAlreadyExist()
+      givenUpsertingTheCaseReturns(aCase)
+      givenRetrievingTheUplodedFileFails()
+      givenNotifyingTheRulingStoreFails()
+
+      val migrated = await(service.process(anUnprocessedMigrationWithAttachments))
+      migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
+      migrated.message shouldBe Seq(
+        "Failed to migrate 1/1 attachments",
+        "Failed to migrate file [name] because [Find Error]",
+        "Failed to notify the ruling store [Notify Error]"
+      )
+
+      theCaseCreated shouldBe aCaseWithAttachments
+    }
+
+    "Migrate new Case with events - with partial failures" in {
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturns(aCase)
       givenCreatingAnEventFails()
-      givenPublishingTheFileFails()
       givenNotifyingTheRulingStoreFails()
 
-      val migrated = await(service.process(anUnprocessedMigration))
+      val migrated = await(service.process(anUnprocessedMigrationWithEvents))
       migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
       migrated.message shouldBe Seq(
         "Failed to migrate 2/2 events",
         "Failed to migrate event [NOTE] because [Create Event Failure]",
         "Failed to migrate event [NOTE] because [Create Event Failure]",
-        "Failed to notify the ruling store [Notify Error]",
-        "Failed to migrate 1/1 attachments",
-        "Failed to migrate file [name] because [Publish Error]"
+        "Failed to notify the ruling store [Notify Error]"
       )
 
       theCaseCreated shouldBe aCase
@@ -397,13 +454,25 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       val fileUploaded = mock[FileUploaded]
       given(attachment.id) willReturn id
       given(fileUploaded.id) willReturn id
-      given(fileConnector.get(any[Seq[String]])(any[HeaderCarrier])) willReturn Future.successful(Seq(fileUploaded))
+      given(fileConnector.find(any[Seq[String]])(any[HeaderCarrier])) willReturn Future.successful(Seq(fileUploaded))
       given(fileConnector.delete(any[String])(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(Some(aCase.copy(attachments = Seq(attachment))))
     }
 
     def givenPublishingTheFileReturns(aSuccessfullyUploadedFile: FileUploaded) = {
       given(fileConnector.publish(anyString())(any[HeaderCarrier])) willReturn Future.successful(aSuccessfullyUploadedFile)
+    }
+
+    def givenRetrievingTheUploadedFileReturns(file: FileUploaded) = {
+      given(fileConnector.find(anyString())(any[HeaderCarrier])) willReturn Future.successful(Some(file))
+    }
+
+    def givenRetrievingTheUplodedFileReturnsNothing() = {
+      given(fileConnector.find(anyString())(any[HeaderCarrier])) willReturn Future.successful(None)
+    }
+
+    def givenRetrievingTheUplodedFileFails() = {
+      given(fileConnector.find(anyString())(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Find Error"))
     }
 
     def givenPublishingTheFileFails() = {

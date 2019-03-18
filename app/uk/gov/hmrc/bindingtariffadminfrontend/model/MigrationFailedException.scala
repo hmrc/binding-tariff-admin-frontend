@@ -17,3 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
 class MigrationFailedException(message: String) extends RuntimeException(message)
+
+object MigrationFailedException{
+  def apply(message: String): MigrationFailedException = new MigrationFailedException(message)
+}

@@ -21,16 +21,16 @@ import play.api.Logger
 import play.api.libs.Files.TemporaryFile
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, Event}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Event
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
-import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
+import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.{sequence, successful}
-import scala.util.{Failure, Success, Try}
+import scala.util.Success
 
 class DataMigrationService @Inject()(repository: MigrationRepository,
                                      fileConnector: FileStoreConnector,
@@ -96,25 +96,27 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     Logger.info(s"Case Migration with reference [${migration.`case`.reference}]: Starting")
 
     for {
+      existingCase <- caseConnector.getCase(migration.`case`.reference)
+
       // Delete any existing attachments that aren't in the migration
-      _ <- deleteMissingAttachments(migration)
+      updated <- deleteMissingAttachments(existingCase, migration)
 
       // Create or Update The Case
       _ <- caseConnector.upsertCase(migration.`case`.toCase)
 
       // Filter out any events that already exist on the case
-      updated <- filterOutExistingEvents(migration)
+      updated <- filterOutExistingEvents(existingCase, updated)
 
       // Create the events
       updated <- createEvents(updated)
 
-      // Notify The Ruling Store
-      updated <- notifyRulingStore(updated)
-
       //Publish The Files
       updated <- publishUploads(updated)
 
-      status = if(updated.message.isEmpty) MigrationStatus.SUCCESS else MigrationStatus.PARTIAL_SUCCESS
+      // Notify The Ruling Store
+      updated <- notifyRulingStore(updated)
+
+      status = if (updated.status == MigrationStatus.UNPROCESSED) MigrationStatus.SUCCESS else updated.status
 
     } yield updated.copy(status = status)
   }
@@ -125,8 +127,12 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       .map(Success(_))
       .recover(withFailure(()))
       .map {
-        case MigrationFailure(_, t: Throwable) => migration.appendMessage(s"Failed to notify the ruling store [${t.getMessage}]")
-        case _ => migration
+        case MigrationFailure(_, t: Throwable) =>
+          migration
+            .copy(status = MigrationStatus.PARTIAL_SUCCESS)
+            .appendMessage(s"Failed to notify the ruling store [${t.getMessage}]")
+        case _ =>
+          migration
       }
   }
 
@@ -139,9 +145,10 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       case migrations: Seq[MigrationState[Event]] if migrations.exists(_.isFailure) =>
         val failedMigrations = migrations.filter(_.isFailure).map(_.asFailure)
         val summaryMessage = s"Failed to migrate ${failedMigrations.size}/${migrations.size} events"
-        val failureMessages = failedMigrations.map (f => s"Failed to migrate event [${f.subject.details.`type`}] because [${f.cause.getMessage}]")
+        val failureMessages = failedMigrations.map(f => s"Failed to migrate event [${f.subject.details.`type`}] because [${f.cause.getMessage}]")
 
         migration
+          .copy(status = MigrationStatus.PARTIAL_SUCCESS)
           .appendMessage(summaryMessage)
           .appendMessage(failureMessages)
       case _ =>
@@ -152,18 +159,20 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
   private def publishUploads(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
     sequence(
       migration.`case`.attachments.map { a =>
-        fileConnector.publish(a.id).map(_ => MigrationSuccess(a)) recover withFailure(a, {
-          case _: NotFoundException => new MigrationFailedException("Not found")
-          case t => t
-        })
+        fileConnector.find(a.id) flatMap {
+          case Some(file) if file.published => Future.successful(MigrationSuccess(a))
+          case Some(_) => fileConnector.publish(a.id).map(_ => MigrationSuccess(a))
+          case None => Future.successful(MigrationFailure(a, MigrationFailedException("Not found")))
+        } recover withFailure(a)
       }
     ) map {
       case migrations: Seq[MigrationState[MigratedAttachment]] if migrations.exists(_.isFailure) =>
         val failedMigrations = migrations.filter(_.isFailure).map(_.asFailure)
         val summaryMessage = s"Failed to migrate ${failedMigrations.size}/${migrations.size} attachments"
-        val failureMessages = failedMigrations.map (f => s"Failed to migrate file [${f.subject.name}] because [${f.cause.getMessage}]")
+        val failureMessages = failedMigrations.map(f => s"Failed to migrate file [${f.subject.name}] because [${f.cause.getMessage}]")
 
         migration
+          .copy(status = MigrationStatus.PARTIAL_SUCCESS)
           .appendMessage(summaryMessage)
           .appendMessage(failureMessages)
       case _ =>
@@ -171,26 +180,27 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     }
   }
 
-  private def deleteMissingAttachments(migration: Migration)(implicit hc: HeaderCarrier): Future[Unit] = {
-    caseConnector.getCase(migration.`case`.reference) flatMap {
-      case None => successful(())
-      case Some(c) =>
-        for {
-          files <- if (c.attachments.nonEmpty) fileConnector.get(c.attachments.map(_.id)) else successful(Seq.empty)
-          newAttachmentIDs = migration.`case`.attachments.map(_.id)
-          missingFiles: Seq[FileUploaded] = files.filterNot(f => newAttachmentIDs.contains(f.id))
-          _ <- sequence(missingFiles.map(f => fileConnector.delete(f.id)))
-        } yield ()
-    }
+  private def deleteMissingAttachments(existingCase: Option[Case], migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = existingCase match {
+    case None => successful(migration)
+    case Some(c) =>
+      for {
+        existingFileIds: Seq[String] <- if (c.attachments.nonEmpty) fileConnector.find(c.attachments.map(_.id)).map(_.map(_.id)) else successful(Seq.empty)
+        newFileIds: Seq[String] = migration.`case`.attachments.map(_.id)
+        deletedFileIds: Seq[String] = existingFileIds.filterNot(f => newFileIds.contains(f))
+        _ <- sequence(deletedFileIds.map(f => fileConnector.delete(f)))
+      } yield migration
   }
 
-  private def filterOutExistingEvents(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
-    caseConnector.getEvents(migration.`case`.reference) recover withResponse(Seq.empty[Event]) map { existingEvents: Seq[Event] =>
-      val updatedEvents: Seq[Event] = migration.`case`.events
-      val newEvents = updatedEvents.filterNot(existingEvents.contains)
-      val updatedCase = migration.`case`.copy(events = newEvents)
-      migration.copy(updatedCase)
-    }
+
+  private def filterOutExistingEvents(existingCase: Option[Case], migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = existingCase match {
+    case Some(c) =>
+      caseConnector.getEvents(c.reference) recover withResponse(Seq.empty[Event]) map { existingEvents: Seq[Event] =>
+        val updatedEvents: Seq[Event] = migration.`case`.events
+        val newEvents = updatedEvents.filterNot(existingEvents.contains)
+        val updatedCase = migration.`case`.copy(events = newEvents)
+        migration.copy(updatedCase)
+      }
+    case None => Future.successful(migration)
   }
 
   private def withFailure[T](subject: T, mapping: Throwable => Throwable = t => t): PartialFunction[Throwable, MigrationState[T]] = {

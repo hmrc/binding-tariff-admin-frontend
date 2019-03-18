@@ -89,7 +89,7 @@ class FileStoreConnectorTest extends ConnectorTest {
     }
   }
 
-  "Connector Get" should {
+  "Connector Find" should {
 
     "GET from the File Store" in {
       stubFor(
@@ -101,12 +101,12 @@ class FileStoreConnectorTest extends ConnectorTest {
           )
       )
 
-      await(connector.get("id")) shouldBe FileUploaded(
+      await(connector.find("id")) shouldBe Some(FileUploaded(
         id = "id",
         fileName = "file-name.txt",
         mimeType = "text/plain",
         published = true
-      )
+      ))
 
       verify(
         getRequestedFor(urlEqualTo("/file/id"))
@@ -115,7 +115,7 @@ class FileStoreConnectorTest extends ConnectorTest {
     }
   }
 
-  "Connector Get Many" should {
+  "Connector Find Many" should {
 
     "GET from the File Store" in {
       stubFor(
@@ -127,7 +127,7 @@ class FileStoreConnectorTest extends ConnectorTest {
           )
       )
 
-      await(connector.get(Seq("id"))) shouldBe Seq(FileUploaded(
+      await(connector.find(Seq("id"))) shouldBe Seq(FileUploaded(
         id = "id",
         fileName = "file-name.txt",
         mimeType = "text/plain",

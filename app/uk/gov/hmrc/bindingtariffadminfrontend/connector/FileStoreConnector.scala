@@ -35,11 +35,11 @@ class FileStoreConnector @Inject()(configuration: AppConfig, http: Authenticated
     http.DELETE(s"${configuration.filestoreUrl}/file/$id").map(_ => ())
   }
 
-  def get(id: String)(implicit hc: HeaderCarrier): Future[FileUploaded] = {
-    http.GET[FileUploaded](s"${configuration.filestoreUrl}/file/$id")
+  def find(id: String)(implicit hc: HeaderCarrier): Future[Option[FileUploaded]] = {
+    http.GET[Option[FileUploaded]](s"${configuration.filestoreUrl}/file/$id")
   }
 
-  def get(ids: Seq[String])(implicit hc: HeaderCarrier): Future[Seq[FileUploaded]] = {
+  def find(ids: Seq[String])(implicit hc: HeaderCarrier): Future[Seq[FileUploaded]] = {
     val params = ids.map(id => s"id=$id").mkString("&")
     http.GET[Seq[FileUploaded]](s"${configuration.filestoreUrl}/file?$params")
   }

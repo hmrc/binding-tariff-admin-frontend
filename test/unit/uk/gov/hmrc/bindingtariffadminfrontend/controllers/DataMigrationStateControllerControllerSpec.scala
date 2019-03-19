@@ -17,7 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import akka.stream.Materializer
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers._
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito
 import org.mockito.Mockito.{never, verify}
@@ -31,7 +31,8 @@ import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.{Configuration, Environment}
 import play.filters.csrf.CSRF.{Token, TokenProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationCounts, MigrationStatus}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationCounts, MigrationStatus, Store}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
@@ -132,12 +133,12 @@ class DataMigrationStateControllerControllerSpec extends WordSpec
   "POST /reset" should {
     "return 303 when permitted" in {
       given(appConfig.resetPermitted) willReturn true
-      given(migrationService.resetEnvironment()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(migrationService.resetEnvironment(any[Set[Store]])(any[HeaderCarrier])) willReturn Future.successful((): Unit)
 
-      val result: Result = await(controller.resetConfirm()(newFakeGETRequestWithCSRF))
+      val result: Result = await(controller.resetConfirm()(newFakeGETRequestWithCSRF.withFormUrlEncodedBody("store[0]" -> "CASES")))
       status(result) shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
-      verify(migrationService).resetEnvironment()(any[HeaderCarrier])
+      verify(migrationService).resetEnvironment(refEq(Set(Store.CASES)))(any[HeaderCarrier])
     }
 
     "return 303 when not permitted" in {
@@ -146,7 +147,7 @@ class DataMigrationStateControllerControllerSpec extends WordSpec
 
       status(result) shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
-      verify(migrationService, never()).resetEnvironment()(any[HeaderCarrier])
+      verify(migrationService, never()).resetEnvironment(any[Set[Store]])(any[HeaderCarrier])
     }
   }
 

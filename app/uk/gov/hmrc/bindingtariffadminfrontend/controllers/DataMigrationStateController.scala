@@ -17,12 +17,15 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
+import play.api.data.{Form, Forms}
+import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, Store}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
-import uk.gov.hmrc.bindingtariffadminfrontend.views.html.{reset_confirm, data_migration_state}
+import uk.gov.hmrc.bindingtariffadminfrontend.views.html.{data_migration_state, reset_confirm}
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -47,9 +50,15 @@ class DataMigrationStateController @Inject()(authenticatedAction: AuthenticatedA
     service.clear(statusFilter).map(_ => Redirect(routes.DataMigrationStateController.get()))
   }
 
+  private val form: Form[Set[Store]] = Form(
+    mapping[Set[Store], Set[Store]](
+      "store" -> set(nonEmptyText.verifying(v => Store.values.exists(v == _.toString)).transform(Store(_).get, _.toString))
+    )(identity)(Some(_))
+  ).fill(Store.values)
+
   def reset(): Action[AnyContent] = authenticatedAction.async { implicit request =>
     if (appConfig.resetPermitted) {
-      successful(Ok(reset_confirm()))
+      successful(Ok(reset_confirm(form)))
     } else {
       successful(Redirect(routes.DataMigrationStateController.get()))
     }
@@ -57,7 +66,10 @@ class DataMigrationStateController @Inject()(authenticatedAction: AuthenticatedA
 
   def resetConfirm(): Action[AnyContent] = authenticatedAction.async { implicit request =>
     if (appConfig.resetPermitted) {
-      service.resetEnvironment().map(_ => Redirect(routes.DataMigrationStateController.get()))
+      form.bindFromRequest.fold(
+        errors => successful(Ok(reset_confirm(errors))),
+        stores => service.resetEnvironment(stores).map(_ => Redirect(routes.DataMigrationStateController.get()))
+      )
     } else {
       successful(Redirect(routes.DataMigrationStateController.get()))
     }

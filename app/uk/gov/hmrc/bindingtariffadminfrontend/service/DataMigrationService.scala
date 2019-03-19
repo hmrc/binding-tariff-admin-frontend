@@ -21,6 +21,7 @@ import play.api.Logger
 import play.api.libs.Files.TemporaryFile
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, Event}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
@@ -66,18 +67,22 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     repository.delete(status)
   }
 
-  def resetEnvironment()(implicit hc: HeaderCarrier): Future[Unit] = {
+  def resetEnvironment(stores: Set[Store])(implicit hc: HeaderCarrier): Future[Unit] = {
+
+    def resetIfPresent(store: Store, expression: => Future[Any]): Future[Unit] = if (stores.contains(store)) {
+      expression.map(_ => ()) recover loggingAWarning
+    } else Future.successful(())
 
     def loggingAWarning: PartialFunction[Throwable, Unit] = {
       case t: Throwable => Logger.warn("Failed to clear Service", t)
     }
 
     for {
-      _ <- fileConnector.delete() recover loggingAWarning
-      _ <- caseConnector.deleteCases() recover loggingAWarning
-      _ <- caseConnector.deleteEvents() recover loggingAWarning
-      _ <- rulingConnector.delete() recover loggingAWarning
-      _ <- clear() recover loggingAWarning
+      _ <- resetIfPresent(Store.FILES, fileConnector.delete())
+      _ <- resetIfPresent(Store.CASES, caseConnector.deleteCases())
+      _ <- resetIfPresent(Store.EVENTS, caseConnector.deleteEvents())
+      _ <- resetIfPresent(Store.RULINGS, rulingConnector.delete())
+      _ <- resetIfPresent(Store.MIGRATION, clear())
     } yield ()
   }
 

@@ -19,7 +19,11 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.form_button
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
-@()(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
+@import views.html.helper.CSRF
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.Store
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.input_checkbox
+@(form: Form[Set[Store]])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
 
@@ -27,32 +31,35 @@
 
  <h3 class="heading-xlarge">Are You Sure?</h3>
 
- <div class="notice">
+ <div class="notice mb-30">
   <i class="icon icon-important">
    <span class="visually-hidden">Warning</span>
   </i>
   <strong class="bold">
-   This will reset each service clearing all:
+   This will reset each service below:
   </strong>
  </div>
 
- <ul class="mb-30 mt-30 list list-bullet bold">
-  <li>Cases</li>
-  <li>Events</li>
-  <li>Attachments</li>
-  <li>Migrations</li>
- </ul>
+ @helper.form(routes.DataMigrationStateController.resetConfirm()) {
+  @CSRF.formField
 
+  @for((store: Store, index: Int) <- Store.values.zipWithIndex) {
+   @input_checkbox(
+    field = form("store[]"),
+    label = store.toString,
+    value = store.toString,
+    checked = !form.hasErrors && form.get.contains(store)
+   )
+  }
 
-
- <div>
-  <div class="inline-block">
-   @form_button(call = routes.DataMigrationStateController.resetConfirm(), label = "I'm Sure, Reset", css = "button-warn")
+  <div>
+   <div class="inline-block">
+    <button type="submit" class="button button-warn">I'm Sure, Reset</button>
+   </div>
+   <div class="inline-block">
+    <a class="secondary-link" href="@routes.IndexController.get()">Back to safety</a>
+   </div>
   </div>
-  <div class="inline-block">
-   <a class="secondary-link" href="@routes.IndexController.get()">Back to safety</a>
-  </div>
- </div>
-
+ }
 
 }

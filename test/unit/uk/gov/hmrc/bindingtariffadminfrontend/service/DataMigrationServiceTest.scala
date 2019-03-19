@@ -125,6 +125,8 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   }
 
   "Service 'Clear Environment'" should {
+    val stores = Store.values
+
     "Clear Back Ends" in {
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
@@ -132,12 +134,72 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(repository.delete(None)) willReturn Future.successful(true)
 
-      await(service.resetEnvironment())
+      await(service.resetEnvironment(stores))
 
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
+      verify(repository).delete(None)
+    }
+
+    "Clear Files" in {
+      given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+
+      await(service.resetEnvironment(Set(Store.FILES)))
+
+      verify(fileConnector).delete()(any[HeaderCarrier])
+      verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
+      verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
+      verify(rulingConnector, never()).delete()(any[HeaderCarrier])
+      verify(repository, never()).delete(None)
+    }
+
+    "Clear Cases" in {
+      given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+
+      await(service.resetEnvironment(Set(Store.CASES)))
+
+      verify(fileConnector, never()).delete()(any[HeaderCarrier])
+      verify(caseConnector).deleteCases()(any[HeaderCarrier])
+      verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
+      verify(rulingConnector, never()).delete()(any[HeaderCarrier])
+      verify(repository, never()).delete(None)
+    }
+
+    "Clear Events" in {
+      given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+
+      await(service.resetEnvironment(Set(Store.EVENTS)))
+
+      verify(fileConnector, never()).delete()(any[HeaderCarrier])
+      verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
+      verify(caseConnector).deleteEvents()(any[HeaderCarrier])
+      verify(rulingConnector, never()).delete()(any[HeaderCarrier])
+      verify(repository, never()).delete(None)
+    }
+
+    "Clear Rulings" in {
+      given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+
+      await(service.resetEnvironment(Set(Store.RULINGS)))
+
+      verify(fileConnector, never()).delete()(any[HeaderCarrier])
+      verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
+      verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
+      verify(rulingConnector).delete()(any[HeaderCarrier])
+      verify(repository, never()).delete(None)
+    }
+
+    "Clear Migrations" in {
+      given(repository.delete(None)) willReturn Future.successful(true)
+
+      await(service.resetEnvironment(Set(Store.MIGRATION)))
+
+      verify(fileConnector, never()).delete()(any[HeaderCarrier])
+      verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
+      verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
+      verify(rulingConnector, never()).delete()(any[HeaderCarrier])
       verify(repository).delete(None)
     }
 
@@ -148,7 +210,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(repository.delete(None)) willReturn Future.successful(true)
 
-      await(service.resetEnvironment())
+      await(service.resetEnvironment(stores))
 
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
@@ -164,7 +226,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(repository.delete(None)) willReturn Future.successful(true)
 
-      await(service.resetEnvironment())
+      await(service.resetEnvironment(stores))
 
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
@@ -180,7 +242,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(repository.delete(None)) willReturn Future.successful(true)
 
-      await(service.resetEnvironment())
+      await(service.resetEnvironment(stores))
 
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
@@ -196,7 +258,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(repository.delete(None)) willReturn Future.failed(new RuntimeException("Error"))
 
-      await(service.resetEnvironment())
+      await(service.resetEnvironment(stores))
 
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
@@ -212,7 +274,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
       given(repository.delete(None)) willReturn Future.successful(true)
 
-      await(service.resetEnvironment())
+      await(service.resetEnvironment(stores))
 
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])

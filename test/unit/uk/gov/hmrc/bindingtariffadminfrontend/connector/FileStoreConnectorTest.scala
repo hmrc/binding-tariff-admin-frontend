@@ -18,7 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.http.Status
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadRequest, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, Search, UploadRequest, UploadTemplate}
 
 class FileStoreConnectorTest extends ConnectorTest {
 
@@ -127,7 +127,7 @@ class FileStoreConnectorTest extends ConnectorTest {
           )
       )
 
-      await(connector.find(Seq("id"))) shouldBe Seq(FileUploaded(
+      await(connector.find(Search(ids = Some(Set("id"))))) shouldBe Seq(FileUploaded(
         id = "id",
         fileName = "file-name.txt",
         mimeType = "text/plain",

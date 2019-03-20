@@ -19,6 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 import com.google.inject.Inject
 import javax.inject.Singleton
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Paged
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, Event}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -46,6 +47,11 @@ class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, c
   def getCase(ref: String)(implicit hc: HeaderCarrier): Future[Option[Case]] = {
     val url = s"${configuration.classificationBackendUrl}/cases/$ref"
     client.GET[Option[Case]](url = url)
+  }
+
+  def getCases()(implicit hc: HeaderCarrier): Future[Paged[Case]] = {
+    val url = s"${configuration.classificationBackendUrl}/cases"
+    client.GET[Paged[Case]](url = url)
   }
 
   def deleteCases()(implicit hc: HeaderCarrier): Future[Unit] = {

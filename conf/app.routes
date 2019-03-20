@@ -9,6 +9,8 @@ POST       /case-migration      @uk.gov.hmrc.bindingtariffadminfrontend.controll
 GET        /file-migration      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.FileMigrationUploadController.get
 POST       /file-migration      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.FileMigrationUploadController.post
 
+GET        /monitor             @uk.gov.hmrc.bindingtariffadminfrontend.controllers.MonitorController.get()
+
 GET        /state               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.get(page: Int ?= 1, status: Seq[String] ?= Seq.empty)
 POST       /state               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.delete(status: Option[String])
 

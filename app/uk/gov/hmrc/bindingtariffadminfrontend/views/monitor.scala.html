@@ -21,32 +21,30 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
 @import uk.gov.hmrc.play.views.html.helpers
 @import views.html.helper.CSRF
-@()(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+@(cases: Int, publishedFiles: Int, unpublishedFiles: Int)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
- <h1 id="index-heading" class="heading-xlarge">Binding Tariff Admin UI</h1>
+ <h1 id="monitor-heading" class="heading-xlarge">Digital Tariffs Monitor</h1>
 
- <h3 class="heading-small">What do you want to do?</h3>
+ <h2 class="heading-medium">There is currently:</h2>
 
- <ul class="list list-bullet">
-  <li>
-   <a href="@routes.DataMigrationStateController.get()">View the current state of migrations</a>
-  </li>
+ <div class="grid-row">
 
-  <li>
-   <a href="@routes.FileMigrationUploadController.get()">Start a File & Case migration</a>
-  </li>
+  <div class="column-one-third data">
+   <span class="data-item bold-xxlarge">@cases</span>
+   <span class="data-item bold-xsmall">Cases</span>
+  </div>
 
-  <li>
-   <a href="@routes.MonitorController.get()">View the Digital Tariffs Dashboard</a>
-  </li>
+  <div class="column-one-third data">
+   <span class="data-item bold-xxlarge">@publishedFiles</span>
+   <span class="data-item bold-xsmall">Published Files</span>
+  </div>
 
-  @if(appConfig.resetPermitted){
-   <li>
-    <a href="@routes.DataMigrationStateController.reset()">Reset Binding Tariff services</a>
-   </li>
-  }
- </ul>
+  <div class="column-one-third data">
+   <span class="data-item bold-xxlarge">@unpublishedFiles</span>
+   <span class="data-item bold-xsmall">Unpublished Files</span>
+  </div>
 
+ </div>
 
 }

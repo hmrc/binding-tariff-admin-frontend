@@ -24,6 +24,9 @@
 @(cases: Int, publishedFiles: Int, unpublishedFiles: Int)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
+
+ <a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
+
  <h1 id="monitor-heading" class="heading-xlarge">Digital Tariffs Monitor</h1>
 
  <h2 class="heading-medium">There is currently:</h2>

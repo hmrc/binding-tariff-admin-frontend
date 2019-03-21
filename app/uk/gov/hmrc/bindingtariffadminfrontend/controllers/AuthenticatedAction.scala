@@ -21,6 +21,7 @@ import java.time.LocalDate
 
 import com.google.common.io.BaseEncoding
 import javax.inject.{Inject, Singleton}
+import play.api.Logger
 import play.api.mvc.Results._
 import play.api.mvc.{ActionBuilder, Request, Result}
 import play.mvc.Http.HeaderNames.{AUTHORIZATION, WWW_AUTHENTICATE}
@@ -45,15 +46,16 @@ class AuthenticatedAction @Inject()(appConfig: AppConfig) extends ActionBuilder[
       .filter(_.isSuccess)
       .map(_.get)
       .map {
-          // Valid Auth
+        // Valid Auth
         case (username, password) if credentials.contains(Credentials(username, sha256(year, password))) =>
           block(AuthenticatedRequest(username, request))
 
-          // Valid Auth but the password has recently expired
+        // Valid Auth but the password has recently expired
         case (username, password) if credentials.contains(Credentials(username, sha256(year - 1, password))) =>
+          Logger.error("The service password has expired. Please generate a new one using sha256(year:password) and override configuration key `auth.credentials`")
           Future.successful(Ok(password_expired()))
 
-          // Invalid Auth
+        // Invalid Auth
         case _ =>
           unauthorized
       }

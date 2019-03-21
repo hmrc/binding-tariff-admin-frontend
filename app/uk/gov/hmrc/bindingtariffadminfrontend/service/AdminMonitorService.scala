@@ -18,8 +18,9 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 
 import javax.inject.Inject
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.Search
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -30,15 +31,23 @@ class AdminMonitorService @Inject()(bindingTariffClassificationConnector: Bindin
   private val countPagination = Pagination(1, 1)
 
   def countCases(implicit hc: HeaderCarrier): Future[Int] = {
-    bindingTariffClassificationConnector.getCases().map(_.resultCount)
+    bindingTariffClassificationConnector.getCases(CaseSearch(), countPagination).map(_.resultCount)
   }
 
   def countUnpublishedFiles(implicit hc: HeaderCarrier): Future[Int] = {
-    fileStoreConnector.find(Search(published = Some(false)), countPagination).map(_.size)
+    fileStoreConnector.find(FileSearch(published = Some(false)), countPagination).map(_.size)
   }
 
   def countPublishedFiles(implicit hc: HeaderCarrier): Future[Int] = {
-    fileStoreConnector.find(Search(published = Some(true)), countPagination).map(_.size)
+    fileStoreConnector.find(FileSearch(published = Some(true)), countPagination).map(_.size)
+  }
+
+  def getCases(search: CaseSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Case]] = {
+    bindingTariffClassificationConnector.getCases(search, pagination)
+  }
+
+  def getFiles(search: FileSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[FileUploaded]] = {
+    fileStoreConnector.find(search, pagination)
   }
 
 }

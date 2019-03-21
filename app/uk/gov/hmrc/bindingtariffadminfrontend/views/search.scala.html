@@ -1,0 +1,150 @@
+@*
+ * Copyright 2019 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+@import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{error_summary, input_file, submit_button}
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
+@import uk.gov.hmrc.play.views.html.helpers
+@import views.html.helper.CSRF
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Case
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.Paged
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseSearch
+@import play.api.libs.json.Json
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.pagination
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.input_text
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.json
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ApplicationType
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.BTIApplication
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.AgentDetails
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Attachment
+@(form: Form[CaseSearch], pager: Pagination, cases: Paged[Case] = Paged.empty[Case], files: Paged[FileUploaded] = Paged.empty[FileUploaded])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+
+@main_template(title = "Binding Tariff Admin", bodyClasses = None) {
+
+ <a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
+
+ <h1 id="search-heading" class="heading-xlarge">Search</h1>
+
+ @helpers.form(action = uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes.SearchController.get()) {
+  <div class="grid-row">
+   <div class="column-one-half">
+    @input_text(
+     field = form(CaseSearch.referenceKey),
+     label = "Reference",
+     hint = Some("Multiple references should be comma separated"),
+     inputClass = Some("w-100")
+    )
+   </div>
+
+   <div class="column-one-half">
+    @input_text(
+     field = form(CaseSearch.traderNameKey),
+     label = "Trader Name",
+     hint = Some("Searches Trader Names containing this expression"),
+     inputClass = Some("w-100")
+    )
+   </div>
+  </div>
+
+  <div class="grid-row">
+   <div class="column-one-half">
+   @input_text(
+    field = form(CaseSearch.statusKey),
+    label = "Status",
+    hint = Some("Multiple statuses should be comma separated"),
+    inputClass = Some("w-100")
+   )
+   </div>
+
+   <div class="column-one-half">
+   @input_text(
+    field = form(CaseSearch.decisionDetailsKey),
+    label = "Ruling Details",
+    hint = Some("Searches Ruling Details containing this expression"),
+    inputClass = Some("w-100")
+   )
+   </div>
+  </div>
+
+  <div>
+   <button type="submit" class="button">Search</button>
+   <a class="secondary-link" href="@uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes.SearchController.get()">Reset</a>
+  </div>
+
+ }
+
+ <script src="@controllers.routes.Assets.at("javascripts/json-formatter.js")" type="text/javascript"></script>
+
+ @pagination(
+  id = "search-pagination-top",
+  pager = cases,
+  onChange = p => uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes.SearchController.get(pager.copy(page = p)),
+  containerClass = Some("mt-30")
+ )
+
+ @for((c: Case, caseIndex: Int) <- cases.results.zipWithIndex) {
+  <div class="search--container grid-row">
+   <div class="search--reference">
+   @c.reference
+   </div>
+   <div class="search--case">
+    <p>Case</p>
+    @json(
+     id = s"search-result-case_$caseIndex",
+     jsValue = Json.toJson(c),
+     containerClass = Some("mt-10")
+    )
+   </div>
+   @* Attachments *@
+   @if(c.attachments.nonEmpty) {
+    <div class="search--files">
+     <p>Attachments in the File Store</p>
+     @json(
+      id = s"search-result-case_$caseIndex-files",
+      jsValue = Json.toJson(files.results.filter(f => c.attachments.exists(a => a.id == f.id))),
+      containerClass = Some("mt-10")
+     )
+    </div>
+    @* Letter of Authority *@
+    @if(c.application.`type` == ApplicationType.BTI && c.application.asInstanceOf[BTIApplication].agent.flatMap(_.letterOfAuthorisation).isDefined) {
+     @defining(c.application.asInstanceOf[BTIApplication].agent.flatMap(_.letterOfAuthorisation).get) { letter: Attachment =>
+      <div class="search--letter_of_authority">
+       <p>Letter of Authority in the File Store</p>
+
+       @json(
+        id = s"search-result-case_$caseIndex-files",
+        jsValue = Json.toJson(files.results.find(f => f.id == letter.id)),
+        containerClass = Some("mt-10")
+       )
+      </div>
+     }
+    }
+   }
+  </div>
+ }
+
+ @pagination(
+  id = "search-pagination-bottotm",
+  pager = cases,
+  onChange = p => uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes.SearchController.get(pager.copy(page = p))
+ )
+
+}
+

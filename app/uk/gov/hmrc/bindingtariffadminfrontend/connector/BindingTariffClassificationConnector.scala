@@ -19,8 +19,8 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 import com.google.inject.Inject
 import javax.inject.Singleton
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Paged
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, Event}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch, Event}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -49,8 +49,9 @@ class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, c
     client.GET[Option[Case]](url = url)
   }
 
-  def getCases()(implicit hc: HeaderCarrier): Future[Paged[Case]] = {
-    val url = s"${configuration.classificationBackendUrl}/cases"
+  def getCases(search: CaseSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Case]] = {
+    val queryParam = Seq(Pagination.bindable.unbind("", pagination), CaseSearch.bindable.unbind("", search)).filter(_.nonEmpty).mkString("&")
+    val url = s"${configuration.classificationBackendUrl}/cases?$queryParam"
     client.GET[Paged[Case]](url = url)
   }
 

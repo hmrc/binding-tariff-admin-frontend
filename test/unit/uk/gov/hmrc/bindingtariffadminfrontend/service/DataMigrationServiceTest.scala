@@ -31,7 +31,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassifica
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Cases.btiApplicationExample
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, Search, UploadRequest, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, FileSearch, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -516,7 +516,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       val fileUploaded = mock[FileUploaded]
       given(attachment.id) willReturn id
       given(fileUploaded.id) willReturn id
-      given(fileConnector.find(any[Search], refEq(Pagination.max))(any[HeaderCarrier])) willReturn Future.successful(Paged(Seq(fileUploaded)))
+      given(fileConnector.find(any[FileSearch], refEq(Pagination.max))(any[HeaderCarrier])) willReturn Future.successful(Paged(Seq(fileUploaded)))
       given(fileConnector.delete(any[String])(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(Some(aCase.copy(attachments = Seq(attachment))))
     }

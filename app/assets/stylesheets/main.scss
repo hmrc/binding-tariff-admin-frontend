@@ -1,3 +1,5 @@
+@import 'json-formatter';
+
 .mt-30 {
   margin-top: 30px !important;
 }
@@ -26,8 +28,19 @@
   font-weight: bold;
 }
 
+.w-100 {
+  width: 100%;
+}
+
 .column-one-sixth {
   width: 16.6%;
+  float: left;
+  padding: 0 15px;
+  box-sizing: border-box;
+}
+
+.column-five-sixths {
+  width: (5 * 16.6%);
   float: left;
   padding: 0 15px;
   box-sizing: border-box;
@@ -127,5 +140,25 @@
     text-decoration: underline;
 
     padding: .526315em .789473em .263157em;
+  }
+}
+
+.search {
+  &--container {
+    margin-top: 15px;
+    border-top: 1px solid #bfc1c3;
+    padding: 30px 15px;
+  }
+
+  &--reference {
+    font-weight: bold;
+  }
+
+  &--case {
+    margin-top: 15px;
+  }
+
+  &--files {
+    margin-top: 30px;
   }
 }

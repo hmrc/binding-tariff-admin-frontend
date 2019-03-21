@@ -20,22 +20,22 @@ import play.api.mvc.QueryStringBindable
 
 import scala.util.Try
 
-case class Search
+case class FileSearch
 (
   ids: Option[Set[String]] = None,
   published: Option[Boolean] = None
 )
 
-object Search {
+object FileSearch {
   private val idKey = "id"
   private val publishedKey = "published"
 
   implicit def bindable(implicit
                         stringBinder: QueryStringBindable[String],
                         booleanBinder: QueryStringBindable[Boolean]
-                       ): QueryStringBindable[Search] = new QueryStringBindable[Search] {
+                       ): QueryStringBindable[FileSearch] = new QueryStringBindable[FileSearch] {
 
-    override def bind(key: String, requestParams: Map[String, Seq[String]]): Option[Either[String, Search]] = {
+    override def bind(key: String, requestParams: Map[String, Seq[String]]): Option[Either[String, FileSearch]] = {
       def params[T](name: String, map: String => T): Option[Set[T]] = {
         requestParams.get(name)
           .map {
@@ -51,18 +51,17 @@ object Search {
         params(name, map).map(_.head)
       }
 
-      Some(Right(Search(
+      Some(Right(FileSearch(
         ids = params(idKey, s => s),
         published = param(publishedKey, _.toBoolean)
       )))
     }
 
-    override def unbind(key: String, search: Search): String = {
+    override def unbind(key: String, search: FileSearch): String = {
       Seq(
         search.ids.map(_.map(stringBinder.unbind(idKey, _)).mkString("&")),
         search.published.map(booleanBinder.unbind(publishedKey, _))
       ).filter(_.isDefined).map(_.get).mkString("&")
     }
   }
-
 }

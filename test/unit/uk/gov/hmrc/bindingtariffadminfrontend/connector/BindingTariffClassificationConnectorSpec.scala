@@ -22,8 +22,8 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import org.apache.http.HttpStatus
 import play.api.http.Status
 import play.api.libs.json.Json
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{Cases, Paged}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, Event, Note, Operator}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{Cases, Paged, Pagination}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.http.{NotFoundException, Upstream5xxResponse}
 
 class BindingTariffClassificationConnectorSpec extends ConnectorTest {
@@ -196,17 +196,17 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
       val response = Paged(Seq(Cases.btiCaseExample))
       val responseJSON = Json.toJson(response).toString()
 
-      stubFor(get(urlEqualTo(s"/cases"))
+      stubFor(get(urlEqualTo(s"/cases?page=1&page_size=2"))
         .willReturn(aResponse()
           .withStatus(HttpStatus.SC_OK)
           .withBody(responseJSON)
         )
       )
 
-      await(connector.getCases()) shouldBe response
+      await(connector.getCases(CaseSearch(), Pagination(1, 2))) shouldBe response
 
       verify(
-        getRequestedFor(urlEqualTo(s"/cases"))
+        getRequestedFor(urlEqualTo(s"/cases?page=1&page_size=2"))
           .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }

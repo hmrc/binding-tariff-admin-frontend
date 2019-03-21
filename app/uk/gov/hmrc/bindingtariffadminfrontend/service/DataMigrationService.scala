@@ -23,7 +23,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassifica
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, Event}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{Search, UploadRequest, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
 import uk.gov.hmrc.http.HeaderCarrier
@@ -188,7 +188,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
   private def deleteMissingAttachments(existingCase: Option[Case], migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = existingCase match {
     case None => successful(migration)
     case Some(c) =>
-      val search = Search(ids = Some(c.attachments.map(_.id).toSet))
+      val search = FileSearch(ids = Some(c.attachments.map(_.id).toSet))
       for {
         existingFileIds: Seq[String] <- if (c.attachments.nonEmpty) fileConnector.find(search, Pagination.max).map(_.results.map(_.id)) else successful(Seq.empty)
         newFileIds: Seq[String] = migration.`case`.attachments.map(_.id)

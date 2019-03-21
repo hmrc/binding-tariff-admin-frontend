@@ -1,6 +1,8 @@
 package uk.gov.hmrc.bindingtariffadminfrontend
 
 import java.io.InputStream
+import java.security.MessageDigest
+import java.time.LocalDate
 
 import org.apache.commons.io.IOUtils
 import org.scalatest._
@@ -19,10 +21,11 @@ trait IntegrationTest extends WiremockFeatureTestServer
   with BeforeAndAfterAll
   with ResourceFiles {
 
+  private lazy val hash: String = sha256(LocalDate.now().getYear + ":password")
   protected val serviceUrl = s"http://localhost:$port/binding-tariff-admin"
 
   override def fakeApplication(): Application = new GuiceApplicationBuilder()
-    .configure("auth.credentials" -> "it:32CFE77045219384D78381C8D137774687F8B041ABF7215AB3639A2553112C94")
+    .configure("auth.credentials" -> s"it:$hash")
     .configure(config)
     .build()
 
@@ -34,6 +37,12 @@ trait IntegrationTest extends WiremockFeatureTestServer
       request = request.auth("it", "password")
     }
     request.execute((stream: InputStream) => Option(stream).map((s: InputStream) => IOUtils.toString(s)))
+  }
+
+  private def sha256(value: String): String = {
+    MessageDigest.getInstance("SHA-256")
+      .digest(value.getBytes("UTF-8"))
+      .map("%02x".format(_)).mkString.toUpperCase()
   }
 
 }

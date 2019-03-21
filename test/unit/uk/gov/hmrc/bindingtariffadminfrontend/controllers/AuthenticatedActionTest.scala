@@ -28,6 +28,7 @@ import org.scalatest.mockito.MockitoSugar
 import play.api.mvc.{Headers, Request, Result, Results}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Credentials}
+import uk.gov.hmrc.bindingtariffadminfrontend.views.html.password_expired
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
@@ -87,11 +88,11 @@ class AuthenticatedActionTest extends UnitSpec with MockitoSugar with BeforeAndA
     }
 
     "Not permit expired credentials" in {
-      givenTheCurrentDateIs("2018-01-01")
+      givenTheCurrentDateIs("2020-01-01")
       givenAnOperatorIsPermittedWith(Credentials(username, hash))
       givenTheRequestHasAuthorization(username, password)
 
-      await(action.invokeBlock(request, block)) shouldBe Results.Unauthorized.withHeaders("WWW-Authenticate" -> "Basic realm=Unauthorized")
+      await(action.invokeBlock(request, block)) shouldBe Results.Ok(password_expired())
 
       verify(block, never()).apply(any[AuthenticatedRequest[_]])
     }

@@ -22,7 +22,7 @@ trait IntegrationTest extends WiremockFeatureTestServer
   protected val serviceUrl = s"http://localhost:$port/binding-tariff-admin"
 
   override def fakeApplication(): Application = new GuiceApplicationBuilder()
-    .configure("auth.credentials" -> "it:5E884898DA28047151D0E56F8DC6292773603D0D6AABBDD62A11EF721D1542D8")
+    .configure("auth.credentials" -> "it:32CFE77045219384D78381C8D137774687F8B041ABF7215AB3639A2553112C94")
     .configure(config)
     .build()
 

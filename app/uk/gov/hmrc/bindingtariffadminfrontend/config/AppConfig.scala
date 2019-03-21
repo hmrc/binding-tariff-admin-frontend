@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.config
 
+import java.time.Clock
+
 import javax.inject.{Inject, Singleton}
 import play.api.Mode.Mode
 import play.api.{Configuration, Environment}
@@ -43,6 +45,7 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: 
   lazy val resetPermitted: Boolean = getBoolean("reset-permitted")
   lazy val pageSize: Int = getInt("page-size")
   lazy val apiToken: String = loadConfig("auth.api-token")
+  lazy val clock: Clock = Clock.systemUTC()
   lazy val credentials: Seq[Credentials] = getString("auth.credentials")
     .split(",")
     .map(_.split(":") match {

@@ -17,6 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import java.security.MessageDigest
+import java.time.LocalDate
 
 import com.google.common.io.BaseEncoding
 import javax.inject.{Inject, Singleton}
@@ -32,6 +33,7 @@ import scala.util.Try
 @Singleton
 class AuthenticatedAction @Inject()(appConfig: AppConfig) extends ActionBuilder[AuthenticatedRequest] {
 
+  private lazy val year: Int = LocalDate.now(appConfig.clock).getYear
   private lazy val credentials: Seq[Credentials] = appConfig.credentials
 
   override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] = {
@@ -47,7 +49,7 @@ class AuthenticatedAction @Inject()(appConfig: AppConfig) extends ActionBuilder[
     val baStr = authorization.replaceFirst("Basic ", "")
     val decoded = BaseEncoding.base64().decode(baStr)
     val Array(user, password) = new String(decoded).split(":")
-    Credentials(user, sha256(password))
+    Credentials(user, sha256(year + ":" + password))
   }
 
   private def sha256(value: String): String = {

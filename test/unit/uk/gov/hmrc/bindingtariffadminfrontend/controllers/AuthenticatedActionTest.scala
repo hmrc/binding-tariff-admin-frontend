@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
+import java.time.{Clock, LocalDate, ZoneOffset}
+
 import com.google.common.base.Charsets
 import com.google.common.io.BaseEncoding
 import org.mockito.ArgumentMatchers._
@@ -36,7 +38,7 @@ class AuthenticatedActionTest extends UnitSpec with MockitoSugar with BeforeAndA
   private val request = mock[Request[_]]
   private val headers = mock[Headers]
   private val block= mock[AuthenticatedRequest[_] => Future[Result]]
-  private val action = new AuthenticatedAction(config)
+  private def action = new AuthenticatedAction(config)
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -51,9 +53,10 @@ class AuthenticatedActionTest extends UnitSpec with MockitoSugar with BeforeAndA
   "Authenticated Action" should {
     val username = "username"
     val password = "password"
-    val hash = "5E884898DA28047151D0E56F8DC6292773603D0D6AABBDD62A11EF721D1542D8"
+    val hash = "32CFE77045219384D78381C8D137774687F8B041ABF7215AB3639A2553112C94"
 
     "Permit valid credentials" in {
+      givenTheCurrentDateIs("2019-01-01")
       givenAnOperatorIsPermittedWith(Credentials(username, hash))
       givenTheRequestHasAuthorization(username, password)
       givenTheBlockExecutesSuccessfully()
@@ -64,6 +67,7 @@ class AuthenticatedActionTest extends UnitSpec with MockitoSugar with BeforeAndA
     }
 
     "Not permit missing credentials" in {
+      givenTheCurrentDateIs("2019-01-01")
       givenAnOperatorIsPermittedWith(Credentials(username, hash))
       givenTheRequestHasNoAuthorization()
 
@@ -73,6 +77,7 @@ class AuthenticatedActionTest extends UnitSpec with MockitoSugar with BeforeAndA
     }
 
     "Not permit invalid credentials" in {
+      givenTheCurrentDateIs("2019-01-01")
       givenAnOperatorIsPermittedWith(Credentials(username, hash))
       givenTheRequestHasAuthorization("other", "other")
 
@@ -81,7 +86,18 @@ class AuthenticatedActionTest extends UnitSpec with MockitoSugar with BeforeAndA
       verify(block, never()).apply(any[AuthenticatedRequest[_]])
     }
 
+    "Not permit expired credentials" in {
+      givenTheCurrentDateIs("2018-01-01")
+      givenAnOperatorIsPermittedWith(Credentials(username, hash))
+      givenTheRequestHasAuthorization(username, password)
+
+      await(action.invokeBlock(request, block)) shouldBe Results.Unauthorized.withHeaders("WWW-Authenticate" -> "Basic realm=Unauthorized")
+
+      verify(block, never()).apply(any[AuthenticatedRequest[_]])
+    }
+
     "Handle invalid Basic header" in {
+      givenTheCurrentDateIs("2019-01-01")
       givenAnOperatorIsPermittedWith(Credentials(username, hash))
       givenTheRequestHasAuthorization("-")
 
@@ -91,6 +107,7 @@ class AuthenticatedActionTest extends UnitSpec with MockitoSugar with BeforeAndA
     }
 
     "Propagate any block errors" in {
+      givenTheCurrentDateIs("2019-01-01")
       givenAnOperatorIsPermittedWith(Credentials(username, hash))
       givenTheRequestHasAuthorization(username, password)
       givenTheBlockFails()
@@ -123,6 +140,10 @@ class AuthenticatedActionTest extends UnitSpec with MockitoSugar with BeforeAndA
 
   private def givenAnOperatorIsPermittedWith(credentials: Credentials): Unit = {
     given(config.credentials) willReturn Seq(credentials)
+  }
+
+  private def givenTheCurrentDateIs(date: String): Unit = {
+    given(config.clock) willReturn Clock.fixed(LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant, ZoneOffset.UTC)
   }
 
 }

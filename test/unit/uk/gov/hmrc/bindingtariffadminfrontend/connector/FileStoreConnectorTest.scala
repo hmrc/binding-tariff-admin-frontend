@@ -18,6 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.http.Status
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, Search, UploadRequest, UploadTemplate}
 
 class FileStoreConnectorTest extends ConnectorTest {
@@ -119,7 +120,7 @@ class FileStoreConnectorTest extends ConnectorTest {
 
     "GET from the File Store" in {
       stubFor(
-        get("/file?id=id")
+        get("/file?id=id&page=1&page_size=2")
           .willReturn(
             aResponse()
               .withStatus(Status.OK)
@@ -127,7 +128,7 @@ class FileStoreConnectorTest extends ConnectorTest {
           )
       )
 
-      await(connector.find(Search(ids = Some(Set("id"))))) shouldBe Seq(FileUploaded(
+      await(connector.find(Search(ids = Some(Set("id"))), Pagination(1, 2))).results shouldBe Seq(FileUploaded(
         id = "id",
         fileName = "file-name.txt",
         mimeType = "text/plain",
@@ -135,7 +136,7 @@ class FileStoreConnectorTest extends ConnectorTest {
       ))
 
       verify(
-        getRequestedFor(urlEqualTo("/file?id=id"))
+        getRequestedFor(urlEqualTo("/file?id=id&page=1&page_size=2"))
           .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }

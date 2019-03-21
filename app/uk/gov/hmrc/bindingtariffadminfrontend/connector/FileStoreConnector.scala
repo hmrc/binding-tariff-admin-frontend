@@ -18,6 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, Search, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -39,8 +40,9 @@ class FileStoreConnector @Inject()(configuration: AppConfig, http: Authenticated
     http.GET[Option[FileUploaded]](s"${configuration.filestoreUrl}/file/$id")
   }
 
-  def find(search: Search)(implicit hc: HeaderCarrier): Future[Seq[FileUploaded]] = {
-    http.GET[Seq[FileUploaded]](s"${configuration.filestoreUrl}/file?${Search.bindable.unbind("", search)}")
+  def find(search: Search, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[FileUploaded]] = {
+    val queryParams = Search.bindable.unbind("", search) + "&" + Pagination.bindable.unbind("", pagination)
+    http.GET[Paged[FileUploaded]](s"${configuration.filestoreUrl}/file?$queryParams")
   }
 
   def initiate(file: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] = {

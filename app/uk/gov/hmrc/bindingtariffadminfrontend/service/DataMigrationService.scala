@@ -190,7 +190,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     case Some(c) =>
       val search = Search(ids = Some(c.attachments.map(_.id).toSet))
       for {
-        existingFileIds: Seq[String] <- if (c.attachments.nonEmpty) fileConnector.find(search).map(_.map(_.id)) else successful(Seq.empty)
+        existingFileIds: Seq[String] <- if (c.attachments.nonEmpty) fileConnector.find(search, Pagination.max).map(_.results.map(_.id)) else successful(Seq.empty)
         newFileIds: Seq[String] = migration.`case`.attachments.map(_.id)
         deletedFileIds: Seq[String] = existingFileIds.filterNot(f => newFileIds.contains(f))
         _ <- sequence(deletedFileIds.map(f => fileConnector.delete(f)))

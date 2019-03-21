@@ -18,6 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 
 import javax.inject.Inject
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.Search
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -26,16 +27,18 @@ import scala.concurrent.Future
 
 class AdminMonitorService @Inject()(bindingTariffClassificationConnector: BindingTariffClassificationConnector, fileStoreConnector: FileStoreConnector){
 
+  private val countPagination = Pagination(1, 1)
+
   def countCases(implicit hc: HeaderCarrier): Future[Int] = {
     bindingTariffClassificationConnector.getCases().map(_.resultCount)
   }
 
   def countUnpublishedFiles(implicit hc: HeaderCarrier): Future[Int] = {
-    fileStoreConnector.find(Search(published = Some(false))).map(_.size)
+    fileStoreConnector.find(Search(published = Some(false)), countPagination).map(_.size)
   }
 
   def countPublishedFiles(implicit hc: HeaderCarrier): Future[Int] = {
-    fileStoreConnector.find(Search(published = Some(true))).map(_.size)
+    fileStoreConnector.find(Search(published = Some(true)), countPagination).map(_.size)
   }
 
 }

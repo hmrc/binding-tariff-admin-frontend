@@ -19,7 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 import java.time.Instant
 
 import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers.{any, anyString}
+import org.mockito.ArgumentMatchers.{any, anyString, refEq}
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -516,7 +516,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       val fileUploaded = mock[FileUploaded]
       given(attachment.id) willReturn id
       given(fileUploaded.id) willReturn id
-      given(fileConnector.find(any[Search])(any[HeaderCarrier])) willReturn Future.successful(Seq(fileUploaded))
+      given(fileConnector.find(any[Search], refEq(Pagination.max))(any[HeaderCarrier])) willReturn Future.successful(Paged(Seq(fileUploaded)))
       given(fileConnector.delete(any[String])(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(Some(aCase.copy(attachments = Seq(attachment))))
     }

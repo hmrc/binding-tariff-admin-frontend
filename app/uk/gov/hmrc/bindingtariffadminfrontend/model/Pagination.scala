@@ -16,8 +16,45 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
+import play.api.mvc.QueryStringBindable
+
 case class Pagination
 (
   page: Int = 1,
   pageSize: Int = 100
 )
+
+object Pagination {
+
+  val max = Pagination(1, Integer.MAX_VALUE)
+
+  private val pageKey = "page"
+  private val pageSizeKey = "page_size"
+
+  implicit def bindable(implicit intBinder: QueryStringBindable[Int]): QueryStringBindable[Pagination] = new QueryStringBindable[Pagination] {
+
+    override def bind(key: String, params: Map[String, Seq[String]]): Option[Either[String, Pagination]] = {
+      def param(name: String): Option[Int] = intBinder.bind(name, params).filter(_.isRight).map(_.right.get)
+
+      val page: Option[Int] = param(pageKey).filter(_ > 0)
+      val pageSize: Option[Int] = param(pageSizeKey)
+
+      (page, pageSize) match {
+        case (Some(p), Some(s)) => Some(Right(Pagination(page = p, pageSize = s)))
+        case (Some(p), _) => Some(Right(Pagination(page = p)))
+        case (_, Some(s)) => Some(Right(Pagination(pageSize = s)))
+        case _ => None
+      }
+    }
+
+    override def unbind(key: String, query: Pagination): String = {
+      Seq[String](
+        intBinder.unbind(pageKey, query.page),
+        intBinder.unbind(pageSizeKey, query.pageSize)
+      ).mkString("&")
+
+    }
+
+  }
+
+}

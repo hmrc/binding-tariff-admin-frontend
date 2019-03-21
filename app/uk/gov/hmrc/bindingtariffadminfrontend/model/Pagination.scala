@@ -16,23 +16,8 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
-trait Pagination {
-  val page: Int
-  val pageSize: Int
-}
-
-object Pagination {
-  val unlimited: Int = Integer.MAX_VALUE
-}
-
-case class SearchPagination
+case class Pagination
 (
-  override val page: Int = 1,
-  override val pageSize: Int = 50
-) extends Pagination
-
-case class NoPagination
-(
-  override val page: Int = 1,
-  override val pageSize: Int = Pagination.unlimited
-) extends Pagination
+  page: Int = 1,
+  pageSize: Int = 100
+)

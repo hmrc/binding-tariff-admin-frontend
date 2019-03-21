@@ -65,11 +65,11 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
   "Service 'Get State'" should {
     val migration = mock[Migration]
-    val migrations = Seq(migration)
+    val migrations = Paged(Seq(migration))
 
     "Delegate to Repository" in {
-      given(repository.get(0, 1, Seq.empty)) willReturn Future.successful(migrations)
-      await(service.getState(0, 1, Seq.empty)) shouldBe migrations
+      given(repository.get(Seq.empty, Pagination())) willReturn Future.successful(migrations)
+      await(service.getState(Seq.empty, Pagination())) shouldBe migrations
     }
   }
 

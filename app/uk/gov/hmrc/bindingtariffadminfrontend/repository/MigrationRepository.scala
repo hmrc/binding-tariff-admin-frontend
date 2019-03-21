@@ -25,7 +25,7 @@ import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{Migration, MigrationCounts}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{Migration, MigrationCounts, Paged, Pagination}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MongoIndexCreator.createSingleFieldAscendingIndex
 import uk.gov.hmrc.mongo.ReactiveRepository
 
@@ -41,7 +41,7 @@ trait MigrationRepository {
 
   def get(status: MigrationStatus): Future[Option[Migration]]
 
-  def get(page: Int, pageSize: Int, status: Seq[MigrationStatus]): Future[Seq[Migration]]
+  def get(status: Seq[MigrationStatus], pagination: Pagination): Future[Paged[Migration]]
 
   def update(c: Migration): Future[Option[Migration]]
 
@@ -72,15 +72,19 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
     Future.sequence(indexes.map(collection.indexesManager.ensure(_)))
   }
 
-  override def get(page: Int, pageSize: Int, status: Seq[MigrationStatus]): Future[Seq[Migration]] = {
+  override def get(status: Seq[MigrationStatus], pagination: Pagination): Future[Paged[Migration]] = {
     val filter = if (status.isEmpty) Json.obj() else Json.obj("status" -> Json.obj("$in" -> status))
-    val actualPage = if(page > 1) page else 1
-    collection
-      .find(filter)
-      .sort(Json.obj("status" -> -1))
-      .options(QueryOpts(skipN = (actualPage - 1) * pageSize, batchSizeN = pageSize))
-      .cursor[Migration]()
-      .collect[Seq](pageSize, Cursor.FailOnError[Seq[Migration]]())
+    val actualPage = if(pagination.page > 1) pagination.page else 1
+    val query = Json.obj("status" -> -1)
+    for {
+      result <- collection
+        .find(filter)
+        .sort(query)
+        .options(QueryOpts(skipN = (actualPage - 1) * pagination.pageSize, batchSizeN = pagination.pageSize))
+        .cursor[Migration]()
+        .collect[Seq](pagination.pageSize, Cursor.FailOnError[Seq[Migration]]())
+      count <- collection.count(Some(query))
+    } yield Paged(result, pagination, count)
   }
 
   override def get(reference: String): Future[Option[Migration]] = {

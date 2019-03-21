@@ -39,8 +39,8 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
                                      rulingConnector: RulingConnector,
                                      caseConnector: BindingTariffClassificationConnector) {
 
-  def getState(page: Int, pageSize: Int, status: Seq[MigrationStatus]): Future[Seq[Migration]] = {
-    repository.get(page, pageSize, status)
+  def getState(status: Seq[MigrationStatus], pagination: Pagination): Future[Paged[Migration]] = {
+    repository.get(status, pagination)
   }
 
   def counts: Future[MigrationCounts] = {

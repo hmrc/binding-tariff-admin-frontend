@@ -32,7 +32,7 @@ import play.api.{Configuration, Environment}
 import play.filters.csrf.CSRF.{Token, TokenProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationCounts, MigrationStatus, Store}
+import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
@@ -69,7 +69,7 @@ class DataMigrationStateControllerControllerSpec extends WordSpec
   "GET /state" should {
     "return 200 when not in progress" in {
       given(migrationService.counts) willReturn Future.successful(new MigrationCounts(Map()))
-      given(migrationService.getState(0, 1, Seq(MigrationStatus.SUCCESS))) willReturn Future.successful(Seq.empty)
+      given(migrationService.getState(Seq(MigrationStatus.SUCCESS), Pagination(0, 1))) willReturn Future.successful(Paged.empty[Migration])
       val result: Result = await(controller.get(0, Seq(MigrationStatus.SUCCESS.toString))(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
       bodyOf(result) should include("data_migration_state-complete-heading")
@@ -77,7 +77,7 @@ class DataMigrationStateControllerControllerSpec extends WordSpec
 
     "return 200 when in progress" in {
       given(migrationService.counts) willReturn Future.successful(new MigrationCounts(Map(MigrationStatus.UNPROCESSED -> 1)))
-      given(migrationService.getState(0, 1, Seq(MigrationStatus.SUCCESS))) willReturn Future.successful(Seq.empty)
+      given(migrationService.getState(Seq(MigrationStatus.SUCCESS), Pagination(0, 1))) willReturn Future.successful(Paged.empty[Migration])
       val result: Result = await(controller.get(0, Seq(MigrationStatus.SUCCESS.toString))(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
       bodyOf(result) should include("data_migration_state-in_progress-heading")
@@ -85,7 +85,7 @@ class DataMigrationStateControllerControllerSpec extends WordSpec
 
     "paginates" in {
       given(migrationService.counts) willReturn Future.successful(new MigrationCounts(Map()))
-      given(migrationService.getState(0, 1, Seq(MigrationStatus.SUCCESS))) willReturn Future.successful(Seq.empty)
+      given(migrationService.getState(Seq(MigrationStatus.SUCCESS), Pagination(0, 1))) willReturn Future.successful(Paged.empty[Migration])
       val result: Result = await(controller.get(0, Seq(MigrationStatus.SUCCESS.toString))(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
     }

@@ -30,11 +30,11 @@ case class Paged[T](results: Seq[T], pageIndex: Int, pageSize: Int, resultCount:
 
 object Paged {
 
-  def empty[T]: Paged[T] = Paged[T](Seq.empty, NoPagination(), 0)
+  def empty[T]: Paged[T] = Paged[T](Seq.empty, Pagination(), 0)
 
   def apply[T](results: Seq[T], pagination: Pagination, resultCount: Int): Paged[T] = Paged(results, pagination.page, pagination.pageSize, resultCount)
 
-  def apply[T](results: Seq[T]): Paged[T] = Paged(results, NoPagination(), results.size)
+  def apply[T](results: Seq[T]): Paged[T] = Paged(results, Pagination(), results.size)
 
   implicit def format[T](implicit fmt: Format[T]): Format[Paged[T]] = Format[Paged[T]](Reads[Paged[T]](reads), Writes[Paged[T]](writes))
 

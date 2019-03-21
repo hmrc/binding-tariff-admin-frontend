@@ -17,13 +17,13 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
-import play.api.data.{Form, Forms}
+import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, Store}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, Pagination, Store}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.{data_migration_state, reset_confirm}
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
@@ -40,8 +40,8 @@ class DataMigrationStateController @Inject()(authenticatedAction: AuthenticatedA
   def get(page: Int, status: Seq[String]): Action[AnyContent] = authenticatedAction.async { implicit request =>
     for {
       counts <- service.counts
-      state <- service.getState(page, appConfig.pageSize, status.flatMap(MigrationStatus(_)))
-      view = data_migration_state(state, counts, page, appConfig.pageSize, routes.DataMigrationStateController.get(_, status))
+      state <- service.getState(status.flatMap(MigrationStatus(_)), Pagination(page, appConfig.pageSize))
+      view = data_migration_state(state.results, counts, page, appConfig.pageSize, routes.DataMigrationStateController.get(_, status))
     } yield Ok(view)
   }
 

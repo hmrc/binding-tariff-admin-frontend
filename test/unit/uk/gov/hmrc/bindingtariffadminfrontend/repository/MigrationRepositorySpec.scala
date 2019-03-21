@@ -24,7 +24,7 @@ import reactivemongo.bson._
 import reactivemongo.core.errors.DatabaseException
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{Cases, Migration, MigrationStatus}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{Cases, Migration, MigrationStatus, Pagination}
 import uk.gov.hmrc.mongo.MongoSpecSupport
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -61,15 +61,14 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
 
   "getAll" should {
 
-
     "retrieve the expected documents from the collection" in {
       val aCase = Cases.migratableCase
       val migration = Migration(aCase)
       await(repository.insert(migration))
       collectionSize shouldBe 1
 
-      await(repository.get(0, 1, Seq.empty)) contains Seq(migration)
-      await(repository.get(1, 1, Seq.empty)) contains Seq.empty
+      await(repository.get(Seq.empty, Pagination(0, 1))).results contains Seq(migration)
+      await(repository.get(Seq.empty, Pagination(1, 1))).results contains Seq.empty
     }
 
     "retrieve the expected documents from the collection by status" in {
@@ -81,14 +80,14 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
       await(repository.insert(migration2))
       collectionSize shouldBe 2
 
-      await(repository.get(0, 1, Seq(MigrationStatus.SUCCESS, MigrationStatus.UNPROCESSED))) contains Seq(migration1, migration2)
-      await(repository.get(0, 1, Seq(MigrationStatus.SUCCESS))) contains Seq(migration1)
-      await(repository.get(0, 1, Seq(MigrationStatus.UNPROCESSED))) contains Seq(migration2)
-      await(repository.get(0, 1, Seq(MigrationStatus.FAILED))) contains Seq.empty
+      await(repository.get(Seq(MigrationStatus.SUCCESS, MigrationStatus.UNPROCESSED), Pagination(0, 1))).results contains Seq(migration1, migration2)
+      await(repository.get(Seq(MigrationStatus.SUCCESS), Pagination(0, 1))).results contains Seq(migration1)
+      await(repository.get(Seq(MigrationStatus.UNPROCESSED), Pagination(0, 1))).results contains Seq(migration2)
+      await(repository.get(Seq(MigrationStatus.FAILED), Pagination(0, 1))).results contains Seq.empty
     }
 
     "return None when there are no documents in the collection" in {
-      await(repository.get(0, 1, Seq.empty)) shouldBe Seq.empty
+      await(repository.get(Seq.empty, Pagination(0, 1))).results shouldBe Seq.empty
     }
 
   }

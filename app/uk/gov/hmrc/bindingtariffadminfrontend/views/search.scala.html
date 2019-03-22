@@ -95,15 +95,13 @@
  @pagination(
   id = "search-pagination-top",
   pager = cases,
-  onChange = p => uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes.SearchController.get(pager.copy(page = p)),
+  onChange = p => uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes.SearchController.get(form.get, pager.copy(page = p)),
   containerClass = Some("mt-30")
  )
 
  @for((c: Case, caseIndex: Int) <- cases.results.zipWithIndex) {
   <div class="search--container grid-row">
-   <div class="search--reference">
-   @c.reference
-   </div>
+   <div class="search--reference">@c.reference</div>
    <div class="search--case">
     <p>Case</p>
     @json(
@@ -127,7 +125,6 @@
      @defining(c.application.asInstanceOf[BTIApplication].agent.flatMap(_.letterOfAuthorisation).get) { letter: Attachment =>
       <div class="search--letter_of_authority">
        <p>Letter of Authority in the File Store</p>
-
        @json(
         id = s"search-result-case_$caseIndex-files",
         jsValue = Json.toJson(files.results.find(f => f.id == letter.id)),
@@ -140,11 +137,13 @@
   </div>
  }
 
- @pagination(
-  id = "search-pagination-bottotm",
-  pager = cases,
-  onChange = p => uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes.SearchController.get(pager.copy(page = p))
- )
+ @if(cases.nonEmpty) {
+  @pagination(
+   id = "search-pagination-bottom",
+   pager = cases,
+   onChange = p => uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes.SearchController.get(form.get, pager.copy(page = p))
+  )
+ }
 
 }
 

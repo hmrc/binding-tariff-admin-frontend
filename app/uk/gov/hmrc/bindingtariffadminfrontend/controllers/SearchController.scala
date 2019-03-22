@@ -39,7 +39,7 @@ class SearchController @Inject()(authenticatedAction: AuthenticatedAction,
 
   private val form: Form[CaseSearch] = CaseSearch.form
 
-  def get(pagination: Pagination): Action[AnyContent] = authenticatedAction.async { implicit request =>
+  def get(s: CaseSearch, pagination: Pagination): Action[AnyContent] = authenticatedAction.async { implicit request =>
     form.bindFromRequest.fold(
       errors =>
         Future.successful(Ok(search(errors, pagination))),

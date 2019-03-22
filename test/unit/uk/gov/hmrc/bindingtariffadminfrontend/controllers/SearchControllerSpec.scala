@@ -69,13 +69,13 @@ class SearchControllerSpec extends WordSpec
       given(service.getCases(any[CaseSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[Case])
       given(service.getFiles(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[FileUploaded])
 
-      val result: Result = await(controller.get(Pagination())(FakeRequest()))
+      val result: Result = await(controller.get(CaseSearch(), Pagination())(FakeRequest()))
       status(result) shouldBe OK
       bodyOf(result) should include("search-heading")
     }
 
     "return 200 with form errors" in {
-      val result: Result = await(controller.get(Pagination())(FakeRequest().withFormUrlEncodedBody("status" -> "x")))
+      val result: Result = await(controller.get(CaseSearch(), Pagination())(FakeRequest().withFormUrlEncodedBody("status" -> "x")))
       status(result) shouldBe OK
       bodyOf(result) should include("search-heading")
     }

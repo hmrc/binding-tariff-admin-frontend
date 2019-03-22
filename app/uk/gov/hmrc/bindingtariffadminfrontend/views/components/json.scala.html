@@ -19,6 +19,7 @@
 @import play.api.libs.json.JsValue
 @(id: String, jsValue: JsValue, containerClass: Option[String] = None)(implicit request: Request[_])
 
+@* https://github.com/summerstyle/jsonTreeViewer *@
 <div id="@id" class="@containerClass">
  <script type="text/javascript">
          var element = document.getElementById(

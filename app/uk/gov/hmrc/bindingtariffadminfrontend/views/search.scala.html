@@ -117,11 +117,24 @@
    @if(c.attachments.nonEmpty) {
     <div class="search--files">
      <p>Attachments in the File Store</p>
-     @json(
-      id = s"search-result-case_$caseIndex-files",
-      jsValue = Json.toJson(files.results.filter(f => c.attachments.exists(a => a.id == f.id))),
-      containerClass = Some("mt-10")
-     )
+     @defining(files.results.filter(f => c.attachments.exists(a => a.id == f.id))) { filesFound: Seq[FileUploaded] =>
+       @json(
+        id = s"search-result-case_$caseIndex-files",
+        jsValue = Json.toJson(filesFound),
+        containerClass = Some("mt-10")
+       )
+
+       @if(filesFound.size != c.attachments.size) {
+        <div class="notice mt-30 mb-30">
+         <i class="icon icon-important">
+          <span class="visually-hidden">Warning</span>
+         </i>
+         <strong class="bold-small">
+          There is @{c.attachments.size - filesFound.size} files missing from the File Store
+         </strong>
+        </div>
+       }
+     }
     </div>
    }
 
@@ -130,11 +143,24 @@
     @defining(c.application.asInstanceOf[BTIApplication].agent.flatMap(_.letterOfAuthorisation).get) { letter: Attachment =>
      <div class="search--letter_of_authority">
       <p>Letter of Authority in the File Store</p>
-      @json(
-       id = s"search-result-case_$caseIndex-files",
-       jsValue = Json.toJson(files.results.find(f => f.id == letter.id)),
-       containerClass = Some("mt-10")
-      )
+      @defining(files.results.find(f => f.id == letter.id)) { file: Option[FileUploaded] =>
+       @if(file.nonEmpty) {
+        @json(
+         id = s"search-result-case_$caseIndex-files",
+         jsValue = Json.toJson(file),
+         containerClass = Some("mt-10")
+        )
+       } else {
+        <div class="notice mt-30 mb-30">
+         <i class="icon icon-important">
+          <span class="visually-hidden">Warning</span>
+         </i>
+         <strong class="bold-small">
+          The Letter of authority is missing from the File Store
+         </strong>
+        </div>
+       }
+      }
      </div>
     }
    }

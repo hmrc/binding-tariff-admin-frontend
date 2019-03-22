@@ -24,11 +24,8 @@
          var element = document.getElementById(
                  '@id'
          );
-         var json  = '@Html(jsValue.toString())';
-         var data = JSON.parse(json);
-
-         var tree = jsonTree.create(data, element);
-
+         var json  = @Html(jsValue.toString());
+         var tree = jsonTree.create(json, element);
          tree.expand(function(node) {
           return node.childNodes.length < 2;
          });

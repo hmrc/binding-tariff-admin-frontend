@@ -102,6 +102,8 @@
  @for((c: Case, caseIndex: Int) <- cases.results.zipWithIndex) {
   <div class="search--container grid-row">
    <div class="search--reference">@c.reference</div>
+
+   @* Case *@
    <div class="search--case">
     <p>Case</p>
     @json(
@@ -110,6 +112,7 @@
      containerClass = Some("mt-10")
     )
    </div>
+
    @* Attachments *@
    @if(c.attachments.nonEmpty) {
     <div class="search--files">
@@ -120,18 +123,19 @@
       containerClass = Some("mt-10")
      )
     </div>
-    @* Letter of Authority *@
-    @if(c.application.`type` == ApplicationType.BTI && c.application.asInstanceOf[BTIApplication].agent.flatMap(_.letterOfAuthorisation).isDefined) {
-     @defining(c.application.asInstanceOf[BTIApplication].agent.flatMap(_.letterOfAuthorisation).get) { letter: Attachment =>
-      <div class="search--letter_of_authority">
-       <p>Letter of Authority in the File Store</p>
-       @json(
-        id = s"search-result-case_$caseIndex-files",
-        jsValue = Json.toJson(files.results.find(f => f.id == letter.id)),
-        containerClass = Some("mt-10")
-       )
-      </div>
-     }
+   }
+
+   @* Letter of Authority *@
+   @if(c.application.`type` == ApplicationType.BTI && c.application.asInstanceOf[BTIApplication].agent.flatMap(_.letterOfAuthorisation).isDefined) {
+    @defining(c.application.asInstanceOf[BTIApplication].agent.flatMap(_.letterOfAuthorisation).get) { letter: Attachment =>
+     <div class="search--letter_of_authority">
+      <p>Letter of Authority in the File Store</p>
+      @json(
+       id = s"search-result-case_$caseIndex-files",
+       jsValue = Json.toJson(files.results.find(f => f.id == letter.id)),
+       containerClass = Some("mt-10")
+      )
+     </div>
     }
    }
   </div>

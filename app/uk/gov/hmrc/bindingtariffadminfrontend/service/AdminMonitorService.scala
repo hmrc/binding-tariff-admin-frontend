@@ -35,11 +35,11 @@ class AdminMonitorService @Inject()(bindingTariffClassificationConnector: Bindin
   }
 
   def countUnpublishedFiles(implicit hc: HeaderCarrier): Future[Int] = {
-    fileStoreConnector.find(FileSearch(published = Some(false)), countPagination).map(_.size)
+    fileStoreConnector.find(FileSearch(published = Some(false)), countPagination).map(_.resultCount)
   }
 
   def countPublishedFiles(implicit hc: HeaderCarrier): Future[Int] = {
-    fileStoreConnector.find(FileSearch(published = Some(true)), countPagination).map(_.size)
+    fileStoreConnector.find(FileSearch(published = Some(true)), countPagination).map(_.resultCount)
   }
 
   def getCases(search: CaseSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Case]] = {

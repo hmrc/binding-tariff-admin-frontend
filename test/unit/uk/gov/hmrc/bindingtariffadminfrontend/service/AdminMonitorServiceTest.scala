@@ -47,15 +47,15 @@ class AdminMonitorServiceTest extends UnitSpec with MockitoSugar with BeforeAndA
 
   "Count Published Files" should {
     "Delegate to connector" in {
-      given(fileConnector.find(refEq(FileSearch(published = Some(true))), refEq(Pagination(1, 1)))(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[FileUploaded])
-      await(service.countPublishedFiles) shouldBe 0
+      given(fileConnector.find(refEq(FileSearch(published = Some(true))), refEq(Pagination(1, 1)))(any[HeaderCarrier])) willReturn Future.successful(Paged(Seq.empty[FileUploaded], 0, 0, 1))
+      await(service.countPublishedFiles) shouldBe 1
     }
   }
 
   "Count Unpublished Files" should {
     "Delegate to connector" in {
-      given(fileConnector.find(refEq(FileSearch(published = Some(false))), refEq(Pagination(1, 1)))(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[FileUploaded])
-      await(service.countUnpublishedFiles) shouldBe 0
+      given(fileConnector.find(refEq(FileSearch(published = Some(false))), refEq(Pagination(1, 1)))(any[HeaderCarrier])) willReturn Future.successful(Paged(Seq.empty[FileUploaded], 0, 0, 1))
+      await(service.countUnpublishedFiles) shouldBe 1
     }
   }
 

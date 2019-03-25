@@ -88,6 +88,26 @@
   </div>
 
   <div class="grid-row">
+   <div class="column-one-half">
+   @input_text(
+    field = form(CaseSearch.eoriKey),
+    label = "EORI",
+    hint = Some("Searches Holder & Agent EORI Codes"),
+    inputClass = Some("w-100")
+   )
+   </div>
+
+   <div class="column-one-half">
+   @input_text(
+    field = form(CaseSearch.commodityCodeKey),
+    label = "Commodity Code",
+    hint = Some("Searches Commodity Codes starting with this expression"),
+    inputClass = Some("w-100")
+   )
+   </div>
+  </div>
+
+  <div class="grid-row">
    <div class="column-one-quarter">
    @input_select(
     field = form(CaseSearch.assigneeIdKey),

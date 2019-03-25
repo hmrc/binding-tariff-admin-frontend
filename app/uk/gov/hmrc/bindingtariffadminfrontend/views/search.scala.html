@@ -88,16 +88,34 @@
   </div>
 
   <div class="grid-row">
-   <div class="column-one-half">
-    @input_select(
-     field = form(CaseSearch.sortFieldKey),
-     label = "Sort Field",
-     inputClass = Some("w-100"),
-     options = SortField.values.map(v => SelectOption(v.toString, v.toString))
-    )
+   <div class="column-one-quarter">
+   @input_select(
+    field = form(CaseSearch.assigneeIdKey),
+    label = "Assignee",
+    inputClass = Some("w-100"),
+    options = Set(SelectOption("-", ""), SelectOption("Assigned", "some"), SelectOption("Unassigned", "none"))
+   )
    </div>
 
-   <div class="column-one-half">
+   <div class="column-one-quarter">
+   @input_select(
+    field = form(CaseSearch.queueIdKey),
+    label = "Queue",
+    inputClass = Some("w-100"),
+    options = Set(SelectOption("-", ""), SelectOption("Assigned", "some"), SelectOption("Unassigned", "none"))
+   )
+   </div>
+
+   <div class="column-one-quarter">
+   @input_select(
+    field = form(CaseSearch.sortFieldKey),
+    label = "Sort Field",
+    inputClass = Some("w-100"),
+    options = SortField.values.map(v => SelectOption(v.toString, v.toString))
+   )
+   </div>
+
+   <div class="column-one-quarter">
    @input_select(
     field = form(CaseSearch.sortDirectionKey),
     label = "Sort Direction",

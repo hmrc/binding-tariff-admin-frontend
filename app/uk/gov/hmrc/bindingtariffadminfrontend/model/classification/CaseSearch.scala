@@ -18,11 +18,13 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
 import java.time.Instant
 
-import play.api.data.{Form, Mapping}
 import play.api.data.Forms._
+import play.api.data.{Form, Mapping}
 import play.api.mvc.QueryStringBindable
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ApplicationType.ApplicationType
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.CaseStatus
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SortDirection.SortDirection
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SortField.SortField
 
 import scala.util.Try
 
@@ -38,7 +40,9 @@ case class CaseSearch
   minDecisionEnd: Option[Instant] = None,
   commodityCode: Option[String] = None,
   decisionDetails: Option[String] = None,
-  keywords: Option[Set[String]] = None
+  keywords: Option[Set[String]] = None,
+  sortField: Option[SortField] = None,
+  sortDirection: Option[SortDirection] = None
 )
 
 object CaseSearch {
@@ -53,6 +57,8 @@ object CaseSearch {
   val minDecisionEndKey = "min_decision_end"
   val commodityCodeKey = "commodity_code"
   val decisionDetailsKey = "decision_details"
+  val sortFieldKey = "sort_by"
+  val sortDirectionKey = "sort_direction"
   val keywordKey = "keyword"
 
   implicit def bindable(implicit stringBinder: QueryStringBindable[String]): QueryStringBindable[CaseSearch] = new QueryStringBindable[CaseSearch] {
@@ -63,6 +69,14 @@ object CaseSearch {
 
     private def bindApplicationType(key: String): Option[ApplicationType] = {
       ApplicationType.values.find(_.toString.equalsIgnoreCase(key))
+    }
+
+    private def bindSortField(key: String): Option[SortField] = {
+      SortField.values.find(_.toString.equalsIgnoreCase(key))
+    }
+
+    private def bindSortDirection(key: String): Option[SortDirection] = {
+      SortDirection.values.find(_.toString.equalsIgnoreCase(key))
     }
 
     private def bindInstant(key: String): Option[Instant] = Try(Instant.parse(key)).toOption
@@ -90,7 +104,9 @@ object CaseSearch {
             minDecisionEnd = param(minDecisionEndKey).flatMap(bindInstant),
             commodityCode = param(commodityCodeKey),
             decisionDetails = param(decisionDetailsKey),
-            keywords = params(keywordKey).map(_.map(_.toUpperCase))
+            keywords = params(keywordKey).map(_.map(_.toUpperCase)),
+            sortField = param(sortFieldKey).flatMap(bindSortField),
+            sortDirection = param(sortDirectionKey).flatMap(bindSortDirection)
           )
         )
       )
@@ -108,7 +124,9 @@ object CaseSearch {
         filter.minDecisionEnd.map(i => stringBinder.unbind(minDecisionEndKey, i.toString)),
         filter.commodityCode.map(stringBinder.unbind(commodityCodeKey, _)),
         filter.decisionDetails.map(stringBinder.unbind(decisionDetailsKey, _)),
-        filter.keywords.map(_.map(s => stringBinder.unbind(keywordKey, s.toString)).mkString("&"))
+        filter.keywords.map(_.map(s => stringBinder.unbind(keywordKey, s.toString)).mkString("&")),
+        filter.sortField.map(f => stringBinder.unbind(sortFieldKey, f.toString)),
+        filter.sortDirection.map(d => stringBinder.unbind(sortDirectionKey, d.toString))
       ).filter(_.isDefined).map(_.get).mkString("&")
     }
   }
@@ -132,7 +150,9 @@ object CaseSearch {
       minDecisionEndKey -> optional(text.transform[Instant](Instant.parse(_), _.toString)),
       commodityCodeKey -> optional[String](text),
       decisionDetailsKey -> optional[String](text),
-      keywordKey -> optional(textTransformingToSet[String](identity, identity))
+      keywordKey -> optional(textTransformingToSet[String](identity, identity)),
+      sortFieldKey -> optional(text.transform[SortField](SortField.withName, _.toString)),
+      sortDirectionKey -> optional(text.transform[SortDirection](SortDirection.withName, _.toString))
     )(CaseSearch.apply)(CaseSearch.unapply)
   )
 }

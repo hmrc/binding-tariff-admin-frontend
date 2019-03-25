@@ -34,7 +34,9 @@ class CaseSearchTest extends UnitSpec {
     statuses = Some(Set(NEW, OPEN)),
     minDecisionEnd = Some(Instant.EPOCH),
     keywords = Some(Set("BIKE", "MTB")),
-    decisionDetails = Some("decision-details")
+    decisionDetails = Some("decision-details"),
+    sortDirection = Some(SortDirection.DESCENDING),
+    sortField = Some(SortField.CREATED_DATE)
   )
 
   private val params: Map[String, Seq[String]] = Map(
@@ -47,7 +49,9 @@ class CaseSearchTest extends UnitSpec {
     "status" -> Seq("NEW", "OPEN"),
     "min_decision_end" -> Seq("1970-01-01T00:00:00Z"),
     "decision_details" -> Seq("decision-details"),
-    "keyword" -> Seq("BIKE", "MTB")
+    "keyword" -> Seq("BIKE", "MTB"),
+    "sort_by" -> Seq("created-date"),
+    "sort_direction" -> Seq("desc")
   )
 
   private val emptyParams: Map[String, Seq[String]] = Map(
@@ -59,7 +63,9 @@ class CaseSearchTest extends UnitSpec {
     "assignee_id" -> Seq(""),
     "status" -> Seq(""),
     "min_decision_end" -> Seq(""),
-    "keyword" -> Seq("")
+    "keyword" -> Seq(""),
+    "sort_by" -> Seq(""),
+    "sort_direction" -> Seq("")
   )
 
   "Case Search Binder" should {
@@ -82,7 +88,9 @@ class CaseSearchTest extends UnitSpec {
           "&min_decision_end=1970-01-01T00:00:00Z" +
           "&decision_details=decision-details" +
           "&keyword=BIKE" +
-          "&keyword=MTB"
+          "&keyword=MTB" +
+          "&sort_by=created-date" +
+          "&sort_direction=desc"
       URLDecoder.decode(CaseSearch.bindable.unbind("", search), "UTF-8") shouldBe populatedQueryParam
     }
 

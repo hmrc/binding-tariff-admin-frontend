@@ -210,6 +210,28 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
           .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }
+
+    "Get valid case with filters" in {
+      val search = CaseSearch(sortDirection = Some(SortDirection.DESCENDING), sortField = Some(SortField.CREATED_DATE))
+      val filter = CaseSearch.bindable.unbind("", search)
+
+      val response = Paged(Seq(Cases.btiCaseExample))
+      val responseJSON = Json.toJson(response).toString()
+
+      stubFor(get(urlEqualTo(s"/cases?page=1&page_size=2&$filter"))
+        .willReturn(aResponse()
+          .withStatus(HttpStatus.SC_OK)
+          .withBody(responseJSON)
+        )
+      )
+
+      await(connector.getCases(search, Pagination(1, 2))) shouldBe response
+
+      verify(
+        getRequestedFor(urlEqualTo(s"/cases?page=1&page_size=2&$filter"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
   }
 
   "Connector Delete All Cases" should {

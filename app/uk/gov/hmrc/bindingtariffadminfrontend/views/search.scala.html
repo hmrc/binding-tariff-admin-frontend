@@ -34,6 +34,10 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.BTIApplication
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.AgentDetails
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Attachment
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.input_select
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SortField
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.components.SelectOption
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SortDirection
 @(form: Form[CaseSearch], pager: Pagination, cases: Paged[Case] = Paged.empty[Case], files: Paged[FileUploaded] = Paged.empty[FileUploaded])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
@@ -79,6 +83,26 @@
     label = "Ruling Details",
     hint = Some("Searches Ruling Details containing this expression"),
     inputClass = Some("w-100")
+   )
+   </div>
+  </div>
+
+  <div class="grid-row">
+   <div class="column-one-half">
+    @input_select(
+     field = form(CaseSearch.sortFieldKey),
+     label = "Sort Field",
+     inputClass = Some("w-100"),
+     options = SortField.values.map(v => SelectOption(v.toString, v.toString))
+    )
+   </div>
+
+   <div class="column-one-half">
+   @input_select(
+    field = form(CaseSearch.sortDirectionKey),
+    label = "Sort Direction",
+    inputClass = Some("w-100"),
+    options = SortDirection.values.map(v => SelectOption(v.toString, v.toString))
    )
    </div>
   </div>

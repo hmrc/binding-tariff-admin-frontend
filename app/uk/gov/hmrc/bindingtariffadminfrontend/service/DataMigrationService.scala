@@ -23,7 +23,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassifica
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, Event}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, UploadRequest, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
 import uk.gov.hmrc.http.HeaderCarrier
@@ -104,22 +104,28 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       existingCase <- caseConnector.getCase(migration.`case`.reference)
 
       // Delete any existing attachments that aren't in the migration
-      updated <- deleteMissingAttachments(existingCase, migration)
+      _ <- deleteExistingAttachmentsNotOnTheMigration(existingCase, migration)
+
+      // Find the files for this Migration
+      migratedFiles: Seq[FileUploaded] <- findMigratedFiles(migration)
+
+      // Filter any un-migrated files from the migration & add a warning
+      updated: Migration = filterUnMigratedAttachmentsFromTheMigration(migratedFiles, migration)
 
       // Create or Update The Case
-      _ <- caseConnector.upsertCase(migration.`case`.toCase)
+      _ <- caseConnector.upsertCase(updated.`case`.toCase)
 
       // Filter out any events that already exist on the case
-      updated <- filterOutExistingEvents(existingCase, updated)
+      updated: Migration <- filterOutExistingEvents(existingCase, updated)
 
       // Create the events
-      updated <- createEvents(updated)
+      updated: Migration <- createEvents(updated)
 
       //Publish The Files
-      updated <- publishUploads(updated)
+      updated: Migration <- publishUploads(migratedFiles, updated)
 
       // Notify The Ruling Store
-      updated <- notifyRulingStore(updated)
+      updated: Migration <- notifyRulingStore(updated)
 
       status = if (updated.status == MigrationStatus.UNPROCESSED) MigrationStatus.SUCCESS else updated.status
 
@@ -161,14 +167,16 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     }
   }
 
-  private def publishUploads(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
+  private def publishUploads(migratedFiles: Seq[FileUploaded], migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
+    val filesById: Map[String, FileUploaded] = migratedFiles.map(f => f.id -> f).toMap
+
     sequence(
       migration.`case`.attachments.map { a =>
-        fileConnector.find(a.id) flatMap {
+        filesById.get(a.id) match {
           case Some(file) if file.published => Future.successful(MigrationSuccess(a))
-          case Some(_) => fileConnector.publish(a.id).map(_ => MigrationSuccess(a))
+          case Some(_) => fileConnector.publish(a.id).map(_ => MigrationSuccess(a)) recover withFailure(a)
           case None => Future.successful(MigrationFailure(a, MigrationFailedException("Not found")))
-        } recover withFailure(a)
+        }
       }
     ) map {
       case migrations: Seq[MigrationState[MigratedAttachment]] if migrations.exists(_.isFailure) =>
@@ -185,18 +193,54 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     }
   }
 
-  private def deleteMissingAttachments(existingCase: Option[Case], migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = existingCase match {
-    case None => successful(migration)
-    case Some(c) =>
-      val search = FileSearch(ids = Some(c.attachments.map(_.id).toSet))
-      for {
-        existingFileIds: Seq[String] <- if (c.attachments.nonEmpty) fileConnector.find(search, Pagination.max).map(_.results.map(_.id)) else successful(Seq.empty)
-        newFileIds: Seq[String] = migration.`case`.attachments.map(_.id)
-        deletedFileIds: Seq[String] = existingFileIds.filterNot(f => newFileIds.contains(f))
-        _ <- sequence(deletedFileIds.map(f => fileConnector.delete(f)))
-      } yield migration
+  def findMigratedFiles(migration: Migration)(implicit hc: HeaderCarrier): Future[Seq[FileUploaded]] = {
+    val newFiles = migration.`case`.attachments
+    val newFileIds = newFiles.map(_.id).toSet
+    if (newFileIds.nonEmpty) {
+      fileConnector.find(FileSearch(ids = Some(newFileIds)), Pagination.max).map(_.results) recover withResponse(Seq.empty)
+    } else successful(Seq.empty)
   }
 
+  private def filterUnMigratedAttachmentsFromTheMigration(filesMigrated: Seq[FileUploaded], migration: Migration): Migration = {
+    val newFiles = migration.`case`.attachments
+    val newFileIds = newFiles.map(_.id).toSet
+    val newFileIdsFound: Seq[String] = filesMigrated.map(_.id)
+    val missingMigratableFiles: Seq[MigratedAttachment] = newFiles.filterNot(att => newFileIdsFound.contains(att.id))
+    missingMigratableFiles match {
+      case missing if missing.nonEmpty =>
+        val summaryMessage = s"Failed to migrate ${missing.size}/${newFileIds.size} attachments"
+        val failureMessages = missing.map(f => s"Failed to migrate file [${f.name}] because [Not Found]")
+        val `case` = migration.`case`.copy(attachments = newFiles.filter(f => newFileIdsFound.contains(f.id)))
+        migration
+          .copy(status = MigrationStatus.PARTIAL_SUCCESS, `case` = `case`)
+          .appendMessage(summaryMessage)
+          .appendMessage(failureMessages)
+      case _ =>
+        migration
+    }
+  }
+
+  private def deleteExistingAttachmentsNotOnTheMigration(existingCase: Option[Case], migration: Migration)
+                                                        (implicit hc: HeaderCarrier): Future[Unit] = existingCase match {
+    case None => successful(migration)
+    case Some(c) =>
+      val existingFiles = c.attachments
+      val existingFileIds = existingFiles.map(_.id).toSet
+      val newFiles = migration.`case`.attachments
+      val newFileIds = newFiles.map(_.id).toSet
+      for {
+        // Get Files already on the case
+        existingFilesFound: Seq[FileUploaded] <-
+          if (existingFileIds.nonEmpty) {
+            fileConnector.find(FileSearch(ids = Some(existingFileIds)), Pagination.max).map(_.results)
+          } else successful(Seq.empty)
+        existingFileIdsFound: Seq[String] = existingFilesFound.map(_.id)
+
+        // Delete Files which are on the case already, but not part of the migration
+        deletedFileIds: Seq[String] = existingFileIdsFound.filterNot(f => newFileIds.contains(f))
+        _ <- sequence(deletedFileIds.map(f => fileConnector.delete(f)))
+      } yield ()
+  }
 
   private def filterOutExistingEvents(existingCase: Option[Case], migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = existingCase match {
     case Some(c) =>

@@ -119,6 +119,12 @@ class CaseSearchTest extends UnitSpec {
       form.hasErrors shouldBe false
       form.get shouldBe search
     }
+
+    "Bind from empty request" in {
+      val form = CaseSearch.form.bind(map.mapValues(_ => ""))
+      form.hasErrors shouldBe false
+      form.get shouldBe CaseSearch()
+    }
   }
 
 }

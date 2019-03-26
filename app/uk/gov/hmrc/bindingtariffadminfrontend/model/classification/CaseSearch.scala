@@ -133,26 +133,30 @@ object CaseSearch {
 
   private def textTransformingToSet[A](reader: String => A, writer: A => String): Mapping[Set[A]] = {
     def splitAndMap(s: String): Set[A] = s.split(",").map(_.trim).map(reader).toSet
+    textTransformingTo[Set[A]](splitAndMap, _.mkString(","))
+  }
 
-    nonEmptyText.verifying("Invalid entry", s => Try(splitAndMap(s)).isSuccess)
-      .transform[Set[A]](s => splitAndMap(s), _.map(writer).mkString(","))
+  private def textTransformingTo[A](reader: String => A, writer: A => String): Mapping[A] = {
+    nonEmptyText
+      .verifying("Invalid entry", s => Try(reader(s)).isSuccess)
+      .transform[A](reader, writer)
   }
 
   val form: Form[CaseSearch] = Form(
     mapping(
-      referenceKey -> optional[Set[String]](textTransformingToSet[String](identity, identity)),
-      applicationTypeKey -> optional[ApplicationType](text.transform[ApplicationType](ApplicationType.withName, _.toString)),
+      referenceKey -> optional[Set[String]](textTransformingToSet(identity, identity)),
+      applicationTypeKey -> optional[ApplicationType](textTransformingTo(ApplicationType.withName, _.toString)),
       queueIdKey -> optional[String](text),
       eoriKey -> optional[String](text),
       assigneeIdKey -> optional[String](text),
       statusKey -> optional[Set[CaseStatus]](textTransformingToSet(CaseStatus.withName, _.toString)),
       traderNameKey -> optional[String](text),
-      minDecisionEndKey -> optional(text.transform[Instant](Instant.parse(_), _.toString)),
+      minDecisionEndKey -> optional[Instant](textTransformingTo(Instant.parse(_), _.toString)),
       commodityCodeKey -> optional[String](text),
       decisionDetailsKey -> optional[String](text),
-      keywordKey -> optional(textTransformingToSet[String](identity, identity)),
-      sortFieldKey -> optional(text.transform[SortField](SortField.withName, _.toString)),
-      sortDirectionKey -> optional(text.transform[SortDirection](SortDirection.withName, _.toString))
+      keywordKey -> optional[Set[String]](textTransformingToSet(identity, identity)),
+      sortFieldKey -> optional[SortField](textTransformingTo(SortField.withName, _.toString)),
+      sortDirectionKey -> optional[SortDirection](textTransformingTo(SortDirection.withName, _.toString))
     )(CaseSearch.apply)(CaseSearch.unapply)
   )
 }

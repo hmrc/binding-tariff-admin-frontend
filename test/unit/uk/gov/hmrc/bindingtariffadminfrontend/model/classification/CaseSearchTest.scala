@@ -54,20 +54,6 @@ class CaseSearchTest extends UnitSpec {
     "sort_direction" -> Seq("desc")
   )
 
-  private val emptyParams: Map[String, Seq[String]] = Map(
-    "reference" -> Seq(""),
-    "application_type" -> Seq(""),
-    "trader_name" -> Seq(""),
-    "queue_id" -> Seq(""),
-    "eori" -> Seq(""),
-    "assignee_id" -> Seq(""),
-    "status" -> Seq(""),
-    "min_decision_end" -> Seq(""),
-    "keyword" -> Seq(""),
-    "sort_by" -> Seq(""),
-    "sort_direction" -> Seq("")
-  )
-
   "Case Search Binder" should {
 
     "Unbind Unpopulated Search to Query String" in {
@@ -99,7 +85,8 @@ class CaseSearchTest extends UnitSpec {
     }
 
     "Bind query string with empty values" in {
-      CaseSearch.bindable.bind("", emptyParams) shouldBe Some(Right(CaseSearch()))
+      CaseSearch.bindable.bind("", params.mapValues(_ => Seq(""))) shouldBe Some(Right(CaseSearch()))
+      CaseSearch.bindable.bind("", params.mapValues(_ => Seq())) shouldBe Some(Right(CaseSearch()))
     }
 
     "Bind populated query string" in {

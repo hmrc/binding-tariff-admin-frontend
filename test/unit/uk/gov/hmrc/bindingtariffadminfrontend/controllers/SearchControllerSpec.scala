@@ -65,6 +65,7 @@ class SearchControllerSpec extends WordSpec
   }
 
   "GET /" should {
+
     "return 200" in {
       given(service.getCases(any[CaseSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[Case])
       given(service.getFiles(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[FileUploaded])

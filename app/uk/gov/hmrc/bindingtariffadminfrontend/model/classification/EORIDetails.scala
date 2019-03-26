@@ -16,7 +16,8 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize._
 
 case class EORIDetails
 (
@@ -27,8 +28,15 @@ case class EORIDetails
   addressLine3: String,
   postcode: String,
   country: String
-)
+) {
+  def anonymize: EORIDetails = this.copy(
+    addressLine1 = anonymized,
+    addressLine2 = anonymized,
+    addressLine3 = anonymized,
+    postcode = anonymized
+  )
+}
 
 object EORIDetails {
-  implicit val format = Json.format[EORIDetails]
+  implicit val format: OFormat[EORIDetails] = Json.format[EORIDetails]
 }

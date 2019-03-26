@@ -22,7 +22,9 @@ case class AgentDetails
 (
   eoriDetails: EORIDetails,
   letterOfAuthorisation: Option[Attachment] = None
-)
+) {
+  def anonymize: AgentDetails = copy(eoriDetails = eoriDetails.anonymize)
+}
 
 object AgentDetails {
   implicit val outboundFormat: OFormat[AgentDetails] = Json.format[AgentDetails]

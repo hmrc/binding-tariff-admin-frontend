@@ -14,22 +14,10 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
+package uk.gov.hmrc.bindingtariffadminfrontend.model
 
-import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize._
 
-case class Contact
-(
-  name: String,
-  email: String,
-  phone: Option[String]
-) {
-  def anonymize: Contact = {
-    this.copy(name = anonymized, email = anonymized, phone = this.phone.map(anonymizing))
-  }
-}
-
-object Contact {
-  implicit val format: OFormat[Contact] = Json.format[Contact]
+object Anonymize {
+  val anonymized: String = "???"
+  def anonymizing: Any => String = _ => anonymized
 }

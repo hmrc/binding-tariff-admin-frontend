@@ -35,7 +35,9 @@ case class Case
   decision: Option[Decision] = None,
   attachments: Seq[Attachment],
   keywords: Set[String]
-)
+) {
+  def anonymize: Case = this.copy(application = this.application.anonymize)
+}
 
 object Case {
   implicit val format: OFormat[Case] = Json.format[Case]

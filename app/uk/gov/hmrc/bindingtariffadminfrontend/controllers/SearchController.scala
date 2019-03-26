@@ -44,9 +44,9 @@ class SearchController @Inject()(authenticatedAction: AuthenticatedAction,
       errors =>
         Future.successful(Ok(search(errors, pagination))),
 
-      result =>
+      query =>
         for {
-          cases <- monitorService.getCases(result, pagination)
+          cases <- monitorService.getCases(query, pagination)
 
           attachmentIds: Set[String] = cases.results
             .flatMap(_.attachments)
@@ -62,7 +62,7 @@ class SearchController @Inject()(authenticatedAction: AuthenticatedAction,
               .toSet
 
           files <- monitorService.getFiles(FileSearch(ids = Some(attachmentIds ++ agentLetterIds)), Pagination.max)
-        } yield Ok(search(form.fill(result), pagination, cases, files))
+        } yield Ok(search(form.fill(query), pagination, cases.map(_.anonymize), files))
     )
   }
 

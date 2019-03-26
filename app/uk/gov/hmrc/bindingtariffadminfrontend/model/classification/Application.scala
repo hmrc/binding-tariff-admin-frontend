@@ -19,6 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 import java.time.ZonedDateTime
 
 import play.api.libs.json.{Format, Json, OFormat}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ApplicationType.ApplicationType
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.LiabilityStatus.LiabilityStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
@@ -27,6 +28,8 @@ import uk.gov.hmrc.play.json.Union
 
 sealed trait Application {
   val `type`: ApplicationType
+
+  def anonymize: Application
 }
 
 object Application {
@@ -54,6 +57,14 @@ case class BTIApplication
   sampleToBeReturned: Boolean = false
 ) extends Application {
   override val `type`: ApplicationType.Value = ApplicationType.BTI
+
+  override def anonymize: Application = this.copy(
+    holder = holder.anonymize,
+    contact = contact.anonymize,
+    agent = agent.map(_.anonymize),
+    confidentialInformation = confidentialInformation.map(anonymizing)
+  )
+
 }
 
 object BTIApplication {
@@ -70,6 +81,11 @@ case class LiabilityOrder
   endDate: ZonedDateTime
 ) extends Application {
   override val `type`: ApplicationType.Value = ApplicationType.LIABILITY_ORDER
+
+  override def anonymize: Application = this.copy(
+    holder = holder.anonymize,
+    contact = contact.anonymize
+  )
 }
 
 object LiabilityOrder {

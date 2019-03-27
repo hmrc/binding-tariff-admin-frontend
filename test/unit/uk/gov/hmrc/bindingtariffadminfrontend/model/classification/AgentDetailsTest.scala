@@ -16,28 +16,27 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize._
+import org.mockito.BDDMockito._
+import org.scalatest.mockito.MockitoSugar
+import uk.gov.hmrc.play.test.UnitSpec
 
-case class EORIDetails
-(
-  eori: String,
-  businessName: String,
-  addressLine1: String,
-  addressLine2: String,
-  addressLine3: String,
-  postcode: String,
-  country: String
-) {
-  def anonymize: EORIDetails = this.copy(
-    addressLine1 = anonymized,
-    addressLine2 = anonymized,
-    addressLine3 = anonymized,
-    postcode = anonymized,
-    country = anonymized
-  )
-}
+class AgentDetailsTest extends UnitSpec with MockitoSugar {
 
-object EORIDetails {
-  implicit val format: OFormat[EORIDetails] = Json.format[EORIDetails]
+  "Agent Details" should {
+    val eori = mock[EORIDetails]
+    val anonymizedEori = mock[EORIDetails]
+    val attachment = mock[Attachment]
+
+    "Anonymize" in {
+      given(eori.anonymize) willReturn anonymizedEori
+
+      AgentDetails(
+        eori,
+        Some(attachment)
+      ).anonymize shouldBe AgentDetails(
+        anonymizedEori,
+        Some(attachment)
+      )
+    }
+  }
 }

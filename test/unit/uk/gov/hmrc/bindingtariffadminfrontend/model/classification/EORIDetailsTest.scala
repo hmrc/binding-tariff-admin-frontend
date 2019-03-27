@@ -16,28 +16,31 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize._
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
+import uk.gov.hmrc.play.test.UnitSpec
 
-case class EORIDetails
-(
-  eori: String,
-  businessName: String,
-  addressLine1: String,
-  addressLine2: String,
-  addressLine3: String,
-  postcode: String,
-  country: String
-) {
-  def anonymize: EORIDetails = this.copy(
-    addressLine1 = anonymized,
-    addressLine2 = anonymized,
-    addressLine3 = anonymized,
-    postcode = anonymized,
-    country = anonymized
-  )
-}
+class EORIDetailsTest extends UnitSpec {
 
-object EORIDetails {
-  implicit val format: OFormat[EORIDetails] = Json.format[EORIDetails]
+  "EORI Details" should {
+    "Anonymize" in {
+      EORIDetails(
+        "eori",
+        "business",
+        "address 1",
+        "address 2",
+        "address 3",
+        "postcode",
+        "country"
+      ).anonymize shouldBe EORIDetails(
+        "eori",
+        "business",
+        Anonymize.anonymized,
+        Anonymize.anonymized,
+        Anonymize.anonymized,
+        Anonymize.anonymized,
+        Anonymize.anonymized
+      )
+    }
+  }
+
 }

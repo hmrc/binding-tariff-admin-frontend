@@ -21,7 +21,7 @@ import play.api.mvc.QueryStringBindable
 case class Pagination
 (
   page: Int = 1,
-  pageSize: Int = 20
+  pageSize: Int = 10
 )
 
 object Pagination {

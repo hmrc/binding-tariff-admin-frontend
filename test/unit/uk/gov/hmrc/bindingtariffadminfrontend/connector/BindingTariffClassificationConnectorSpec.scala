@@ -73,7 +73,7 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
   }
 
   "Connector 'Create Event'" should {
-    val event = Event(Note("note"), Operator("id"), Instant.now())
+    val event = Event(Note("note"), "ref",  Operator("id"), Instant.now())
     val requestJSON = Json.toJson(event).toString()
 
     "Create valid event" in {
@@ -114,10 +114,10 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
   }
 
   "Connector 'GET Events'" should {
-    val event = Event(Note("note"), Operator("id"), Instant.now())
+    val event = Event(Note("note"), "ref", Operator("id"), Instant.now())
 
     "Get valid events" in {
-      val responseJSON = Json.toJson(Seq(event)).toString()
+      val responseJSON = Json.toJson(Paged(Seq(event))).toString()
 
       stubFor(get(urlEqualTo("/cases/ref/events"))
         .willReturn(aResponse()
@@ -126,7 +126,7 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
         )
       )
 
-      await(connector.getEvents("ref")) shouldBe Seq(event)
+      await(connector.getEvents("ref", Pagination())) shouldBe Paged(Seq(event))
 
       verify(
         getRequestedFor(urlEqualTo("/cases/ref/events"))
@@ -142,7 +142,7 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
       )
 
       intercept[NotFoundException] {
-        await(connector.getEvents("ref"))
+        await(connector.getEvents("ref", Pagination()))
       }
 
       verify(

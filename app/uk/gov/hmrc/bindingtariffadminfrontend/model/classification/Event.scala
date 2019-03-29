@@ -32,6 +32,7 @@ import uk.gov.hmrc.play.json.Union
 case class Event
 (
   details: Details,
+  caseReference: String,
   operator: Operator,
   timestamp: Instant
 )

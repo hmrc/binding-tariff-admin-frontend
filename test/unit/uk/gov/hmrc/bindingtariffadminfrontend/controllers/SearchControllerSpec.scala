@@ -28,7 +28,7 @@ import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch, Event}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.{AdminMonitorService, DataMigrationService}
@@ -69,6 +69,7 @@ class SearchControllerSpec extends WordSpec
     "return 200" in {
       given(service.getCases(any[CaseSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[Case])
       given(service.getFiles(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[FileUploaded])
+      given(service.getEvents(any[Case], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[Event])
 
       val result: Result = await(controller.get(CaseSearch(), Pagination())(FakeRequest()))
       status(result) shouldBe OK

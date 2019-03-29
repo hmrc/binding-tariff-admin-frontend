@@ -36,7 +36,7 @@ import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.{Configuration, Environment}
 import play.filters.csrf.CSRF.{Token, TokenProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigratableCase, MigratedAttachment}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigratableCase, MigratableEvent, MigratedAttachment}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
@@ -114,7 +114,7 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
             cancellation = Some(Cancellation(CancelReason.ANNULLED))
           )),
           attachments = Seq(MigratedAttachment(public = false, "attachment.pdf", None, "2019-01-01")),
-          events =  Seq(Event(Note("Note"), Operator("Event Operator Id",  Some("Event Operator")), "2019-01-01")),
+          events =  Seq(MigratableEvent(Note("Note"), Operator("Event Operator Id",  Some("Event Operator")), "2019-01-01")),
           keywords = Set("Keyword")
         )
       )

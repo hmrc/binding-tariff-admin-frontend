@@ -22,7 +22,7 @@ import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{ApplicationType, BTIApplication, CaseSearch}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{ApplicationType, BTIApplication, CaseSearch, Event}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileSearch
 import uk.gov.hmrc.bindingtariffadminfrontend.service.AdminMonitorService
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.search
@@ -62,7 +62,9 @@ class SearchController @Inject()(authenticatedAction: AuthenticatedAction,
               .toSet
 
           files <- monitorService.getFiles(FileSearch(ids = Some(attachmentIds ++ agentLetterIds)), Pagination.max)
-        } yield Ok(search(form.fill(query), pagination, cases.map(_.anonymize), files))
+
+          events: Seq[Event] <- Future.sequence(cases.results.map(monitorService.getEvents(_, Pagination.max).map(_.results))).map(_.flatten)
+        } yield Ok(search(form.fill(query), pagination, cases.map(_.anonymize), files, events))
     )
   }
 

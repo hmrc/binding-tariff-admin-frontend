@@ -29,7 +29,7 @@ class MigratableCaseTest extends UnitSpec with MockitoSugar {
   private val decision = mock[Decision]
   private val attachment = mock[Attachment]
   private val migratedAttachment = mock[MigratedAttachment]
-  private val event = mock[Event]
+  private val event = mock[MigratableEvent]
 
   "Migratable Case" should {
 

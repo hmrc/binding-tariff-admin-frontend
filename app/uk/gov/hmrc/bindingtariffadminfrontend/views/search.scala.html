@@ -38,7 +38,14 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SortField
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.components.SelectOption
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SortDirection
-@(form: Form[CaseSearch], pager: Pagination, cases: Paged[Case] = Paged.empty[Case], files: Paged[FileUploaded] = Paged.empty[FileUploaded])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Event
+@(
+        form: Form[CaseSearch],
+        pager: Pagination,
+        cases: Paged[Case] = Paged.empty[Case],
+        files: Paged[FileUploaded] = Paged.empty[FileUploaded],
+        events: Seq[Event] = Seq.empty[Event]
+)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
 
@@ -173,6 +180,18 @@
      jsValue = Json.toJson(c),
      containerClass = Some("mt-10")
     )
+   </div>
+
+   @* Events *@
+   <div class="search--events">
+    <p>Events</p>
+    @defining(events.filter(e => e.caseReference == c.reference)) { caseEvents: Seq[Event] =>
+     @json(
+      id = s"search-result-case_$caseIndex-events",
+      jsValue = Json.toJson(caseEvents),
+      containerClass = Some("mt-10")
+     )
+    }
    </div>
 
    @* Attachments *@

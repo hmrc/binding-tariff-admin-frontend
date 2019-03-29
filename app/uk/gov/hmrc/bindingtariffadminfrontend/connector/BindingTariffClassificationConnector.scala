@@ -39,9 +39,9 @@ class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, c
     client.POST[Event, Event](url = url, body = event)
   }
 
-  def getEvents(ref: String)(implicit hc: HeaderCarrier): Future[Seq[Event]] = {
+  def getEvents(ref: String, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Event]] = {
     val url = s"${configuration.classificationBackendUrl}/cases/$ref/events"
-    client.GET[Seq[Event]](url = url)
+    client.GET[Paged[Event]](url = url)
   }
 
   def getCase(ref: String)(implicit hc: HeaderCarrier): Future[Option[Case]] = {

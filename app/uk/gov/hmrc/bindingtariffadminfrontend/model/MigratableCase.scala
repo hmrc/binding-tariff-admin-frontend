@@ -37,7 +37,7 @@ case class MigratableCase
   application: Application,
   decision: Option[Decision] = None,
   attachments: Seq[MigratedAttachment],
-  events: Seq[Event],
+  events: Seq[MigratableEvent],
   keywords: Set[String]
 ) {
   def toCase: Case = {

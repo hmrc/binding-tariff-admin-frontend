@@ -150,10 +150,10 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
   private def createEvents(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
     sequence(
       migration.`case`.events map { event =>
-        caseConnector.createEvent(migration.`case`.reference, event).map(MigrationSuccess(_)) recover withFailure(event)
+        caseConnector.createEvent(migration.`case`.reference, event.toEvent(migration.`case`.reference)).map(_ => MigrationSuccess(event)) recover withFailure(event)
       }
     ) map {
-      case migrations: Seq[MigrationState[Event]] if migrations.exists(_.isFailure) =>
+      case migrations: Seq[MigrationState[MigratableEvent]] if migrations.exists(_.isFailure) =>
         val failedMigrations = migrations.filter(_.isFailure).map(_.asFailure)
         val summaryMessage = s"Failed to migrate ${failedMigrations.size}/${migrations.size} events"
         val failureMessages = failedMigrations.map(f => s"Failed to migrate event [${f.subject.details.`type`}] because [${f.cause.getMessage}]")
@@ -222,7 +222,9 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
 
   private def deleteExistingAttachmentsNotOnTheMigration(existingCase: Option[Case], migration: Migration)
                                                         (implicit hc: HeaderCarrier): Future[Unit] = existingCase match {
-    case None => successful(migration)
+    case None =>
+      successful(())
+
     case Some(c) =>
       val existingFiles = c.attachments
       val existingFileIds = existingFiles.map(_.id).toSet
@@ -244,9 +246,9 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
 
   private def filterOutExistingEvents(existingCase: Option[Case], migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = existingCase match {
     case Some(c) =>
-      caseConnector.getEvents(c.reference) recover withResponse(Seq.empty[Event]) map { existingEvents: Seq[Event] =>
-        val updatedEvents: Seq[Event] = migration.`case`.events
-        val newEvents = updatedEvents.filterNot(existingEvents.contains)
+      caseConnector.getEvents(c.reference, Pagination.max).map(_.results) recover withResponse(Seq.empty[Event]) map { existingEvents: Seq[Event] =>
+        val updatedEvents: Seq[MigratableEvent] = migration.`case`.events
+        val newEvents = updatedEvents.filterNot(me => existingEvents.contains(me.toEvent(migration.`case`.reference)))
         val updatedCase = migration.`case`.copy(events = newEvents)
         migration.copy(updatedCase)
       }

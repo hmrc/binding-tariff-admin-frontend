@@ -286,10 +286,10 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
   "Service 'Process'" should {
     val migratableAttachment = MigratedAttachment(public = true, name = "name", timestamp = Instant.EPOCH)
-    val migratableEvent1 = MigratableEvent(details = Note("note"), operator = Operator("id"), timestamp = Instant.now())
-    val migratedEvent1 = Event(details = Note("note"), caseReference = "1", operator = Operator("id"), timestamp = Instant.now())
-    val migratableEvent2 = MigratableEvent(details = Note("other"), operator = Operator("id"), timestamp = Instant.now())
-    val migratedEvent2 = Event(details = Note("other"), caseReference = "1", operator = Operator("id"), timestamp = Instant.now())
+    val migratableEvent1 = MigratableEvent(details = Note("note"), operator = Operator("id"), timestamp = Instant.MAX)
+    val migratedEvent1 = Event(details = Note("note"), caseReference = "1", operator = Operator("id"), timestamp = Instant.MAX)
+    val migratableEvent2 = MigratableEvent(details = Note("other"), operator = Operator("id"), timestamp = Instant.MAX)
+    val migratedEvent2 = Event(details = Note("other"), caseReference = "1", operator = Operator("id"), timestamp = Instant.MAX)
     val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq.empty, Seq.empty, Set("keyword1", "keyword2"))
     val migratableCaseWithEvents = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq.empty, Seq(migratableEvent1, migratableEvent2), Set("keyword1", "keyword2"))
     val migratableCaseWithAttachments = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(migratableAttachment), Seq.empty, Set("keyword1", "keyword2"))

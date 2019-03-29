@@ -83,7 +83,7 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
         .options(QueryOpts(skipN = (actualPage - 1) * pagination.pageSize, batchSizeN = pagination.pageSize))
         .cursor[Migration]()
         .collect[Seq](pagination.pageSize, Cursor.FailOnError[Seq[Migration]]())
-      count <- collection.count(Some(query))
+      count <- collection.count(Some(filter))
     } yield Paged(result, pagination, count)
   }
 

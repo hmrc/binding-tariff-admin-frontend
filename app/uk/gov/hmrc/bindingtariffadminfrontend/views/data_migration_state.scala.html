@@ -17,9 +17,11 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Migration, MigrationCounts, MigrationStatus}
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{form_button, migration_status_table, pager}
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{form_button, migration_status_table}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
-@(migrations: Seq[Migration], counts: MigrationCounts, page: Int, pageSize: Int, changePage: Int => Call)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.pagination
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.Paged
+@(migrations: Paged[Migration], counts: MigrationCounts, changePage: Int => Call)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
 
@@ -79,13 +81,13 @@
 
 
 
- @migration_status_table(migrations)
+ @migration_status_table(migrations.results)
 
- @pager(
-  page = page,
-  pageSize = pageSize,
-  totalResultCount = counts.total,
-  changePage = changePage
+ @pagination(
+  id = "state-pagination",
+  pager = migrations,
+  onChange = changePage,
+  containerClass = Some("mt-30")
  )
 
  @if(counts.hasUnprocessed) {

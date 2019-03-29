@@ -41,7 +41,7 @@ class DataMigrationStateController @Inject()(authenticatedAction: AuthenticatedA
     for {
       counts <- service.counts
       state <- service.getState(status.flatMap(MigrationStatus(_)), Pagination(page, appConfig.pageSize))
-      view = data_migration_state(state.results, counts, page, appConfig.pageSize, routes.DataMigrationStateController.get(_, status))
+      view = data_migration_state(state, counts, routes.DataMigrationStateController.get(_, status))
     } yield Ok(view)
   }
 

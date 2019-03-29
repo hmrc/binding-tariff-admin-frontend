@@ -12,7 +12,7 @@ object AppDependencies {
     "uk.gov.hmrc"                 %% "play-json-union-formatter"  % "1.5.0",
     "uk.gov.hmrc"                 %% "play-reactivemongo"         % "6.2.0",
     "uk.gov.hmrc"                 %% "play-scheduling"            % "5.4.0",
-    "uk.gov.hmrc"                 %% "play-ui"                    % "7.33.0-play-25"
+    "uk.gov.hmrc"                 %% "play-ui"                    % "7.37.0-play-25"
   )
 
   private lazy val scope = "test, it"

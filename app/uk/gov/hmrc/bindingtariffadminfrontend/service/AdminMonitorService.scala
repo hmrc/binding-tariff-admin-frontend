@@ -19,7 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 import javax.inject.Inject
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch, Event}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch, Event, EventSearch}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -46,8 +46,8 @@ class AdminMonitorService @Inject()(bindingTariffClassificationConnector: Bindin
     bindingTariffClassificationConnector.getCases(search, pagination)
   }
 
-  def getEvents(c: Case, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Event]] = {
-    bindingTariffClassificationConnector.getEvents(c.reference, pagination)
+  def getEvents(search: EventSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Event]] = {
+    bindingTariffClassificationConnector.getEvents(search, pagination)
   }
 
   def getFiles(search: FileSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[FileUploaded]] = {

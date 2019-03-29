@@ -152,6 +152,45 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
     }
   }
 
+  "Connector 'Search Events'" should {
+    val event = Event(Note("note"), "ref", Operator("id"), Instant.now())
+
+    "Get valid events" in {
+      val responseJSON = Json.toJson(Paged(Seq(event))).toString()
+
+      stubFor(get(urlEqualTo("/events?page=1&page_size=2"))
+        .willReturn(aResponse()
+          .withStatus(HttpStatus.SC_OK)
+          .withBody(responseJSON)
+        )
+      )
+
+      await(connector.getEvents(EventSearch(), Pagination(1, 2))) shouldBe Paged(Seq(event))
+
+      verify(
+        getRequestedFor(urlEqualTo("/events?page=1&page_size=2"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
+
+    "Return failed for 404" in {
+      stubFor(get(urlEqualTo("/events?page=1&page_size=2"))
+        .willReturn(aResponse()
+          .withStatus(HttpStatus.SC_NOT_FOUND)
+        )
+      )
+
+      intercept[NotFoundException] {
+        await(connector.getEvents(EventSearch(), Pagination(1, 2)))
+      }
+
+      verify(
+        getRequestedFor(urlEqualTo("/events?page=1&page_size=2"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
+  }
+
   "Connector 'GET Case'" should {
     val ref = Cases.btiCaseExample.reference
 

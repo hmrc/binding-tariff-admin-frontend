@@ -43,7 +43,7 @@
         form: Form[CaseSearch],
         pager: Pagination,
         cases: Paged[Case] = Paged.empty[Case],
-        files: Paged[FileUploaded] = Paged.empty[FileUploaded],
+        files: Seq[FileUploaded] = Seq.empty[FileUploaded],
         events: Seq[Event] = Seq.empty[Event]
 )(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
@@ -198,7 +198,7 @@
    @if(c.attachments.nonEmpty) {
     <div class="search--files">
      <p>Attachments in the File Store</p>
-     @defining(files.results.filter(f => c.attachments.exists(a => a.id == f.id))) { filesFound: Seq[FileUploaded] =>
+     @defining(files.filter(f => c.attachments.exists(a => a.id == f.id))) { filesFound: Seq[FileUploaded] =>
        @json(
         id = s"search-result-case_$caseIndex-files",
         jsValue = Json.toJson(filesFound),
@@ -224,7 +224,7 @@
     @defining(c.application.asInstanceOf[BTIApplication].agent.flatMap(_.letterOfAuthorisation).get) { letter: Attachment =>
      <div class="search--letter_of_authority">
       <p>Letter of Authority in the File Store</p>
-      @defining(files.results.find(f => f.id == letter.id)) { file: Option[FileUploaded] =>
+      @defining(files.find(f => f.id == letter.id)) { file: Option[FileUploaded] =>
        @if(file.nonEmpty) {
         @json(
          id = s"search-result-case_$caseIndex-files",

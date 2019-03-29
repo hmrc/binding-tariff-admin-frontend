@@ -20,7 +20,7 @@ import com.google.inject.Inject
 import javax.inject.Singleton
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch, Event}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch, Event, EventSearch}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -41,6 +41,12 @@ class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, c
 
   def getEvents(ref: String, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Event]] = {
     val url = s"${configuration.classificationBackendUrl}/cases/$ref/events"
+    client.GET[Paged[Event]](url = url)
+  }
+
+  def getEvents(search: EventSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Event]] = {
+    val queryParam = Seq(Pagination.bindable.unbind("", pagination), EventSearch.bindable.unbind("", search)).filter(_.nonEmpty).mkString("&")
+    val url = s"${configuration.classificationBackendUrl}/events?$queryParam"
     client.GET[Paged[Event]](url = url)
   }
 

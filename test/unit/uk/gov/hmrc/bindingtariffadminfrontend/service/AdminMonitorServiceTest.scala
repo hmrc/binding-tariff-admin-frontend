@@ -23,7 +23,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch, Event, EventSearch}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
@@ -70,6 +70,13 @@ class AdminMonitorServiceTest extends UnitSpec with MockitoSugar with BeforeAndA
     "Delegate to connector" in {
       given(fileConnector.find(refEq(FileSearch()), refEq(Pagination()))(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[FileUploaded])
       await(service.getFiles(FileSearch(), Pagination())) shouldBe Paged.empty[FileUploaded]
+    }
+  }
+
+  "Get Events" should {
+    "Delegate to connector" in {
+      given(btcConnector.getEvents(refEq(EventSearch()), refEq(Pagination()))(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[Event])
+      await(service.getEvents(EventSearch(), Pagination())) shouldBe Paged.empty[Event]
     }
   }
 

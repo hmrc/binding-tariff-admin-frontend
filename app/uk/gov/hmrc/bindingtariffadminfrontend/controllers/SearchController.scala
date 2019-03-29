@@ -21,9 +21,9 @@ import play.api.data.Form
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{ApplicationType, BTIApplication, CaseSearch, Event}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileSearch
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.AdminMonitorService
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.search
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
@@ -46,7 +46,7 @@ class SearchController @Inject()(authenticatedAction: AuthenticatedAction,
 
       query =>
         for {
-          cases <- monitorService.getCases(query, pagination)
+          cases: Paged[Case] <- monitorService.getCases(query, pagination)
 
           attachmentIds: Set[String] = cases.results
             .flatMap(_.attachments)
@@ -61,10 +61,12 @@ class SearchController @Inject()(authenticatedAction: AuthenticatedAction,
               .map(_.id)
               .toSet
 
-          files <- monitorService.getFiles(FileSearch(ids = Some(attachmentIds ++ agentLetterIds)), Pagination.max)
+          fileSearch = FileSearch(ids = Some(attachmentIds ++ agentLetterIds))
+          files: Paged[FileUploaded] <- if(cases.nonEmpty) monitorService.getFiles(fileSearch, Pagination.max) else Future.successful(Paged.empty[FileUploaded])
 
-          events: Seq[Event] <- Future.sequence(cases.results.map(monitorService.getEvents(_, Pagination.max).map(_.results))).map(_.flatten)
-        } yield Ok(search(form.fill(query), pagination, cases.map(_.anonymize), files, events))
+          eventSearch = EventSearch(Some(cases.results.map(_.reference).toSet))
+          events: Paged[Event] <- if(cases.nonEmpty) monitorService.getEvents(eventSearch, Pagination.max) else Future.successful(Paged.empty[Event])
+        } yield Ok(search(form.fill(query), pagination, cases.map(_.anonymize), files.results, events.results))
     )
   }
 

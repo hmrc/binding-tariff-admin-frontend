@@ -22,8 +22,8 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import org.apache.http.HttpStatus
 import play.api.http.Status
 import play.api.libs.json.Json
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{Cases, Paged, Pagination}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{Cases, Paged, Pagination}
 import uk.gov.hmrc.http.{NotFoundException, Upstream5xxResponse}
 
 class BindingTariffClassificationConnectorSpec extends ConnectorTest {
@@ -306,6 +306,25 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
 
       verify(
         deleteRequestedFor(urlEqualTo("/events"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
+  }
+
+  "Connector Run Days Elapsed" should {
+    "PUT to the Case Store" in {
+      stubFor(
+        put("/scheduler/days-elapsed")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.ACCEPTED)
+          )
+      )
+
+      await(connector.runDaysElapsed)
+
+      verify(
+        putRequestedFor(urlEqualTo("/scheduler/days-elapsed"))
           .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }

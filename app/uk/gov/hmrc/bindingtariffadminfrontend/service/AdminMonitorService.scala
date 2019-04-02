@@ -18,15 +18,16 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 
 import javax.inject.Inject
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.ScheduledJob.ScheduledJob
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch, Event, EventSearch}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination, ScheduledJob}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class AdminMonitorService @Inject()(bindingTariffClassificationConnector: BindingTariffClassificationConnector, fileStoreConnector: FileStoreConnector){
+class AdminMonitorService @Inject()(bindingTariffClassificationConnector: BindingTariffClassificationConnector, fileStoreConnector: FileStoreConnector) {
 
   private val countPagination = Pagination(1, 1)
 
@@ -52,6 +53,14 @@ class AdminMonitorService @Inject()(bindingTariffClassificationConnector: Bindin
 
   def getFiles(search: FileSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[FileUploaded]] = {
     fileStoreConnector.find(search, pagination)
+  }
+
+  def runScheduledJob(job: ScheduledJob)(implicit hc: HeaderCarrier): Future[Unit] = {
+    job match {
+      case ScheduledJob.DAYS_ELAPSED =>
+        bindingTariffClassificationConnector.runDaysElapsed
+      case _ => Future.failed(new IllegalArgumentException(s"Invalid Job [${job.toString}]"))
+    }
   }
 
 }

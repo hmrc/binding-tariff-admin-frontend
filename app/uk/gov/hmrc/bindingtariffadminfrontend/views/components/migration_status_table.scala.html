@@ -14,8 +14,8 @@
  * limitations under the License.
  *@
 
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.{Migration, MigrationStatus}
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.{Migration, MigrationStatus}
 @(migrations: Seq[Migration])(implicit config: AppConfig)
 
 <div>
@@ -29,28 +29,30 @@
   </thead>
   <tbody class="max-height-960 overflow-y">
    @for(migration: Migration <- migrations) {
-    <tr>
-     <td>
+    @defining(migration.`case`.reference) { reference: String =>
+     <tr id="migration_status_table-case_@reference">
+      <td>
       @if(migration.status == MigrationStatus.SUCCESS || migration.status == MigrationStatus.PARTIAL_SUCCESS) {
-       <a href="@{config.internalServiceUrl}/tariff-classification/cases/@{migration.`case`.reference}" target="_blank">@{migration.`case`.reference}</a>
+       <a id="migration_status_table-case_@reference-link" href="@{config.internalServiceUrl}/tariff-classification/cases/@{migration.`case`.reference}" target="_blank">@{migration.`case`.reference}</a>
       } else {
        <span>@{migration.`case`.reference}</span>
       }
-     </td>
-     <td>
-      <strong class="phase-tag @if(migration.status == MigrationStatus.FAILED){phase-tag-red} @if(migration.status == MigrationStatus.SUCCESS){phase-tag-green} @if(migration.status == MigrationStatus.PARTIAL_SUCCESS){phase-tag-orange}">
-      @{migration.status.toString.replaceAll("_", " ")}
-      </strong>
-     </td>
-     <td>
+      </td>
+      <td>
+       <strong id="migration_status_table-case_@reference-state" class="phase-tag @if(migration.status == MigrationStatus.FAILED){phase-tag-red} @if(migration.status == MigrationStatus.SUCCESS){phase-tag-green} @if(migration.status == MigrationStatus.PARTIAL_SUCCESS){phase-tag-orange}">
+       @{migration.status.toString.replaceAll("_", " ")}
+       </strong>
+      </td>
+      <td>
       @for(m <- migration.message) {
        <div>@{m}</div>
       }
-     </td>
-    </tr>
+      </td>
+     </tr>
+    }
    }
    @if(migrations.isEmpty){
-    <tr>
+    <tr id="migration_status_table-empty">
      <td colspan="3">No cases have been migrated</td>
     </tr>
    }

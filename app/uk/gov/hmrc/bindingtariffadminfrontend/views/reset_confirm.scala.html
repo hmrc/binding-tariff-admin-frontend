@@ -16,13 +16,11 @@
 
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.form_button
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Store}
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
-@import views.html.helper.CSRF
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.Store
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.input_checkbox
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
+@import views.html.helper.CSRF
 @(form: Form[Set[Store]])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
@@ -54,7 +52,7 @@
 
   <div>
    <div class="inline-block">
-    <button type="submit" class="button button-warn">I'm Sure, Reset</button>
+    <button id="reset-submit_button" type="submit" class="button button-warn">I'm Sure, Reset</button>
    </div>
    <div class="inline-block">
     <a class="secondary-link" href="@routes.IndexController.get()">Back to safety</a>

@@ -16,19 +16,19 @@
 
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, ScheduledJob}
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.ScheduledJob.ScheduledJob
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, ScheduledJob}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
 @import views.html.helper.CSRF
-@(job: Option[ScheduledJob] = None)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+@(jobRun: Option[ScheduledJob] = None)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
  <a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
 
- <h1 id="index-heading" class="heading-xlarge">Binding Tariff Scheduled Jobs</h1>
+ <h1 id="scheduler-heading" class="heading-xlarge">Binding Tariff Scheduled Jobs</h1>
 
- @if(job.isDefined) {
-  <p>@job.get.toString.replace("_", " ") ran successfully</p>
+ @if(jobRun.isDefined) {
+  <p id="scheduler-confirmation-@jobRun.get">@jobRun.get.toString.replace("_", " ") ran successfully</p>
  }
 
  <h3 class="heading-small">What job do you want to run?</h3>
@@ -39,7 +39,7 @@
   <li>
    @helper.form(action = routes.SchedulerController.post(job)) {
     @CSRF.formField
-    <button class="button" type="submit">@job.toString.replace("_", " ")</button>
+    <button id="scheduler-job-@job" class="button" type="submit">@job.toString.replace("_", " ")</button>
    }
   </li>
  }

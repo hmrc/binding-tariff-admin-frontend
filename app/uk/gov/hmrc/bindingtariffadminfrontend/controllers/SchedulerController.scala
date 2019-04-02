@@ -25,6 +25,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.service.AdminMonitorService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
 @Singleton

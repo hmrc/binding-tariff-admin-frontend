@@ -16,9 +16,10 @@
 
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Store}
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.input_checkbox
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Store}
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.components.CheckOption
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.input_checkbox_group
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
 @import views.html.helper.CSRF
 @(form: Form[Set[Store]])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
@@ -41,14 +42,10 @@
  @helper.form(routes.DataMigrationStateController.resetConfirm()) {
   @CSRF.formField
 
-  @for((store: Store, index: Int) <- Store.values.zipWithIndex) {
-   @input_checkbox(
-    field = form("store[]"),
-    label = store.toString,
-    value = store.toString,
-    checked = !form.hasErrors && form.get.contains(store)
-   )
-  }
+  @input_checkbox_group(
+   field = form("store[]"),
+   options = Store.values.map(s => CheckOption(label = s.toString, value = s.toString, checked = !form.hasErrors && form.get.contains(s)))
+  )
 
   <div>
    <div class="inline-block">

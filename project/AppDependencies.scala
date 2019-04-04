@@ -7,12 +7,12 @@ object AppDependencies {
     "org.apache.httpcomponents"   %  "httpclient"                 % "4.5.7",
     "org.apache.httpcomponents"   %  "httpmime"                   % "4.5.7",
     "io.megl"                     %% "play-json-extra"            % "2.4.3",
-    "uk.gov.hmrc"                 %% "bootstrap-play-25"          % "4.9.0",
+    "uk.gov.hmrc"                 %% "bootstrap-play-25"          % "4.10.0",
     "uk.gov.hmrc"                 %% "govuk-template"             % "5.30.0-play-25",
     "uk.gov.hmrc"                 %% "play-json-union-formatter"  % "1.5.0",
     "uk.gov.hmrc"                 %% "play-reactivemongo"         % "6.2.0",
     "uk.gov.hmrc"                 %% "play-scheduling"            % "5.4.0",
-    "uk.gov.hmrc"                 %% "play-ui"                    % "7.37.0-play-25"
+    "uk.gov.hmrc"                 %% "play-ui"                    % "7.38.0-play-25"
   )
 
   private lazy val scope = "test, it"

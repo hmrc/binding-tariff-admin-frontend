@@ -14,31 +14,16 @@
  * limitations under the License.
  *@
 
+@import play.api.libs.json.Json
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{error_summary, input_file, submit_button}
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{ApplicationType, Attachment, BTIApplication, Case, CaseSearch, Event, SortDirection, SortField}
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Paged, Pagination}
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.components.SelectOption
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{input_select, input_text, json, pagination}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
 @import uk.gov.hmrc.play.views.html.helpers
-@import views.html.helper.CSRF
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Case
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.Paged
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseSearch
-@import play.api.libs.json.Json
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.pagination
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.input_text
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.json
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ApplicationType
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.BTIApplication
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.AgentDetails
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Attachment
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.input_select
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SortField
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.components.SelectOption
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SortDirection
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Event
 @(
         form: Form[CaseSearch],
         pager: Pagination,
@@ -227,7 +212,7 @@
       @defining(files.find(f => f.id == letter.id)) { file: Option[FileUploaded] =>
        @if(file.nonEmpty) {
         @json(
-         id = s"search-result-case_$caseIndex-files",
+         id = s"search-result-case_$caseIndex-letter_of_authority",
          jsValue = Json.toJson(file),
          containerClass = Some("mt-10")
         )

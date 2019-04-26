@@ -151,7 +151,7 @@ object CaseSearch {
       assigneeIdKey -> optional[String](text),
       statusKey -> optional[Set[CaseStatus]](textTransformingToSet(CaseStatus.withName, _.toString)),
       traderNameKey -> optional[String](text),
-      minDecisionEndKey -> optional[Instant](textTransformingTo(Instant.parse(_), _.toString)),
+      minDecisionEndKey -> optional[Instant](textTransformingTo(Instant.parse, _.toString)),
       commodityCodeKey -> optional[String](text),
       decisionDetailsKey -> optional[String](text),
       keywordKey -> optional[Set[String]](textTransformingToSet(identity, identity)),

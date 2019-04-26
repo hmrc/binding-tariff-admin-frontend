@@ -19,8 +19,8 @@ package uk.gov.hmrc.bindingtariffadminfrontend.repository
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.{JsObject, JsString, Json}
-import reactivemongo.api.{Cursor, QueryOpts}
 import reactivemongo.api.indexes.Index
+import reactivemongo.api.{Cursor, QueryOpts}
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
@@ -61,7 +61,8 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
   extends ReactiveRepository[Migration, BSONObjectID](
     collectionName = "CaseMigration",
     mongo = mongoDbProvider.mongo,
-    domainFormat = Migration.format) with MigrationRepository {
+    domainFormat = Migration.Mongo.format) with MigrationRepository {
+  import Migration.Mongo.format
 
   override lazy val indexes: Seq[Index] = Seq(
     createSingleFieldAscendingIndex("case.reference", isUnique = true),

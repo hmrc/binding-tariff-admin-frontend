@@ -27,6 +27,7 @@ case class Case
   status: CaseStatus,
   createdDate: Instant,
   daysElapsed: Long,
+  referredDaysElapsed: Long,
   closedDate: Option[Instant] = None,
   caseBoardsFileNumber: Option[String] = None,
   assignee: Option[Operator] = None,

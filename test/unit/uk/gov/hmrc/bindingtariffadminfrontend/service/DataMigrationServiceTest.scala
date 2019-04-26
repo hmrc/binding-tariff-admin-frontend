@@ -290,13 +290,13 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val migratedEvent1 = Event(details = Note("note"), caseReference = "1", operator = Operator("id"), timestamp = Instant.MAX)
     val migratableEvent2 = MigratableEvent(details = Note("other"), operator = Operator("id"), timestamp = Instant.MAX)
     val migratedEvent2 = Event(details = Note("other"), caseReference = "1", operator = Operator("id"), timestamp = Instant.MAX)
-    val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq.empty, Seq.empty, Set("keyword1", "keyword2"))
-    val migratableCaseWithEvents = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq.empty, Seq(migratableEvent1, migratableEvent2), Set("keyword1", "keyword2"))
-    val migratableCaseWithAttachments = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(migratableAttachment), Seq.empty, Set("keyword1", "keyword2"))
+    val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, 0, None, None, None, None, btiApplicationExample, None, Seq.empty, Seq.empty, Set("keyword1", "keyword2"))
+    val migratableCaseWithEvents = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, 0, None, None, None, None, btiApplicationExample, None, Seq.empty, Seq(migratableEvent1, migratableEvent2), Set("keyword1", "keyword2"))
+    val migratableCaseWithAttachments = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, 0, None, None, None, None, btiApplicationExample, None, Seq(migratableAttachment), Seq.empty, Set("keyword1", "keyword2"))
 
     val attachment = Attachment(id = "name", public = true, timestamp = Instant.EPOCH)
-    val aCase = Case("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq.empty, Set("keyword1", "keyword2"))
-    val aCaseWithAttachments = Case("1", CaseStatus.OPEN, Instant.EPOCH, 0, None, None, None, None, btiApplicationExample, None, Seq(attachment), Set("keyword1", "keyword2"))
+    val aCase = Case("1", CaseStatus.OPEN, Instant.EPOCH, 0, 0, None, None, None, None, btiApplicationExample, None, Seq.empty, Set("keyword1", "keyword2"))
+    val aCaseWithAttachments = Case("1", CaseStatus.OPEN, Instant.EPOCH, 0, 0, None, None, None, None, btiApplicationExample, None, Seq(attachment), Set("keyword1", "keyword2"))
 
     val anUnprocessedMigration = Migration(migratableCase)
     val anUnprocessedMigrationWithAttachments = Migration(migratableCaseWithAttachments)

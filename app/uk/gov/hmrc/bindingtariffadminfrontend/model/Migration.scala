@@ -35,5 +35,13 @@ case class Migration
 }
 
 object Migration {
-  implicit val format: OFormat[Migration] = Json.format[Migration]
+  object Mongo {
+    private implicit val fmt: OFormat[MigratableCase] =  MigratableCase.Mongo.format
+    implicit val format: OFormat[Migration] = Json.format[Migration]
+  }
+
+  object REST {
+    private implicit val fmt: OFormat[MigratableCase] =  MigratableCase.REST.format
+    implicit val format: OFormat[Migration] = Json.format[Migration]
+  }
 }

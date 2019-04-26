@@ -4,6 +4,7 @@
     "status": "CANCELLED",
     "createdDate": "2018-01-01T00:00:00Z",
     "daysElapsed": 1,
+    "referredDaysElapsed": 2,
     "keywords": [
       "Keyword"
     ],

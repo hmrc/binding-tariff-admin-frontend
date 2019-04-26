@@ -20,7 +20,7 @@ import java.io.{BufferedWriter, File, FileWriter}
 import java.time.{Instant, LocalDate, ZoneOffset}
 
 import akka.stream.Materializer
-import org.mockito.{ArgumentCaptor, ArgumentMatchers, Mockito}
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers._
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito._
@@ -36,8 +36,8 @@ import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.{Configuration, Environment}
 import play.filters.csrf.CSRF.{Token, TokenProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigratableCase, MigratableEvent, MigratedAttachment}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigratableCase, MigratableEvent, MigratedAttachment}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
@@ -83,6 +83,7 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
           status = CaseStatus.CANCELLED,
           createdDate = "2018-01-01",
           daysElapsed = 1,
+          referredDaysElapsed = 2,
           closedDate = Some("2018-01-01"),
           caseBoardsFileNumber = Some("Case Boards File Number"),
           assignee = Some(Operator("Assignee Id", Some("Assignee"))),

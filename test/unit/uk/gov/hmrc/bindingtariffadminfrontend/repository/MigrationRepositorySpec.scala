@@ -37,6 +37,8 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
   with MockitoSugar {
   self =>
 
+  import Migration.Mongo.format
+
   private val mongoDbProvider: MongoDbProvider = new MongoDbProvider {
     override val mongo: () => DB = self.mongo
   }

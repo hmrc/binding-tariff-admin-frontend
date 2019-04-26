@@ -49,6 +49,7 @@ class CaseMigrationUploadController @Inject()(authenticatedAction: Authenticated
   }
 
   def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
+    val priority: Boolean = request.body.dataParts.get("priority").exists(_.head.toBoolean)
     request.body.file("file").filter(_.filename.nonEmpty).map(_.ref.file) match {
       case None => successful(Redirect(routes.CaseMigrationUploadController.get()))
       case Some(f: File) =>
@@ -56,7 +57,7 @@ class CaseMigrationUploadController @Inject()(authenticatedAction: Authenticated
         result match {
           case JsError(errs) => successful(Ok(views.html.case_migration_file_error(errs)))
           case JsSuccess(migrations, _) =>
-            service.prepareMigration(migrations).map(_ => Redirect(routes.DataMigrationStateController.get()))
+            service.prepareMigration(migrations, priority).map(_ => Redirect(routes.DataMigrationStateController.get()))
         }
     }
   }

@@ -47,11 +47,12 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     repository.countByStatus
   }
 
-  def prepareMigration(cases: Seq[MigratableCase]): Future[Boolean] = {
+  def prepareMigration(cases: Seq[MigratableCase], priority: Boolean = false)(implicit hc: HeaderCarrier): Future[Boolean] = {
     val migrations = cases.map(Migration(_))
     for {
       _ <- repository.delete(migrations)
       result <- repository.insert(migrations)
+      _ = if(priority) Future.sequence(migrations.map(process(_).flatMap(update))) else Future.successful((): Unit)
     } yield result
   }
 

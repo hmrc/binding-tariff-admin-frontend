@@ -40,6 +40,8 @@
    accept = Some(".json")
   )
 
+  <input id="case_migration_upload-priority" type="hidden" value="false" name="priority"/>
+
   <div>
    @submit_button(label = "Upload")
    <a id="case_migration_upload-continue" class="button button-info" href="@routes.DataMigrationStateController.get()">Continue to Migration Progress</a>

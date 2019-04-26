@@ -100,17 +100,6 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       )
     }
 
-    "Service 'Update'" should {
-      val migration = mock[Migration]
-      val migrationUpdated = mock[Migration]
-
-      "Delegate to Repository" in {
-        given(repository.update(migration)) willReturn Future.successful(Some(migrationUpdated))
-
-        await(service.update(migration)) shouldBe Some(migrationUpdated)
-      }
-    }
-
     def theMigrationsCreated: Seq[Migration] = {
       val captor: ArgumentCaptor[Seq[Migration]] = ArgumentCaptor.forClass(classOf[Seq[Migration]])
       verify(repository).insert(captor.capture())
@@ -121,6 +110,17 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       val captor: ArgumentCaptor[Seq[Migration]] = ArgumentCaptor.forClass(classOf[Seq[Migration]])
       verify(repository).delete(captor.capture())
       captor.getValue
+    }
+  }
+
+  "Service 'Update'" should {
+    val migration = mock[Migration]
+    val migrationUpdated = mock[Migration]
+
+    "Delegate to Repository" in {
+      given(repository.update(migration)) willReturn Future.successful(Some(migrationUpdated))
+
+      await(service.update(migration)) shouldBe Some(migrationUpdated)
     }
   }
 

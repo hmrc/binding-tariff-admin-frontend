@@ -39,6 +39,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigratableCase, MigratableEvent, MigratedAttachment}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.Future
@@ -66,7 +67,7 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
 
   "POST /" should {
     "Prepare Upload and Redirect To Migration State Controller" in {
-      given(migrationService.prepareMigration(any[Seq[MigratableCase]])) willReturn Future.successful(true)
+      given(migrationService.prepareMigration(any[Seq[MigratableCase]], refEq(false))(any[HeaderCarrier])) willReturn Future.successful(true)
 
       val file = TemporaryFile(withJson(fromFile("migration.json")))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
@@ -121,6 +122,19 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
       )
     }
 
+    "Prepare Upload with priority flag" in {
+      given(migrationService.prepareMigration(any[Seq[MigratableCase]], refEq(true))(any[HeaderCarrier])) willReturn Future.successful(true)
+
+      val file = TemporaryFile(withJson(fromFile("migration.json")))
+      val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
+      val form = MultipartFormData[TemporaryFile](dataParts = Map("priority" -> Seq("true")), files = Seq(filePart), badParts = Seq.empty)
+      val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
+
+      val result: Result = await(controller.post(postRequest))
+      status(result) shouldBe SEE_OTHER
+      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
+    }
+
     "return 200 with Json Errors" in {
       val file = TemporaryFile(withJson("[{}]"))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
@@ -156,7 +170,7 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
 
   private def theMigrations: Seq[MigratableCase] = {
     val captor = ArgumentCaptor.forClass(classOf[Seq[MigratableCase]])
-    verify(migrationService).prepareMigration(captor.capture())
+    verify(migrationService).prepareMigration(captor.capture(), any[Boolean])(any[HeaderCarrier])
     captor.getValue
   }
 

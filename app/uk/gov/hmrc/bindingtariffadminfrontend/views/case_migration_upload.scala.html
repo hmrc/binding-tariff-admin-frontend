@@ -17,7 +17,7 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{error_summary, input_file, submit_button}
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{error_summary, input_checkbox, input_file, submit_button}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
 @import uk.gov.hmrc.play.views.html.helpers
 @import views.html.helper.CSRF
@@ -40,7 +40,13 @@
    accept = Some(".json")
   )
 
-  <input id="case_migration_upload-priority" type="hidden" value="false" name="priority"/>
+  @if(request.operator == "test") {
+   @input_checkbox(
+    field = form("priority"),
+    label = "Migrate Synchronously",
+    value = "true"
+   )
+  }
 
   <div>
    @submit_button(label = "Upload")

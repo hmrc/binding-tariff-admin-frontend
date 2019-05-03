@@ -18,4 +18,8 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model
 
 import play.api.mvc.{Request, WrappedRequest}
 
-case class AuthenticatedRequest[A](operator: String, request: Request[A]) extends WrappedRequest[A](request)
+case class AuthenticatedRequest[A]
+(
+  operator: String,
+  request: Request[A]
+) extends WrappedRequest[A](request)

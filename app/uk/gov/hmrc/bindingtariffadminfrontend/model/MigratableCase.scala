@@ -21,6 +21,7 @@ import java.time.Instant
 import play.api.libs.json.{JsObject, Json, OFormat}
 import play.json.extra.{InvariantFormat, Jsonx}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.CaseStatus
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SampleStatus.SampleStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 
 case class MigratableCase
@@ -38,7 +39,8 @@ case class MigratableCase
   decision: Option[Decision] = None,
   attachments: Seq[MigratedAttachment],
   events: Seq[MigratableEvent],
-  keywords: Set[String]
+  keywords: Set[String],
+  sampleStatus: Option[SampleStatus] = None
 ) {
   def toCase: Case = {
     Case(
@@ -54,7 +56,8 @@ case class MigratableCase
       application,
       decision,
       attachments = attachments.map(m => m.asAttachment),
-      keywords = keywords
+      keywords = keywords,
+      sampleStatus = sampleStatus
     )
   }
 }

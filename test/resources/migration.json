@@ -8,6 +8,7 @@
     "keywords": [
       "Keyword"
     ],
+    "sampleStatus": "AWAITING",
     "application": {
       "holder": {
         "eori": "EORI",
@@ -56,7 +57,13 @@
         "reason": "ANNULLED",
         "applicationForExtendedUse": false
       },
-      "appeal": []
+      "appeal": [
+        {
+          "id": "1",
+          "status": "IN_PROGRESS",
+          "type": "REVIEW"
+        }
+      ]
     },
     "events": [
       {

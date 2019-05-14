@@ -16,17 +16,13 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.AppealStatus.AppealStatus
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.AppealType.AppealType
+import play.api.libs.json.Format
+import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 
-case class Appeal
-(
-  id: String,
-  status: AppealStatus,
-  `type`: AppealType
-)
+object AppealType extends Enumeration {
+  type AppealType = Value
+  val REVIEW, APPEAL_TIER_1, APPEAL_TIER_2, COURT_OF_APPEALS, SUPREME_COURT = Value
 
-object Appeal {
-  implicit val outboundFormat: OFormat[Appeal] = Json.format[Appeal]
+  implicit val format: Format[AppealType.Value] = JsonUtil.format(AppealType)
 }
+

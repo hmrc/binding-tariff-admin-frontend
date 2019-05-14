@@ -55,7 +55,8 @@
       "cancellation": {
         "reason": "ANNULLED",
         "applicationForExtendedUse": false
-      }
+      },
+      "appeal": []
     },
     "events": [
       {

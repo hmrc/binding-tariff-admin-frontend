@@ -111,12 +111,13 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
             methodSearch = Some("Method Search"),
             methodCommercialDenomination = Some("Commercial Denomination"),
             methodExclusion = Some("Method Exclusion"),
-            appeal =  Seq.empty,
+            appeal =  Seq(Appeal("1", AppealStatus.IN_PROGRESS, AppealType.REVIEW)),
             cancellation = Some(Cancellation(CancelReason.ANNULLED))
           )),
           attachments = Seq(MigratedAttachment(public = false, "attachment.pdf", None, "2019-01-01")),
           events =  Seq(MigratableEvent(Note("Note"), Operator("Event Operator Id",  Some("Event Operator")), "2019-01-01")),
-          keywords = Set("Keyword")
+          keywords = Set("Keyword"),
+          sampleStatus = Some(SampleStatus.AWAITING)
         )
       )
     }

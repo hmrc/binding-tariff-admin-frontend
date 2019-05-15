@@ -20,6 +20,7 @@ import java.time.Instant
 
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.CaseStatus
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SampleStatus.SampleStatus
 
 case class Case
 (
@@ -35,7 +36,8 @@ case class Case
   application: Application,
   decision: Option[Decision] = None,
   attachments: Seq[Attachment],
-  keywords: Set[String]
+  keywords: Set[String],
+  sampleStatus: Option[SampleStatus] = None
 ) {
   def anonymize: Case = this.copy(application = this.application.anonymize)
 }

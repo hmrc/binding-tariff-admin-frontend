@@ -37,7 +37,7 @@ import play.api.{Configuration, Environment}
 import play.filters.csrf.CSRF.{Token, TokenProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigratableCase, MigratableEvent, MigratedAttachment}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigratableCase, MigratableDecision, MigratableEvent, MigratedAttachment}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
@@ -84,7 +84,7 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
           status = CaseStatus.CANCELLED,
           createdDate = "2018-01-01",
           daysElapsed = 1,
-          referredDaysElapsed = 2,
+          referredDaysElapsed = Some(2),
           closedDate = Some("2018-01-01"),
           caseBoardsFileNumber = Some("Case Boards File Number"),
           assignee = Some(Operator("Assignee Id", Some("Assignee"))),
@@ -102,7 +102,7 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
             knownLegalProceedings = Some("Known Legal Proceedings"),
             envisagedCommodityCode = Some("Envisaged Code")
           ),
-          decision  = Some(Decision(
+          decision  = Some(MigratableDecision(
             bindingCommodityCode = "391990",
             effectiveStartDate = Some("2018-01-01"),
             effectiveEndDate = Some("2021-01-01"),
@@ -111,7 +111,7 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
             methodSearch = Some("Method Search"),
             methodCommercialDenomination = Some("Commercial Denomination"),
             methodExclusion = Some("Method Exclusion"),
-            appeal =  Seq(Appeal("1", AppealStatus.IN_PROGRESS, AppealType.REVIEW)),
+            appeal =  Some(Seq(Appeal("1", AppealStatus.IN_PROGRESS, AppealType.REVIEW))),
             cancellation = Some(Cancellation(CancelReason.ANNULLED))
           )),
           attachments = Seq(MigratedAttachment(public = false, "attachment.pdf", None, "2019-01-01")),
@@ -126,6 +126,19 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
       given(migrationService.prepareMigration(any[Seq[MigratableCase]], refEq(true))(any[HeaderCarrier])) willReturn Future.successful(true)
 
       val file = TemporaryFile(withJson(fromFile("migration.json")))
+      val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
+      val form = MultipartFormData[TemporaryFile](dataParts = Map("priority" -> Seq("true")), files = Seq(filePart), badParts = Seq.empty)
+      val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
+
+      val result: Result = await(controller.post(postRequest))
+      status(result) shouldBe SEE_OTHER
+      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
+    }
+
+    "Prepare Upload with missing minimal data" in {
+      given(migrationService.prepareMigration(any[Seq[MigratableCase]], refEq(true))(any[HeaderCarrier])) willReturn Future.successful(true)
+
+      val file = TemporaryFile(withJson(fromFile("migration-minimal.json")))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map("priority" -> Seq("true")), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)

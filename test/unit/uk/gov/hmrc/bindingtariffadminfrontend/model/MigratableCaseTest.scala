@@ -20,6 +20,8 @@ import java.time.Instant
 
 import org.mockito.BDDMockito.given
 import org.scalatest.mockito.MockitoSugar
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.SUPPRESSED
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SampleStatus.DESTROYED
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -27,6 +29,7 @@ class MigratableCaseTest extends UnitSpec with MockitoSugar {
 
   private val application = mock[Application]
   private val decision = mock[Decision]
+  private val migratableDecision = mock[MigratableDecision]
   private val attachment = mock[Attachment]
   private val migratedAttachment = mock[MigratedAttachment]
   private val event = mock[MigratableEvent]
@@ -34,26 +37,28 @@ class MigratableCaseTest extends UnitSpec with MockitoSugar {
   "Migratable Case" should {
 
     given(migratedAttachment.asAttachment) willReturn attachment
+    given(migratableDecision.toDecision) willReturn decision
 
     "Convert To Case" in {
       MigratableCase(
         reference = "ref",
-        status = CaseStatus.SUPPRESSED,
+        status = SUPPRESSED,
         createdDate = Instant.EPOCH,
         daysElapsed = 10,
-        referredDaysElapsed = 20,
+        referredDaysElapsed = Some(20),
         closedDate = Some(Instant.EPOCH),
         caseBoardsFileNumber = Some("case-boards-number"),
         assignee = Some(Operator("operator")),
         queueId = Some("queue"),
         application = application,
-        decision = Some(decision),
+        decision = Some(migratableDecision),
         attachments = Seq(migratedAttachment),
         events = Seq(event),
-        keywords = Set("keyword1", "keyword2")
+        keywords = Set("keyword1", "keyword2"),
+        sampleStatus = Some(DESTROYED)
       ).toCase shouldBe Case(
         "ref",
-        status = CaseStatus.SUPPRESSED,
+        status = SUPPRESSED,
         createdDate = Instant.EPOCH,
         daysElapsed = 10,
         referredDaysElapsed = 20,
@@ -64,7 +69,36 @@ class MigratableCaseTest extends UnitSpec with MockitoSugar {
         application = application,
         decision = Some(decision),
         attachments = Seq(attachment),
+        keywords = Set("keyword1", "keyword2"),
+        sampleStatus = Some(DESTROYED)
+      )
+    }
+
+    "Convert To Case with defaults" in {
+      MigratableCase(
+        reference = "ref",
+        status = SUPPRESSED,
+        createdDate = Instant.EPOCH,
+        daysElapsed = 10,
+        application = application,
+        attachments = Seq(migratedAttachment),
+        events = Seq(event),
         keywords = Set("keyword1", "keyword2")
+      ).toCase shouldBe Case(
+        "ref",
+        status = SUPPRESSED,
+        createdDate = Instant.EPOCH,
+        daysElapsed = 10,
+        referredDaysElapsed = 0,  // Note: type conversion
+        closedDate = None,
+        caseBoardsFileNumber = None,
+        assignee = None,
+        queueId = None,
+        application = application,
+        decision = None,
+        attachments = Seq(attachment),
+        keywords = Set("keyword1", "keyword2"),
+        sampleStatus = None
       )
     }
   }

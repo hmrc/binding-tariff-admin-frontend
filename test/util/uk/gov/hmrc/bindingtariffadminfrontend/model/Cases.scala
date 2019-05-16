@@ -29,10 +29,11 @@ object Cases {
   val contactExample = Contact("name", "email", Some("phone"))
   val btiApplicationExample = BTIApplication(eoriDetailsExample, contactExample, Some(eoriAgentDetailsExample), false, "Laptop", "Personal Computer", None, None, None, None, None, None, false, false)
   val decision = Decision("AD12324FR", Some(Instant.now()), Some(Instant.now().plus(2*365, ChronoUnit.DAYS)), "justification", "good description", None, None, Some("denomination"))
+  val migratableDecision = MigratableDecision("AD12324FR", Some(Instant.now()), Some(Instant.now().plus(2*365, ChronoUnit.DAYS)), "justification", "good description", None, None, Some("denomination"))
   val liabilityApplicationExample = LiabilityOrder(eoriDetailsExample, contactExample, LiabilityStatus.LIVE, "port", "entry number", ZonedDateTime.now())
   val btiCaseExample = Case("1", CaseStatus.OPEN, Instant.now(), 0, 0, None, None, None, None, btiApplicationExample, Some(decision), Seq.empty, Set("k1", "k2"))
 
   val migratedAttachment = MigratedAttachment(public = true, name = "name", operator = Some(Operator("id", Some("operator-name"))), timestamp = Instant.now())
-  val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.now(), 0, 0, None, None, None, None, btiApplicationExample, Some(decision), Seq.empty, Seq.empty, Set("k1", "k2"))
+  val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.now(), 0, Some(0), None, None, None, None, btiApplicationExample, Some(migratableDecision), Seq.empty, Seq.empty, Set("k1", "k2"))
 
 }

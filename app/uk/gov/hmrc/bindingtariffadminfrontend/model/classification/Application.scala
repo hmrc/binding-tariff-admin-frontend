@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import java.time.ZonedDateTime
+import java.time.Instant
 
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize._
@@ -73,17 +73,16 @@ object BTIApplication {
 
 case class LiabilityOrder
 (
-  holder: EORIDetails,
   contact: Contact,
+  goodName: Option[String],
   status: LiabilityStatus,
-  port: String,
-  entryNumber: String,
-  endDate: ZonedDateTime
+  traderName: String,
+  entryDate: Option[Instant] = None,
+  entryNumber: Option[String] = None
 ) extends Application {
   override val `type`: ApplicationType.Value = ApplicationType.LIABILITY_ORDER
 
   override def anonymize: Application = this.copy(
-    holder = holder.anonymize,
     contact = contact.anonymize
   )
 }

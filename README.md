@@ -28,6 +28,10 @@ Run `sm --start BINDING_TARIFF_ADMIN_FRONTEND -r`
 
 Open `http://localhost:9584/binding-tariff-admin`
 
+##### Authentication
+
+This service uses basic authentication. The password expired every year on January 1st and will need refreshing in configuration.
+
 ### Testing
 
 Run `./run_all_tests.sh`

@@ -32,6 +32,8 @@ Open `http://localhost:9584/binding-tariff-admin`
 
 This service uses basic authentication. The password expires every year on January 1st and will need refreshing in configuration.
 
+See [application.conf](https://github.com/hmrc/binding-tariff-admin-frontend/blob/master/conf/application.conf) for more info
+
 ### Testing
 
 Run `./run_all_tests.sh`

@@ -30,7 +30,7 @@ Open `http://localhost:9584/binding-tariff-admin`
 
 ##### Authentication
 
-This service uses basic authentication. The password expired every year on January 1st and will need refreshing in configuration.
+This service uses basic authentication. The password expires every year on January 1st and will need refreshing in configuration.
 
 ### Testing
 

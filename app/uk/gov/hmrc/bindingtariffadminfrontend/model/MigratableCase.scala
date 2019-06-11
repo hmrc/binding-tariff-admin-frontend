@@ -42,6 +42,13 @@ case class MigratableCase
   keywords: Set[String],
   sampleStatus: Option[SampleStatus] = None
 ) {
+
+  def toSample: Sample = {
+    sampleStatus match {
+      case Some(s) => Sample(status = Some(s))
+      case _ => Sample()
+    }
+  }
   def toCase: Case = {
     Case(
       reference,
@@ -57,7 +64,7 @@ case class MigratableCase
       decision.map(_.toDecision),
       attachments = attachments.map(m => m.asAttachment),
       keywords = keywords,
-      sampleStatus = sampleStatus
+      sample = toSample
     )
   }
 }

@@ -16,7 +16,7 @@ The Admin Front end Service for the Binding Tariff Suite of Applications
 2) Run the backend `sm --start BINDING_TARIFF_CLASSIFICATION -r`
 3) Run the filestore `sm --start BINDING_TARIFF_FILESTORE -r`
 
-Finally Run `sbt run` to boot the app
+Finally Run `sbt "run 9584"` to boot the app
 
 Open `http://localhost:9584/binding-tariff-admin-frontend`
  

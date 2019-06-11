@@ -70,7 +70,7 @@ class MigratableCaseTest extends UnitSpec with MockitoSugar {
         decision = Some(decision),
         attachments = Seq(attachment),
         keywords = Set("keyword1", "keyword2"),
-        sampleStatus = Some(DESTROYED)
+        sample = Sample(status = Some(DESTROYED))
       )
     }
 
@@ -98,7 +98,7 @@ class MigratableCaseTest extends UnitSpec with MockitoSugar {
         decision = None,
         attachments = Seq(attachment),
         keywords = Set("keyword1", "keyword2"),
-        sampleStatus = None
+        sample = Sample()
       )
     }
   }

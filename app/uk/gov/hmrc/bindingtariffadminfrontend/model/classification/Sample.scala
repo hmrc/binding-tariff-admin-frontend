@@ -16,8 +16,20 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import play.api.libs.json.Format
+import play.api.libs.json.{Format, Json, OFormat}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SampleStatus.SampleStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
+
+case class Sample
+(
+  status: Option[SampleStatus] = None,
+  requestedBy: Option[Operator] = None,
+  returnStatus: Option[String] = None
+)
+
+object Sample {
+  implicit val format: OFormat[Sample] = Json.format[Sample]
+}
 
 object SampleStatus extends Enumeration {
   type SampleStatus = Value
@@ -25,3 +37,4 @@ object SampleStatus extends Enumeration {
   RETURNED_PORT_OFFICER, RETURNED_COURIER, DESTROYED = Value
   implicit val format: Format[SampleStatus.Value] = JsonUtil.format(SampleStatus)
 }
+

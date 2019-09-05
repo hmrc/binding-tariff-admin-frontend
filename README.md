@@ -12,7 +12,7 @@ The Admin Front end Service for the Binding Tariff Suite of Applications
 
 ##### Starting the application:
  
-1) Run All Dependent Applications `sm --start DIGITAL_TARIFF_DEPS -r`
+1) Run All Dependent Applications `sm --start DIGITAL_TARIFFS_DEPS -r`
 2) Run the backend `sm --start BINDING_TARIFF_CLASSIFICATION -r`
 3) Run the filestore `sm --start BINDING_TARIFF_FILESTORE -r`
 

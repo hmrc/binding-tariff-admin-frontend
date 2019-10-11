@@ -17,6 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.repository
 
 import com.google.inject.ImplementedBy
+import play.api.Logger
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.{JsObject, JsString, Json}
 import reactivemongo.api.indexes.Index

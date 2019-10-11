@@ -18,6 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 
 import javax.inject.Inject
 import play.api.Logger
+import scala.util.{Failure, Success}
 import play.api.libs.Files.TemporaryFile
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
@@ -51,7 +52,15 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     val migrations = cases.map(Migration(_))
     for {
       _ <- repository.delete(migrations)
-      result <- repository.insert(migrations)
+      result <- {
+        val a = repository.insert(migrations)
+        a onComplete{
+          case Success(value) => Logger.info("Success :::: ")
+          case Failure(exception) => Logger.error("Failed case for future ::::::: " + exception)
+        }
+        a
+      }
+
       _ <- if(priority) Future.sequence(migrations.map(process(_).flatMap(update))) else Future.successful((): Unit)
     } yield result
   }

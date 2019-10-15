@@ -18,8 +18,10 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 
 import javax.inject.Inject
 import play.api.Logger
+
 import scala.util.{Failure, Success}
 import play.api.libs.Files.TemporaryFile
+import reactivemongo.core.errors.GenericDriverException
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
@@ -56,7 +58,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
         val a = repository.insert(migrations)
         a onComplete{
           case Success(value) => Logger.info("Success :::: ")
-          case Failure(exception) => Logger.error("Failed case for future ::::::: " + exception)
+          case Failure(exception: GenericDriverException) => Logger.error("Failed case for future ::::::: " + exception.message)
         }
         a
       }

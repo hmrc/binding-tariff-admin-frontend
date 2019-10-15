@@ -135,10 +135,49 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
     }
 
-    "Prepare Upload with missing minimal data" in {
+    "Prepare Upload with minimal data" in {
       given(migrationService.prepareMigration(any[Seq[MigratableCase]], refEq(true))(any[HeaderCarrier])) willReturn Future.successful(true)
 
       val file = TemporaryFile(withJson(fromFile("migration-minimal.json")))
+      val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
+      val form = MultipartFormData[TemporaryFile](dataParts = Map("priority" -> Seq("true")), files = Seq(filePart), badParts = Seq.empty)
+      val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
+
+      val result: Result = await(controller.post(postRequest))
+      status(result) shouldBe SEE_OTHER
+      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
+    }
+
+    "Prepare Upload with minimal data and a single appeal field" in {
+      given(migrationService.prepareMigration(any[Seq[MigratableCase]], refEq(true))(any[HeaderCarrier])) willReturn Future.successful(true)
+
+      val file = TemporaryFile(withJson(fromFile("migration-minimal-single-appeal-field.json")))
+      val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
+      val form = MultipartFormData[TemporaryFile](dataParts = Map("priority" -> Seq("true")), files = Seq(filePart), badParts = Seq.empty)
+      val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
+
+      val result: Result = await(controller.post(postRequest))
+      status(result) shouldBe SEE_OTHER
+      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
+    }
+
+    "Prepare Upload with minimal data and all appeal fields" in {
+      given(migrationService.prepareMigration(any[Seq[MigratableCase]], refEq(true))(any[HeaderCarrier])) willReturn Future.successful(true)
+
+      val file = TemporaryFile(withJson(fromFile("migration-minimal-all-appeal-fields.json")))
+      val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
+      val form = MultipartFormData[TemporaryFile](dataParts = Map("priority" -> Seq("true")), files = Seq(filePart), badParts = Seq.empty)
+      val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
+
+      val result: Result = await(controller.post(postRequest))
+      status(result) shouldBe SEE_OTHER
+      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
+    }
+
+    "Prepare Upload with minimal data with multiple appeals" in {
+      given(migrationService.prepareMigration(any[Seq[MigratableCase]], refEq(true))(any[HeaderCarrier])) willReturn Future.successful(true)
+
+      val file = TemporaryFile(withJson(fromFile("migration-minimal-all-appeal-fields-multiple.json")))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map("priority" -> Seq("true")), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)

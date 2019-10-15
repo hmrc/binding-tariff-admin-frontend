@@ -111,7 +111,9 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
 
   override def insert(c: Seq[Migration]): Future[Boolean] = {
     val producers = c.map(implicitly[collection.ImplicitlyDocumentProducer](_))
-    collection.bulkInsert(ordered = false)(producers: _*).map{a =>
+    val x = collection.bulkInsert(ordered = false)(producers: _*)
+
+      x.map{a =>
       Logger.error("BTI mongo error message ::::::: " + a.errmsg)
       a.ok
     }

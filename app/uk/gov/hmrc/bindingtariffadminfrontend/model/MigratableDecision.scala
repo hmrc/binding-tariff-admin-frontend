@@ -18,7 +18,9 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model
 
 import java.time.Instant
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.functional.syntax._
+import play.api.libs.json.Reads._
+import play.api.libs.json._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Appeal, Cancellation, Decision}
 
 case class MigratableDecision
@@ -51,5 +53,19 @@ case class MigratableDecision
 }
 
 object MigratableDecision {
-  implicit val format: OFormat[MigratableDecision] = Json.format[MigratableDecision]
+
+  implicit val reads: Reads[MigratableDecision] = {
+    ((JsPath \ "bindingCommodityCode").read[String] and
+      (JsPath \ "effectiveStartDate").readNullable[Instant] and
+      (JsPath \ "effectiveEndDate").readNullable[Instant] and
+      (JsPath \ "justification").read[String] and
+      (JsPath \ "goodsDescription").read[String] and
+      (JsPath \ "methodSearch").readNullable[String] and
+      (JsPath \ "methodCommercialDenomination").readNullable[String] and
+      (JsPath \ "methodExclusion").readNullable[String] and
+      ((JsPath \ "appeal").readNullable[Seq[Appeal]] or (JsPath \ "appeal").readNullable[Appeal].map(_.map(Seq(_)))) and
+      (JsPath \ "cancellation").readNullable[Cancellation]) (MigratableDecision.apply _)
+  }
+
+  implicit val writes: Writes[MigratableDecision] = Json.writes[MigratableDecision]
 }

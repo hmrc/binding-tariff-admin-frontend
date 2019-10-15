@@ -16,7 +16,8 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{JsPath, Reads, Writes, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.AppealStatus.AppealStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.AppealType.AppealType
 
@@ -28,5 +29,13 @@ case class Appeal
 )
 
 object Appeal {
-  implicit val outboundFormat: OFormat[Appeal] = Json.format[Appeal]
+  //implicit val outboundFormat: OFormat[Appeal] = Json.format[Appeal]
+
+  implicit val reads: Reads[Appeal] = {
+    ((JsPath \ "id").readNullable[String].map(_.getOrElse("default id")) and
+      (JsPath \ "status").readNullable[AppealStatus].map(_.getOrElse(AppealStatus.IN_PROGRESS)) and
+      (JsPath \ "type").readNullable[AppealType].map(_.getOrElse(AppealType.REVIEW))) (Appeal.apply _)
+  }
+
+  implicit val writes: Writes[Appeal] = Json.writes[Appeal]
 }

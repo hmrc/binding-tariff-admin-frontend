@@ -1,0 +1,85 @@
+[
+  {
+    "reference": "reference",
+    "status": "CANCELLED",
+    "createdDate": "2018-01-01T00:00:00Z",
+    "daysElapsed": 1,
+    "keywords": [
+      "Keyword"
+    ],
+    "sampleStatus": "AWAITING",
+    "application": {
+      "holder": {
+        "eori": "EORI",
+        "businessName": "Business Name",
+        "addressLine1": "Line 1",
+        "addressLine2": "Line 2",
+        "addressLine3": "Line 3",
+        "postcode": "Postcode",
+        "country": "GB"
+      },
+      "contact": {
+        "name": "Contact Name",
+        "email": "contact.name@host.com",
+        "phone": "Phone"
+      },
+      "offline": false,
+      "goodName": "Good Name",
+      "goodDescription": "Good Description",
+      "confidentialInformation": "Confidential Information",
+      "otherInformation": "Other Information",
+      "envisagedCommodityCode": "Envisaged Code",
+      "reissuedBTIReference": "Reissued Reference",
+      "relatedBTIReference": "Related Reference",
+      "knownLegalProceedings": "Known Legal Proceedings",
+      "sampleToBeProvided": false,
+      "sampleToBeReturned": false,
+      "type": "BTI"
+    },
+    "closedDate": "2018-01-01T00:00:00Z",
+    "caseBoardsFileNumber": "Case Boards File Number",
+    "assignee": {
+      "id": "Assignee Id",
+      "name": "Assignee"
+    },
+    "queueId": "1",
+    "decision": {
+      "bindingCommodityCode": "391990",
+      "effectiveStartDate": "2018-01-01T00:00:00Z",
+      "effectiveEndDate": "2021-01-01T00:00:00Z",
+      "justification": "Justification",
+      "goodsDescription": "Decision Good Description",
+      "methodSearch": "Method Search",
+      "methodCommercialDenomination": "Commercial Denomination",
+      "methodExclusion": "Method Exclusion",
+      "cancellation": {
+        "reason": "ANNULLED",
+        "applicationForExtendedUse": false
+      },
+      "appeal" : [{
+        "status": "IN_PROGRESS"
+      }]
+    },
+    "events": [
+      {
+        "details": {
+          "comment": "Note",
+          "type": "NOTE"
+        },
+        "operator": {
+          "id": "Event Operator Id",
+          "name": "Event Operator"
+        },
+        "timestamp": "2019-01-01T00:00:00Z"
+      }
+    ],
+    "attachments": [
+      {
+        "public": false,
+        "name": "attachment.pdf",
+        "mimeType": "application/pdf",
+        "timestamp": "2019-01-01T00:00:00Z"
+      }
+    ]
+  }
+]

@@ -52,7 +52,6 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     for {
       _ <- repository.delete(migrations)
       result <- repository.insert(migrations)
-
       _ <- if(priority) Future.sequence(migrations.map(process(_).flatMap(update))) else Future.successful((): Unit)
     } yield result
   }

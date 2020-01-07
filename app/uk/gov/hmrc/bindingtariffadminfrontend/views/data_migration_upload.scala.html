@@ -1,0 +1,75 @@
+@*
+ * Copyright 2020 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+@import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
+@(form: Form[_])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+
+@main_template(title = "Binding Tariff Admin", bodyClasses = None) {
+ <a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
+
+ <h1 id="data_migration_upload-heading" class="heading-xlarge">Data files upload for migration</h1>
+ <h2 id="data_migration_upload-subheading" class="heading-medium error-summary-heading">Step 1: upload the data for tblCaseRecord, eBTI_Application, tblCaseBTI, tblCaseClassMeth, eBTI_Addresses, tblImages, tblMovement, tblUser, tblSample and tblHistoryCases</h2>
+
+ <div class="form-group">
+  @helper.CSRF.formField
+
+  <div class="mt-15">
+   <div>
+    <label for="files" class="bold">
+     Select *.csv files to migrate
+    </label>
+   </div>
+
+   <input id="files" name="files" type="file" class="mt-15" multiple="" accept="text/csv,.csv,.xls"/>
+  </div>
+
+ </div>
+
+ <div>
+  <button id="upload-button" class="button" type="button" onclick="fileMigration.uploadData('@{routes.DataMigrationUploadController.post().url}')">Upload</button>
+ </div>
+
+ <div class="display-none mt-30" id="progress">
+  <hr/>
+  <p><span id="progress-state">Uploading</span> <span class="total-count">0</span> files</p>
+  <hr/>
+ </div>
+
+ <div id="failed-table-container" class="display-none mt-30">
+  <h3 class="heading-small">
+   Failed Uploads <span class="failed-count">0</span>/<span class="total-count">0</span>
+  </h3>
+  <table id="failed-table">
+  </table>
+ </div>
+
+ <div id="success-table-container" class="display-none mt-30">
+  <h3 class="heading-small">
+   Successful Uploads <span class="success-count" id="success-count">0</span>/<span class="total-count">0</span>
+  </h3>
+  <table id="success-table"></table>
+
+  <div class="mt-30">
+   <a id="data_migration_upload-continue" class="display-none button button-info" href="@routes.CaseMigrationUploadController.get()">Continue to Create Josn</a>
+  </div>
+ </div>
+
+ <script src="@controllers.routes.Assets.at("javascripts/polyfill.js")" type="text/javascript"></script>
+ <script src="@controllers.routes.Assets.at("javascripts/upload.js")" type="text/javascript"></script>
+}

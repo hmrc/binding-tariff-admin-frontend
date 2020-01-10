@@ -19,7 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 import java.time.Instant
 
 import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers.{any, anyString}
+import org.mockito.ArgumentMatchers.{any, anyString, refEq}
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -52,6 +52,42 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   override protected def afterEach(): Unit = {
     super.afterEach()
     reset(repository, caseConnector, fileConnector, rulingConnector, upscanS3Connector)
+  }
+
+  "Service getDataMigrationFilesDetails" should {
+    val aSuccessfullyUploadedFile = FileUploaded("name", "published", "text/plain", None, None)
+
+    "if connector is returning the file metadata " in {
+
+      given(fileConnector.find(refEq("name"))(any[HeaderCarrier])).willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
+
+      val result = await(service.getDataMigrationFilesDetails(List("name")))
+
+      result shouldBe List(aSuccessfullyUploadedFile)
+      verify(fileConnector, atLeastOnce()).find(refEq("name"))(any[HeaderCarrier])
+    }
+
+    "if connector is returning the file metadata for mutiple callas " in {
+
+      given(fileConnector.find(refEq("name1"))(any[HeaderCarrier])).willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
+      given(fileConnector.find(refEq("name2"))(any[HeaderCarrier])).willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
+
+      val result = await(service.getDataMigrationFilesDetails(List("name1", "name2")))
+
+      result shouldBe List(aSuccessfullyUploadedFile, aSuccessfullyUploadedFile)
+      verify(fileConnector, atLeastOnce()).find(refEq("name1"))(any[HeaderCarrier])
+      verify(fileConnector, atLeastOnce()).find(refEq("name2"))(any[HeaderCarrier])
+    }
+
+    "if connector is not returning the file metadata " in {
+
+      given(fileConnector.find(any[String])(any[HeaderCarrier])).willReturn(Future.successful(None))
+
+      intercept[RuntimeException]{
+        await(service.getDataMigrationFilesDetails(List("name")))
+      }
+      verify(fileConnector, atLeastOnce()).find(refEq("name"))(any[HeaderCarrier])
+    }
   }
 
   "Service 'Counts'" should {

@@ -48,6 +48,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
         case None =>  throw new RuntimeException("No data found")
       }
     }
+
     Future.sequence(opts)
   }
 

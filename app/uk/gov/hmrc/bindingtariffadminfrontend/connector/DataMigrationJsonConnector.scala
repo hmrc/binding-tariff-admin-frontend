@@ -29,7 +29,8 @@ import scala.concurrent.Future
 class DataMigrationJsonConnector @Inject()(configuration: AppConfig, http: AuthenticatedHttpClient) {
 
   def generateJson(files: List[FileUploaded])(implicit hc: HeaderCarrier): Future[JsValue] = {
-    http.POST[List[FileUploaded], JsValue](s"${configuration.dataMigrationUrl}/json", files)
-  }
 
+    http.POST[List[FileUploaded], JsValue](
+      s"${configuration.dataMigrationUrl}/spike-binding-tariff-data-migration/json", files)
+  }
 }

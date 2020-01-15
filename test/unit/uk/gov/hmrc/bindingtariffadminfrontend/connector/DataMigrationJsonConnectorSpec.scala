@@ -32,7 +32,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
   "Connector generateJson" should {
     "return the json for the mutiple files" in {
       stubFor(
-        post("/spike-binding-tariff-data-migration/json")
+        post("/binding-tariff-data-migration/json")
           .withHeader("Content-Type", equalTo("application/json"))
           .willReturn(
             aResponse()
@@ -50,13 +50,13 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
                                      |}""".stripMargin)
 
       verify(
-        postRequestedFor(urlEqualTo("/spike-binding-tariff-data-migration/json"))
+        postRequestedFor(urlEqualTo("/binding-tariff-data-migration/json"))
       )
     }
 
     "propagate errors" in {
       stubFor(
-        post("/spike-binding-tariff-data-migration/json")
+        post("/binding-tariff-data-migration/json")
         .willReturn(serverError())
       )
 
@@ -65,7 +65,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
       }
 
       verify(
-        postRequestedFor(urlEqualTo("/spike-binding-tariff-data-migration/json"))
+        postRequestedFor(urlEqualTo("/binding-tariff-data-migration/json"))
       )
     }
   }

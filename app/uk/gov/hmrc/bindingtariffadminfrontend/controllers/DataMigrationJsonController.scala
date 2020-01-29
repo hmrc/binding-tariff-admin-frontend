@@ -51,7 +51,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     res.map { result =>
       Ok(result).withHeaders(
         "Content-Type" -> "application/json",
-        "Content-Disposition" -> s"attachment; filename=Data-Migration${DateTime.now().toString("yyyyMMddHHmmss")}.json"
+        "Content-Disposition" -> s"attachment; filename=BTI-Data-Migration${DateTime.now().toString("yyyyMMddHHmmss")}.json"
       )
     }
   }

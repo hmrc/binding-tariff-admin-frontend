@@ -18,6 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import akka.actor.ActorSystem
 import javax.inject.{Inject, Singleton}
+import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json._
 import play.api.mvc._
@@ -50,7 +51,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     res.map { result =>
       Ok(result).withHeaders(
         "Content-Type" -> "application/json",
-        "Content-Disposition" -> "attachment; filename=datamigration.json"
+        "Content-Disposition" -> s"attachment; filename=Data-Migration${DateTime.now().toString("yyyyMMddHHmmss")}.json"
       )
     }
   }

@@ -19,6 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 import javax.inject.Inject
 import play.api.Logger
 import play.api.libs.Files.TemporaryFile
+import play.api.libs.json.JsValue
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
@@ -38,6 +39,18 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
                                      upscanS3Connector: UpscanS3Connector,
                                      rulingConnector: RulingConnector,
                                      caseConnector: BindingTariffClassificationConnector) {
+
+  def getDataMigrationFilesDetails(fileNames:List[String])(implicit hc: HeaderCarrier): Future[List[FileUploaded]] ={
+
+    val opts =  fileNames.map{ file =>
+      fileConnector.find(file).map{
+        case Some(data) =>  data
+        case None =>  throw new RuntimeException("No data found")
+      }
+    }
+
+    Future.sequence(opts)
+  }
 
   def getState(status: Seq[MigrationStatus], pagination: Pagination): Future[Paged[Migration]] = {
     repository.get(status, pagination)

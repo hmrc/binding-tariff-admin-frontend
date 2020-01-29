@@ -52,5 +52,4 @@ class FileStoreConnector @Inject()(configuration: AppConfig, http: Authenticated
   def publish(id: String)(implicit hc: HeaderCarrier): Future[FileUploaded] = {
     http.POSTEmpty[FileUploaded](s"${configuration.filestoreUrl}/file/$id/publish")
   }
-
 }

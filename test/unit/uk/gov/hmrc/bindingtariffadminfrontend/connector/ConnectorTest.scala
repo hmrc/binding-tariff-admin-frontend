@@ -53,6 +53,7 @@ trait ConnectorTest extends UnitSpec with WithFakeApplication
     when(appConfig.rulingUrl) thenReturn getUrl
     when(appConfig.filestoreUrl) thenReturn getUrl
     when(appConfig.classificationBackendUrl) thenReturn getUrl
+    when(appConfig.dataMigrationUrl) thenReturn getUrl
   }
 
 }

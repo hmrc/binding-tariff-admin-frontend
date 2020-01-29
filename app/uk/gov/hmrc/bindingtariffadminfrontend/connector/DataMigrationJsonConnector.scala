@@ -31,6 +31,6 @@ class DataMigrationJsonConnector @Inject()(configuration: AppConfig, http: Authe
   def generateJson(files: List[FileUploaded])(implicit hc: HeaderCarrier): Future[JsValue] = {
 
     http.POST[List[FileUploaded], JsValue](
-      s"${configuration.dataMigrationUrl}/binding-tariff-data-migration/json", files)
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/json", files)
   }
 }

@@ -28,9 +28,14 @@ import scala.concurrent.Future
 @Singleton
 class DataMigrationJsonConnector @Inject()(configuration: AppConfig, http: AuthenticatedHttpClient) {
 
-  def generateJson(files: List[FileUploaded])(implicit hc: HeaderCarrier): Future[JsValue] = {
+  def sendDataForProcessing(files: List[FileUploaded])(implicit hc: HeaderCarrier): Future[JsValue] = {
 
     http.POST[List[FileUploaded], JsValue](
-      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/json", files)
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/sendDataForProcessing", files)
+  }
+
+  def getBtiJson()(implicit hc: HeaderCarrier): Future[JsValue] = {
+
+    http.GET[JsValue](s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/getBtiJson")
   }
 }

@@ -7,7 +7,8 @@ GET        /                    @uk.gov.hmrc.bindingtariffadminfrontend.controll
 GET        /case-migration      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.CaseMigrationUploadController.get
 POST       /case-migration      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.CaseMigrationUploadController.post
 
-GET        /data-migration-json @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.get
+POST       /data-migration-json @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.sendDataForProcessing
+GET        /data-migration-json @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downLoadFiles
 
 GET        /data-migration      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.get
 POST       /data-migration      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.post

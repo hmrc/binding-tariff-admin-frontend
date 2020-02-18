@@ -14,7 +14,9 @@ object AppDependencies {
     "uk.gov.hmrc"                 %% "play-json-union-formatter"  % "1.5.0",
     "uk.gov.hmrc"                 %% "play-reactivemongo"         % "6.7.0",
     "uk.gov.hmrc"                 %% "play-scheduling"            % "5.4.0",
-    "uk.gov.hmrc"                 %% "play-ui"                    % "7.40.0-play-25"
+    "uk.gov.hmrc"                 %% "play-ui"                    % "7.40.0-play-25",
+    "org.reactivemongo"       %% "reactivemongo-akkastream" % "0.20.1",
+    "com.lightbend.akka"      %% "akka-stream-alpakka-csv"  % "1.1.2"
   )
 
   private lazy val scope = "test, it"

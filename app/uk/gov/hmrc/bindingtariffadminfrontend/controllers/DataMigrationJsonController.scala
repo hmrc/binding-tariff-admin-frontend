@@ -16,11 +16,12 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.alpakka.csv.scaladsl.CsvToMap.toMap
-import akka.stream.scaladsl.{FileIO, Framing, Sink, Source}
+import akka.stream.scaladsl.{FileIO, Flow, Framing, Keep, Sink, Source}
 import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
@@ -31,6 +32,7 @@ import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
 import play.api.data.Form
 import play.api.data.Forms._
+import play.api.http.HttpEntity
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files
 import play.api.libs.Files.TemporaryFile
@@ -42,6 +44,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadRequest
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
+import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.successful
@@ -70,80 +73,53 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     // handling any errors we could map to something like
     // a Left(BadRequest("error")). Since we're not
     // we just wrap the source in a Right(...)
-    Accumulator.source[ByteString]
-      .map(Right.apply)
+    Accumulator
+      .source[ByteString]
+      .map { b =>
+        b.alsoTo(Sink.foreach(l => println(l)))
+        b
+      }
+      .map(x => Right[Result, Source[ByteString, _]](x))
   }
 
-  def randomize(s: List[Char], n: Int): List[Char] = {
-    if(n==0) Nil
-    else {
-      val i = Math.floor(Math.random() * s.length).toInt
-      s(i) :: randomize(s, n - 1)
+  def randomize(s: String): String = {
+
+    def r(s: List[Char], n: Int): List[Char] = {
+      if (n == 0) Nil
+      else {
+        val i = Math.floor(Math.random() * s.length).toInt
+        s(i) :: r(s, n - 1)
+      }
     }
+
+    r(s.toList, s.length).mkString
   }
 
-  def uploadCSV = Action(verbatimBodyParser) { implicit request =>
+  def uploadCSV: Action[Source[ByteString, _]] = Action(verbatimBodyParser) { implicit request =>
 
-      val source = request.body
-        .map { x =>
-          println("Here1")
-          println(x.utf8String)
-          x
+    val source = request.body
+      .via(lineScanner())
+      .via(toMap())
+      .map(_.mapValues(_.utf8String))
+      .map { record =>
+        record.map {
+          case ("col1", v1 ) => ("col1", randomize(v1))
+          case x => x
         }
-        .via(Framing.delimiter(ByteString("\n"), 4096))
-        .map { x =>
-          println("Here2")
-          println(x.utf8String)
-          x
-        }
-        .via(lineScanner())
-        .via(toMap())
-        .map(_.mapValues(_.utf8String))
-        .map { record =>
-          println(record)
-          record.map {
-            case ("col2", v1 ) => ("col2", randomize(v1.toList, v1.toList.size).mkString(""))
-          }
-        }.map { x =>
-          x.values.map(s => '"'+s.replaceAll("""["]""", """\"""")+'"').mkString(",")
-        }
-    Ok.chunked(source)
+      }
+      .zipWithIndex
+      .map { case (x, i) =>
+        val data = x.values.map(_.replace("\"", "\\\"")).map(s => '"'+s+'"').mkString(",")+"\n"
+        if(i==0) ByteString(x.keys.map(_.replace("\"", "\\\"")).map(s => '"'+s+'"').mkString(",")+"\n" + data)
+        else ByteString(data)
+      }
+
+
+    Result(
+      header = ResponseHeader(200, Map.empty),
+      body = HttpEntity.Streamed(source, None, Some("text/plain"))
+    )
   }
-
-
-//    form.bindFromRequest.fold(
-//      _ => {
-//        successful(BadRequest)
-//      },
-//
-//      uploadRequest  => {
-//        request.body.files.find(_.filename.nonEmpty) match {
-//          case Some(file) =>
-//            val source = Source[MultipartFormData.FilePart[Files.TemporaryFile]](request.body.files.toList).flatMapMerge( 16, file => {
-//              FileIO.fromPath(file.ref.file.toPath)
-//                .via(lineScanner(escapeChar = '\u0001'))
-//                .via(toMap())
-//                .map(_.mapValues(_.utf8String))
-//                .grouped(32)
-//                .map { map =>
-//                  (file, map)
-//                }
-//            })
-//            .mapAsync(16) { case (file, record) =>
-//              record.map{ x =>
-//                x()
-//
-//
-//              }
-//            }
-//
-//            successful(Ok.chunked(source))
-//
-//          case None => successful(BadRequest)
-//        }
-//      }
-//    )
-//  }
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
 

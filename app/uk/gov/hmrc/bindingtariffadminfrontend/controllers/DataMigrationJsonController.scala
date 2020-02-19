@@ -16,26 +16,17 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
-import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.alpakka.csv.scaladsl.CsvToMap.toMap
-import akka.stream.scaladsl.{FileIO, Flow, Framing, Keep, RunnableGraph, Sink, Source}
 import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.data.Form
-import play.api.data.Forms.mapping
+import play.api.data.Forms.{mapping, _}
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
-import play.api.data.Form
-import play.api.data.Forms._
-import play.api.http.{HttpChunk, HttpEntity}
-import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.Files
-import play.api.libs.Files.TemporaryFile
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
@@ -44,12 +35,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadRequest
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
-import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.Future.successful
-import scala.tools.nsc.io.File
-import scala.util.{Failure, Random, Success}
 
 @Singleton
 class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAction,
@@ -80,7 +66,10 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     r(s.toList, s.length).mkString
   }
 
-  def uploadCSV = EssentialAction { requestHeader =>
+  def anonymiseData = EssentialAction { requestHeader =>
+
+    val keys = List("FirstName", "LastName", "ContactName", "CaseEmail", "Contact", "CancelledUser",
+      "Name", "Address1", "Address2", "Address3", "TelephoneNo", "FaxNo", "Email", "City", "VATRegTurnNo", "Signature")
 
     Accumulator.source.map { source =>
 
@@ -91,7 +80,8 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
           .map(_.mapValues(_.utf8String))
           .map { record =>
             record.map {
-              case ("Reason", v1) => ("Reason", randomize(v1))
+              case (key, v1 ) if keys.contains(key) => (key, randomize(v1))
+              case ("Postcode ", _ ) => ("Postcode ", "ZZ11ZZ")
               case x => x
             }
           }

@@ -74,10 +74,13 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     r(s.toList, s.length).mkString
   }
 
-  def anonymiseData = EssentialAction { requestHeader =>
+  def anonymiseData: EssentialAction = EssentialAction { requestHeader =>
 
     val keys = List("FirstName", "LastName", "ContactName", "CaseEmail", "Contact", "CancelledUser",
-      "Name", "Address1", "Address2", "Address3", "TelephoneNo", "FaxNo", "Email", "City", "VATRegTurnNo", "Signature")
+      "Name", "Address1", "Address2", "Address3", "TelephoneNo", "FaxNo", "Email", "City", "VATRegTurnNo", "Signature",
+    "CaseName", "CaseAddress1", "CaseAddress2", "CaseAddress3", "CaseAddress4", "CaseAddress5", "CasePostCode",
+    "CaseTelephoneNo", "CaseFaxNo", "CaseAgentName", "CaseNameCompleted", "LiabilityPortOfficerName", "LiabilityPortOfficerTel",
+    "SupressUserName")
 
     var headers: Option[List[String]] = None
 

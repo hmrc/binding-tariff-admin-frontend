@@ -30,19 +30,19 @@ import uk.gov.hmrc.play.bootstrap.filters.frontend.deviceid.DeviceIdFilter
 
 @Singleton
 class CustomFrontendFilters @Inject()(
-                                 configuration: Configuration,
-                                 loggingFilter: LoggingFilter,
-                                 headersFilter: HeadersFilter,
-                                 securityFilter: SecurityHeadersFilter,
-                                 frontendAuditFilter: FrontendAuditFilter,
-                                 metricsFilter: MetricsFilter,
-                                 deviceIdFilter: DeviceIdFilter,
-                                 csrfFilter: CSRFFilter,
-                                 cookieCryptoFilter: CookieCryptoFilter,
-                                 sessionTimeoutFilter: SessionTimeoutFilter,
-                                 cacheControlFilter: CacheControlFilter,
-                                 mdcFilter: MDCFilter
-                               ) extends HttpFilters {
+  configuration: Configuration,
+  loggingFilter: LoggingFilter,
+  headersFilter: HeadersFilter,
+  securityFilter: SecurityHeadersFilter,
+  frontendAuditFilter: FrontendAuditFilter,
+  metricsFilter: MetricsFilter,
+  deviceIdFilter: DeviceIdFilter,
+  csrfFilter: CSRFFilter,
+  cookieCryptoFilter: CookieCryptoFilter,
+  sessionTimeoutFilter: SessionTimeoutFilter,
+  cacheControlFilter: CacheControlFilter,
+  mdcFilter: MDCFilter
+) extends HttpFilters {
 
   val frontendFilters = Seq(
     metricsFilter,
@@ -50,7 +50,7 @@ class CustomFrontendFilters @Inject()(
     cookieCryptoFilter,
     deviceIdFilter,
     loggingFilter,
-    frontendAuditFilter,
+//    frontendAuditFilter,
     sessionTimeoutFilter,
 //    csrfFilter,
     cacheControlFilter,

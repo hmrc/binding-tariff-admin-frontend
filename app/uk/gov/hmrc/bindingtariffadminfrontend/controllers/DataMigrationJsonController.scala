@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.alpakka.csv.scaladsl.CsvToMap.toMap
-import akka.stream.scaladsl.{FileIO, Flow, Framing, Keep, Sink, Source}
+import akka.stream.scaladsl.{FileIO, Flow, Framing, Keep, RunnableGraph, Sink, Source}
 import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
@@ -32,7 +32,7 @@ import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
 import play.api.data.Form
 import play.api.data.Forms._
-import play.api.http.HttpEntity
+import play.api.http.{HttpChunk, HttpEntity}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files
 import play.api.libs.Files.TemporaryFile
@@ -67,21 +67,6 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     )(UploadRequest.apply)(UploadRequest.unapply)
   )
 
-  def verbatimBodyParser: BodyParser[Source[ByteString, _]] = BodyParser { j =>
-    // Return the source directly. We need to return
-    // an Accumulator[Either[Result, T]], so if we were
-    // handling any errors we could map to something like
-    // a Left(BadRequest("error")). Since we're not
-    // we just wrap the source in a Right(...)
-    Accumulator
-      .source[ByteString]
-      .map { b =>
-        b.alsoTo(Sink.foreach(l => println(l)))
-        b
-      }
-      .map(x => Right[Result, Source[ByteString, _]](x))
-  }
-
   def randomize(s: String): String = {
 
     def r(s: List[Char], n: Int): List[Char] = {
@@ -95,30 +80,30 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     r(s.toList, s.length).mkString
   }
 
-  def uploadCSV: Action[Source[ByteString, _]] = Action(verbatimBodyParser) { implicit request =>
+  def uploadCSV = EssentialAction { requestHeader =>
 
-    val source = request.body
-      .via(lineScanner())
-      .via(toMap())
-      .map(_.mapValues(_.utf8String))
-      .map { record =>
-        record.map {
-          case ("col1", v1 ) => ("col1", randomize(v1))
-          case x => x
-        }
+    Accumulator.source.map { source =>
+
+      Ok.chunked {
+        source
+          .via(lineScanner())
+          .via(toMap())
+          .map(_.mapValues(_.utf8String))
+          .map { record =>
+            record.map {
+              case ("Reason", v1) => ("Reason", randomize(v1))
+              case x => x
+            }
+          }
+          .zipWithIndex
+          .map { case (x, i) =>
+            val data = x.values.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n"
+            if (i == 0) ByteString(x.keys.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n" + data)
+            else ByteString(data)
+          }
+
       }
-      .zipWithIndex
-      .map { case (x, i) =>
-        val data = x.values.map(_.replace("\"", "\\\"")).map(s => '"'+s+'"').mkString(",")+"\n"
-        if(i==0) ByteString(x.keys.map(_.replace("\"", "\\\"")).map(s => '"'+s+'"').mkString(",")+"\n" + data)
-        else ByteString(data)
-      }
-
-
-    Result(
-      header = ResponseHeader(200, Map.empty),
-      body = HttpEntity.Streamed(source, None, Some("text/plain"))
-    )
+    }
   }
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>

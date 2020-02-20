@@ -14,11 +14,11 @@
  * limitations under the License.
  *@
 
-@import views.html.helper.{CSRF, form}
+@import views.html.helper.form
 @(call: Call, label: String = "Submit", disabled: Boolean = false, css: String = "")(implicit request: Request[_])
 
 @form(action = call) {
-  @CSRF.formField
+
   <input type="submit" id="label" class="button @css" value="@label"@if(disabled){ disabled="disabled"}/>
 }
 

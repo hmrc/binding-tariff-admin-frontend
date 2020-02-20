@@ -17,25 +17,90 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import akka.actor.ActorSystem
+import akka.stream.Materializer
+import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
+import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json._
+import play.api.libs.streams.Accumulator
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
+import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
 class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAction,
                                             service: DataMigrationService,
                                             connector: DataMigrationJsonConnector,
-                                            actorSystem: ActorSystem,
+                                            implicit val system: ActorSystem,
+                                            implicit val materializer: Materializer,
                                             override val messagesApi: MessagesApi,
                                             implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
+
+ private lazy val keys = List("FirstName", "LastName", "ContactName", "CaseEmail", "Contact", "CancelledUser",
+    "Name", "Address1", "Address2", "Address3", "TelephoneNo", "FaxNo", "Email", "City", "VATRegTurnNo", "Signature",
+    "CaseName", "CaseAddress1", "CaseAddress2", "CaseAddress3", "CaseAddress4", "CaseAddress5", "CasePostCode",
+    "CaseTelephoneNo", "CaseFaxNo", "CaseAgentName", "CaseNameCompleted", "LiabilityPortOfficerName", "LiabilityPortOfficerTel",
+    "SupressUserName", "InsBoardFileUserName")
+
+  def randomize(s: String): String = {
+
+    def r(s: List[Char], n: Int): List[Char] = {
+      if (n == 0) Nil
+      else {
+        val i = Math.floor(Math.random() * s.length).toInt
+        s(i) :: r(s, n - 1)
+      }
+    }
+
+    r(s.toList, s.length).mkString
+  }
+
+  def anonymiseData: EssentialAction = EssentialAction { requestHeader =>
+
+    var headers: Option[List[String]] = None
+
+    Accumulator.source.map { source =>
+
+      val result = source
+        .via(lineScanner())
+        .map(_.map(_.utf8String))
+        .map { list =>
+          headers match {
+            case None =>
+              headers = Some(list)
+              (list, None)
+            case Some(headers) =>
+              (headers, Some(list))
+          }
+        }
+        .map {
+          case (headers, None) =>
+            (headers, None)
+          case (headers, Some(data)) =>
+            val listMap = ListMap(headers.zip(data): _*) map {
+              case (key, v1) if keys.contains(key) => (key, randomize(v1))
+              case ("Postcode ", _ ) => ("Postcode ", "ZZ11ZZ")
+              case x => x
+            }
+            (headers, Some(listMap.values.toList))
+        }
+        .map {
+          case (headers, None) =>
+            ByteString(headers.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
+          case (_, Some(data)) =>
+            ByteString(data.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
+        }
+
+      Ok.chunked(result)
+    }
+  }
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
 

@@ -6,7 +6,7 @@ class AdminIntegrationTest extends IntegrationTest {
     scenario("User loads the index page") {
       val response = get()
 
-      response.is2xx shouldBe true
+      response.code shouldBe 200
     }
 
     scenario("User loads the index page without auth") {
@@ -20,7 +20,7 @@ class AdminIntegrationTest extends IntegrationTest {
     scenario("User loads the state page") {
       val response = get(path = "state")
 
-      response.is2xx shouldBe true
+      response.code shouldBe 200
     }
 
     scenario("User loads the state page without auth") {
@@ -31,10 +31,12 @@ class AdminIntegrationTest extends IntegrationTest {
   }
 
   feature("Reset Page") {
+
     scenario("User loads the reset page") {
+
       val response = get(path = "reset")
 
-      response.is2xx shouldBe true
+      response.code shouldBe 200
     }
 
     scenario("User loads the reset page without auth") {

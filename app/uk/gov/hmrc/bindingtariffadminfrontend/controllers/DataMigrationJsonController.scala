@@ -16,33 +16,22 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
-import java.nio.charset.{Charset, StandardCharsets}
-
-import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.{Attributes, FlowShape, Inlet, Materializer, Outlet}
-import akka.stream.alpakka.csv.impl.{CsvToMapAsStringsStage, CsvToMapStage, CsvToMapStageBase}
+import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
-import akka.stream.alpakka.csv.scaladsl.CsvToMap.toMap
-import akka.stream.scaladsl.Flow
-import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
-import play.api.data.Form
-import play.api.data.Forms.{mapping, _}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadRequest
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 import scala.collection.immutable.ListMap
-import scala.collection.{SortedMap, immutable}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
@@ -54,12 +43,11 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
                                             override val messagesApi: MessagesApi,
                                             implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
 
-  private lazy val form = Form[UploadRequest](
-    mapping[UploadRequest, String, String](
-      "filename" -> text,
-      "mimetype" -> text
-    )(UploadRequest.apply)(UploadRequest.unapply)
-  )
+ private lazy val keys = List("FirstName", "LastName", "ContactName", "CaseEmail", "Contact", "CancelledUser",
+    "Name", "Address1", "Address2", "Address3", "TelephoneNo", "FaxNo", "Email", "City", "VATRegTurnNo", "Signature",
+    "CaseName", "CaseAddress1", "CaseAddress2", "CaseAddress3", "CaseAddress4", "CaseAddress5", "CasePostCode",
+    "CaseTelephoneNo", "CaseFaxNo", "CaseAgentName", "CaseNameCompleted", "LiabilityPortOfficerName", "LiabilityPortOfficerTel",
+    "SupressUserName", "InsBoardFileUserName")
 
   def randomize(s: String): String = {
 
@@ -76,47 +64,41 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
 
   def anonymiseData: EssentialAction = EssentialAction { requestHeader =>
 
-    val keys = List("FirstName", "LastName", "ContactName", "CaseEmail", "Contact", "CancelledUser",
-      "Name", "Address1", "Address2", "Address3", "TelephoneNo", "FaxNo", "Email", "City", "VATRegTurnNo", "Signature",
-    "CaseName", "CaseAddress1", "CaseAddress2", "CaseAddress3", "CaseAddress4", "CaseAddress5", "CasePostCode",
-    "CaseTelephoneNo", "CaseFaxNo", "CaseAgentName", "CaseNameCompleted", "LiabilityPortOfficerName", "LiabilityPortOfficerTel",
-    "SupressUserName")
-
     var headers: Option[List[String]] = None
 
     Accumulator.source.map { source =>
 
-      Ok.chunked {
-        source
-          .via(lineScanner())
-          .map(_.map(_.utf8String))
-          .map { list =>
-            headers match {
-              case None =>
-                headers = Some(list)
-                (list, None)
-              case Some(headers) =>
-                (headers, Some(list))
+      val result = source
+        .via(lineScanner())
+        .map(_.map(_.utf8String))
+        .map { list =>
+          headers match {
+            case None =>
+              headers = Some(list)
+              (list, None)
+            case Some(headers) =>
+              (headers, Some(list))
+          }
+        }
+        .map {
+          case (headers, None) =>
+            (headers, None)
+          case (headers, Some(data)) =>
+            val listMap = ListMap(headers.zip(data): _*) map {
+              case (key, v1) if keys.contains(key) => (key, randomize(v1))
+              case ("Postcode ", _ ) => ("Postcode ", "ZZ11ZZ")
+              case x => x
             }
-          }
-          .map {
-            case (headers, None) =>
-              (headers, None)
-            case (headers, Some(data)) =>
-              val listMap = ListMap(headers.zip(data): _*) map {
-                case (key, v1) if keys.contains(key) => (key, randomize(v1))
-                case ("Postcode ", _ ) => ("Postcode ", "ZZ11ZZ")
-                case x => x
-              }
-              (headers, Some(listMap.values.toList))
-          }
-          .map {
-            case (headers, None) =>
-              ByteString(headers.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
-            case (headers, Some(data)) =>
-              ByteString(data.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
-          }
-      }
+            (headers, Some(listMap.values.toList))
+        }
+        .map {
+          case (headers, None) =>
+            ByteString(headers.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
+          case (_, Some(data)) =>
+            ByteString(data.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
+        }
+
+      Ok.chunked(result)
     }
   }
 

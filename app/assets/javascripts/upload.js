@@ -110,7 +110,6 @@ var fileMigration = {
         form.append("file", file);
 
         return new Promise(function (resolve, reject) {
-            var csrf = document.getElementsByName("csrfToken").item(0);
             $.ajax({
                 type: "POST",
                 url: url,
@@ -118,9 +117,6 @@ var fileMigration = {
                 processData: false,
                 contentType: false,
                 mimeType: "multipart/form-data",
-                headers: {
-                    "CSRF-token": csrf.value
-                },
                 success: function () {
                     resolve({
                         file: file

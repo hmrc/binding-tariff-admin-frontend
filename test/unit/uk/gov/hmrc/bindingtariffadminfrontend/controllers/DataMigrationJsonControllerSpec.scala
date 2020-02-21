@@ -51,7 +51,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
   private val appConfig = new AppConfig(configuration, env)
   private implicit val mat: Materializer = fakeApplication.materializer
   private val controller = new DataMigrationJsonController(
-    new SuccessfulAuthenticatedAction, migrationService, migrationConnector, actorSystem, messageApi, appConfig
+    new SuccessfulAuthenticatedAction, migrationService, migrationConnector, actorSystem, mat, messageApi, appConfig
   )
 
   private val csvList = List("tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",

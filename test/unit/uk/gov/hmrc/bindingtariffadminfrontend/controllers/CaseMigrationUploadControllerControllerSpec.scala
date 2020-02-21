@@ -59,7 +59,7 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
 
   "GET /" should {
     "return 200" in {
-      val result: Result = await(controller.get()(newFakeGETRequestWithCSRF))
+      val result: Result = await(controller.get()(FakeRequest("GET", "/")))
       status(result) shouldBe OK
       bodyOf(result) should include("case_migration_upload-heading")
     }
@@ -224,12 +224,6 @@ class CaseMigrationUploadControllerControllerSpec extends WordSpec with Matchers
     val captor = ArgumentCaptor.forClass(classOf[Seq[MigratableCase]])
     verify(migrationService).prepareMigration(captor.capture(), any[Boolean])(any[HeaderCarrier])
     captor.getValue
-  }
-
-  private def newFakeGETRequestWithCSRF: FakeRequest[AnyContentAsEmpty.type] = {
-    val tokenProvider: TokenProvider = fakeApplication.injector.instanceOf[TokenProvider]
-    val csrfTags = Map(Token.NameRequestTag -> "csrfToken", Token.RequestTag -> tokenProvider.generateToken)
-    FakeRequest("GET", "/", FakeHeaders(), AnyContentAsEmpty, tags = csrfTags)
   }
 
   private def withJson(json: String): File = {

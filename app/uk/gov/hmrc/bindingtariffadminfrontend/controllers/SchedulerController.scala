@@ -29,10 +29,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
 @Singleton
-class SchedulerController @Inject()(authenticatedAction: AuthenticatedAction,
-                                    adminMonitorService: AdminMonitorService,
-                                    override val messagesApi: MessagesApi,
-                                    implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
+class SchedulerController @Inject() (
+  authenticatedAction: AuthenticatedAction,
+  adminMonitorService: AdminMonitorService,
+  override val messagesApi: MessagesApi,
+  implicit val appConfig: AppConfig
+) extends FrontendController with I18nSupport {
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
     successful(Ok(views.html.scheduler()))

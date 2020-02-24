@@ -19,7 +19,6 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.ScheduledJob.ScheduledJob
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, ScheduledJob}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
-@import views.html.helper.CSRF
 @(jobRun: Option[ScheduledJob] = None)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
@@ -38,7 +37,6 @@
  @for(job: ScheduledJob <- ScheduledJob.values) {
   <li>
    @helper.form(action = routes.SchedulerController.post(job)) {
-    @CSRF.formField
     <button id="scheduler-job-@job" class="button" type="submit">@job.toString.replace("_", " ")</button>
    }
   </li>

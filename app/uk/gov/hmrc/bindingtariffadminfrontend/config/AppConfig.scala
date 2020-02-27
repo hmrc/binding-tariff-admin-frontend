@@ -37,7 +37,7 @@ class AppConfig @Inject()(val runModeConfiguration: Configuration, environment: 
   lazy val analyticsHost: String = loadConfig("google-analytics.host")
 
   lazy val filestoreUrl: String = baseUrl("binding-tariff-filestore")
-  lazy val dataMigrationUrl: String = baseUrl("binding-tariff-data-migration")
+  lazy val dataMigrationUrl: String = baseUrl("binding-tariff-data-transformation")
   lazy val classificationBackendUrl: String = baseUrl("binding-tariff-classification")
   lazy val rulingUrl: String = baseUrl("binding-tariff-ruling-frontend")
   lazy val internalServiceUrl: String = loadConfig("tariff-classification-frontend")

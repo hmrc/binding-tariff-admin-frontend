@@ -18,6 +18,7 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.form_button
 @(form: Form[_])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
@@ -27,7 +28,6 @@
  <h2 id="data_migration_upload-subheading" class="heading-medium error-summary-heading">Step 1: upload the data for tblCaseRecord, eBTI_Application, tblCaseBTI, tblCaseClassMeth, eBTI_Addresses, tblImages, tblMovement, tblUser, tblSample and tblHistoryCases</h2>
 
  <div class="form-group">
-  @helper.CSRF.formField
 
   <div class="mt-15">
    <div>
@@ -60,14 +60,14 @@
  </div>
 
  <div id="success-table-container" class="display-none mt-30">
-  <h3 class="heading-small">
-   Successful Uploads <span class="success-count" id="success-count">0</span>/<span class="total-count">0</span>
-  </h3>
+  <h3 class="heading-small"> Successful Uploads <span class="success-count" id="success-count">0</span>/<span class="total-count">0</span></h3>
+
   <table id="success-table"></table>
 
   <div class="mt-30">
-   <a id="data_migration_upload-continue" class="display-none button button-info" href="@routes.DataMigrationJsonController.get()">Continue to Create Json</a>
+   @form_button(call = routes.DataMigrationJsonController.postDataAndRedirect(), label = "Continue to build Json", css = "display-none")
   </div>
+
  </div>
 
  <script src="@controllers.routes.Assets.at("javascripts/polyfill.js")" type="text/javascript"></script>

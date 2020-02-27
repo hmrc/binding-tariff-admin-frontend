@@ -110,7 +110,6 @@ var fileMigration = {
         form.append("file", file);
 
         return new Promise(function (resolve, reject) {
-            var csrf = document.getElementsByName("csrfToken").item(0);
             $.ajax({
                 type: "POST",
                 url: url,
@@ -118,9 +117,6 @@ var fileMigration = {
                 processData: false,
                 contentType: false,
                 mimeType: "multipart/form-data",
-                headers: {
-                    "CSRF-token": csrf.value
-                },
                 success: function () {
                     resolve({
                         file: file
@@ -182,7 +178,7 @@ var fileMigration = {
             function updateContinueMessage(total) {
                 var count = document.getElementById("success-count");
                 if(parseInt(count.innerHTML) == total){
-                    var data_migration_upload = document.getElementById("data_migration_upload-continue");
+                    var data_migration_upload = document.getElementById("label");
                     data_migration_upload.classList.remove("display-none");
                 }
             }

@@ -21,6 +21,8 @@ object AppDependencies {
 
   private lazy val scope = "test, it"
 
+
+
   val test: Seq[ModuleID] = Seq(
     "com.github.tomakehurst"  %  "wiremock"                 % "2.20.0"                % scope,
     "com.typesafe.play"       %% "play-test"                % current                 % scope,

@@ -178,7 +178,7 @@ var fileMigration = {
             function updateContinueMessage(total) {
                 var count = document.getElementById("success-count");
                 if(parseInt(count.innerHTML) == total){
-                    var data_migration_upload = document.getElementById("data_migration_upload-continue");
+                    var data_migration_upload = document.getElementById("label");
                     data_migration_upload.classList.remove("display-none");
                 }
             }

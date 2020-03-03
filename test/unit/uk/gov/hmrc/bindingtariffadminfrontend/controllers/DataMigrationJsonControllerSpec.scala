@@ -36,6 +36,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, Upstream4xxResponse, Upstream5xxResponse}
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.Future
 
@@ -170,25 +171,29 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
       given(migrationConnector.downloadJson(any[HeaderCarrier]))
         .willReturn(Future.successful(HttpResponse.apply(200, responseJson= Some(json))))
 
-      val result: Result = await(controller.downloadJson()(newFakeGETRequestWithCSRF))
+      val accumulator = await(controller.downloadJson()(newFakeGETRequestWithCSRF))
 
-      status(result) shouldBe OK
-      jsonBodyOf(result) shouldBe Json.parse("""{
-                                               |  "href": "url",
-                                               |  "fields": {
-                                               |    "field": "\rvalue\r"
-                                               |  }
-                                               |}""".stripMargin)
+      accumulator.map{ result =>
+        status(result) shouldBe OK
+        jsonBodyOf(result) shouldBe Json.parse("""{
+                                                 |  "href": "url",
+                                                 |  "fields": {
+                                                 |    "field": "\rvalue\r"
+                                                 |  }
+                                                 |}""".stripMargin)
+      }
+
     }
 
     "return 400" in {
       given(migrationConnector.downloadJson(any[HeaderCarrier]))
         .willReturn(Future.successful(HttpResponse.apply(400, responseJson= Some(Json.obj("error" -> "error while building josn")))))
 
-      val result: Result = await(controller.downloadJson()(newFakeGETRequestWithCSRF))
-
-      status(result) shouldBe BAD_REQUEST
-      jsonBodyOf(result) shouldBe Json.obj("error" -> "error while building josn")
+      val accumulator = await(controller.downloadJson()(newFakeGETRequestWithCSRF))
+      accumulator.map { result =>
+        status(result) shouldBe BAD_REQUEST
+        jsonBodyOf(result) shouldBe Json.obj("error" -> "error while building josn")
+      }
     }
   }
 

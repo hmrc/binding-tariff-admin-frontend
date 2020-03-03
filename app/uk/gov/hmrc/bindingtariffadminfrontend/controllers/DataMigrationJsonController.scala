@@ -19,6 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
@@ -29,8 +30,9 @@ import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
-import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.csv_processing_status
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -130,17 +132,19 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     }
   }
 
-  def downloadJson: Action[AnyContent] = authenticatedAction.async { implicit request =>
+  def downloadJson: EssentialAction = EssentialAction { implicit request =>
 
-    connector.downloadJson.map{
-      case response if response.status == OK =>
-        val result = Json.prettyPrint(response.json).replaceAll("_x000D_", "\\\\r")
-        Ok(result).withHeaders(
-          "Content-Type" -> "application/json",
-          "Content-Disposition" -> s"attachment; filename=BTI-Data-Migration${DateTime.now().toString("yyyyMMddHHmmss")}.json"
-        )
-      case response => Status(response.status)(response.body).as("application/json")
+    val result = Source.fromFuture {
+      connector.downloadJson(HeaderCarrier()).map {
+        case response if response.status == OK => Json.prettyPrint(response.json).replaceAll("_x000D_", "\\\\r")
+        case response => throw new BadRequestException("Failed to get mapped json from data migration api " + response.status)
+      }
+    }
+
+    Accumulator.done(result).map { data =>
+      Ok.chunked(data).withHeaders(
+        "Content-Type" -> "application/json",
+        "Content-Disposition" -> s"attachment; filename=BTI-Data-Migration${DateTime.now().toString("yyyyMMddHHmmss")}.json")
     }
   }
-
 }

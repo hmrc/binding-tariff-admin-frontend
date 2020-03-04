@@ -18,6 +18,8 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import org.mockito.ArgumentMatchers.{any, refEq}
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito._
@@ -26,6 +28,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import play.api.http.Status._
 import play.api.i18n.{DefaultLangs, DefaultMessagesApi}
 import play.api.libs.json.Json
+import play.api.libs.ws.{DefaultWSResponseHeaders, StreamedResponse, WSClient, WSRequest}
 import play.api.mvc.{AnyContentAsEmpty, Result}
 import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.{Configuration, Environment}
@@ -34,10 +37,10 @@ import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, Upstream4xxResponse, Upstream5xxResponse}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, Upstream4xxResponse, Upstream5xxResponse}
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class DataMigrationJsonControllerSpec extends WordSpec with Matchers
@@ -47,12 +50,14 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
   private val configuration = Configuration.load(env)
   private val migrationService = mock[DataMigrationService]
   private val migrationConnector = mock[DataMigrationJsonConnector]
+  private val mockWSClient = mock[WSClient]
+  private val mockWSRequest = mock[WSRequest]
   private val actorSystem = mock[ActorSystem]
   private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
   private val appConfig = new AppConfig(configuration, env)
   private implicit val mat: Materializer = fakeApplication.materializer
   private val controller = new DataMigrationJsonController(
-    new SuccessfulAuthenticatedAction, migrationService, migrationConnector, actorSystem, mat, messageApi, appConfig
+    new SuccessfulAuthenticatedAction, migrationService, migrationConnector, actorSystem, mat, messageApi, appConfig, mockWSClient
   )
 
   private val csvList = List("tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
@@ -165,35 +170,39 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
       val json = Json.parse("""{
                               |  "href": "url",
                               |  "fields": {
-                              |    "field": "_x000D_value_x000D_"
+                              |    "field": "value"
                               |  }
                               |}""".stripMargin)
-      given(migrationConnector.downloadJson(any[HeaderCarrier]))
-        .willReturn(Future.successful(HttpResponse.apply(200, responseJson= Some(json))))
 
-      val accumulator = await(controller.downloadJson()(newFakeGETRequestWithCSRF))
+      val response = StreamedResponse.apply(
+        DefaultWSResponseHeaders(200, Map.empty), body= Source.apply(List(ByteString(json.toString()))))
+      given(mockWSClient.url(any())).willReturn(mockWSRequest)
+      given(mockWSRequest.withMethod("GET")).willReturn(mockWSRequest)
+      given(mockWSRequest.stream()).willReturn(Future.successful(response))
 
-      accumulator.map{ result =>
-        status(result) shouldBe OK
-        jsonBodyOf(result) shouldBe Json.parse("""{
-                                                 |  "href": "url",
-                                                 |  "fields": {
-                                                 |    "field": "\rvalue\r"
-                                                 |  }
-                                                 |}""".stripMargin)
-      }
+      val result = await(controller.downloadJson()(newFakeGETRequestWithCSRF))
+
+      status(result) shouldBe OK
+      jsonBodyOf(result) shouldBe Json.parse("""{
+                                               |  "href": "url",
+                                               |  "fields": {
+                                               |    "field": "value"
+                                               |  }
+                                               |}""".stripMargin)
 
     }
 
     "return 400" in {
-      given(migrationConnector.downloadJson(any[HeaderCarrier]))
-        .willReturn(Future.successful(HttpResponse.apply(400, responseJson= Some(Json.obj("error" -> "error while building josn")))))
+      val response = StreamedResponse.apply(
+        DefaultWSResponseHeaders(400, Map.empty), body= Source.apply(
+          List(ByteString(Json.obj("error" -> "error while building josn").toString()))))
+      given(mockWSClient.url(any())).willReturn(mockWSRequest)
+      given(mockWSRequest.withMethod("GET")).willReturn(mockWSRequest)
+      given(mockWSRequest.stream()).willReturn(Future.successful(response))
 
-      val accumulator = await(controller.downloadJson()(newFakeGETRequestWithCSRF))
-      accumulator.map { result =>
-        status(result) shouldBe BAD_REQUEST
-        jsonBodyOf(result) shouldBe Json.obj("error" -> "error while building josn")
-      }
+      intercept[BadRequestException](
+        await(controller.downloadJson()(newFakeGETRequestWithCSRF))
+      )
     }
   }
 

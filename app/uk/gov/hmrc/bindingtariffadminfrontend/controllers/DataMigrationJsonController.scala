@@ -19,19 +19,18 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
-import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.json.Json
 import play.api.libs.streams.Accumulator
+import play.api.libs.ws.WSClient
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.csv_processing_status
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
+import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 import scala.collection.immutable.ListMap
@@ -45,7 +44,8 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
                                             implicit val system: ActorSystem,
                                             implicit val materializer: Materializer,
                                             override val messagesApi: MessagesApi,
-                                            implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
+                                            implicit val appConfig: AppConfig,
+                                            wsClient: WSClient) extends FrontendController with I18nSupport {
 
  private lazy val keys = List("FirstName", "LastName", "ContactName", "CaseEmail", "Contact", "CancelledUser",
     "Name", "Address1", "Address2", "Address3", "TelephoneNo", "FaxNo", "Email", "City", "VATRegTurnNo", "Signature",
@@ -114,7 +114,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
       result <- connector.sendDataForProcessing(files)
     } yield {
       result.status match {
-        case ACCEPTED => Redirect(routes.DataMigrationJsonController.checkStatus)
+        case ACCEPTED => Redirect(routes.DataMigrationJsonController.checkStatus())
         case _ => throw new RuntimeException("data processing error")
       }
     }
@@ -132,19 +132,20 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     }
   }
 
-  def downloadJson: EssentialAction = EssentialAction { implicit request =>
+  def downloadJson: Action[AnyContent] = authenticatedAction.async {
 
-    val result = Source.fromFuture {
-      connector.downloadJson(HeaderCarrier()).map {
-        case response if response.status == OK => Json.prettyPrint(response.json).replaceAll("_x000D_", "\\\\r")
-        case response => throw new BadRequestException("Failed to get mapped json from data migration api " + response.status)
+    wsClient.url(s"${appConfig.dataMigrationUrl}/binding-tariff-data-transformation/tranformed-bti-records")
+      .withMethod("GET").stream().map{ res =>
+        res.headers.status match{
+          case OK => res.body
+          case _ => throw new BadRequestException("Failed to get mapped json from data migration api " + res.headers.status)
+        }
       }
-    }
-
-    Accumulator.done(result).map { data =>
-      Ok.chunked(data).withHeaders(
-        "Content-Type" -> "application/json",
-        "Content-Disposition" -> s"attachment; filename=BTI-Data-Migration${DateTime.now().toString("yyyyMMddHHmmss")}.json")
+      .map{ dataContent =>
+        Ok.chunked(dataContent).withHeaders(
+          "Content-Type" -> "application/json",
+          "Content-Disposition" -> s"attachment; filename=BTI-Data-Migration${DateTime.now().toString("yyyyMMddHHmmss")}.json")
     }
   }
+
 }

@@ -40,7 +40,10 @@
 <script src="@controllers.routes.Assets.at("javascripts/data-processing.js")" type="text/javascript"></script>
 <script type="text/javascript">
  function fetchData(){
-  dataProcessing.updateStatus("@routes.DataMigrationJsonController.getStatusOfJsonProcessing.url")
+   var status = document.getElementById("processing-status");
+   if(status.innerHTML != "done"){
+     dataProcessing.updateStatus("@routes.DataMigrationJsonController.getStatusOfJsonProcessing.url")
+   }
  }
  document.addEventListener("DOMContentLoaded", function(event) {
    setInterval(fetchData,10000)

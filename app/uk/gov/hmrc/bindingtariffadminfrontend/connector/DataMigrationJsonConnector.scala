@@ -17,6 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
 import javax.inject.{Inject, Singleton}
+import play.api.libs.ws.{StreamedResponse, WSClient}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
@@ -25,7 +26,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class DataMigrationJsonConnector @Inject()(configuration: AppConfig, http: AuthenticatedHttpClient) {
+class DataMigrationJsonConnector @Inject()(
+  configuration: AppConfig,
+  http: AuthenticatedHttpClient,
+  wsClient: WSClient) {
 
   def sendDataForProcessing(files: List[FileUploaded])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
 
@@ -39,9 +43,9 @@ class DataMigrationJsonConnector @Inject()(configuration: AppConfig, http: Authe
       s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/processing-status")
   }
 
-  def downloadJson(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def downloadJson: Future[StreamedResponse] = {
 
-    http.GET[HttpResponse](
-      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/tranformed-bti-records")
+    wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/tranformed-bti-records")
+      .withMethod("GET").stream()
   }
 }

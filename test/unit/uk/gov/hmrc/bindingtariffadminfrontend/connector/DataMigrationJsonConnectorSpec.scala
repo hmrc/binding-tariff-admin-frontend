@@ -19,12 +19,13 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.http.Status
 import play.api.libs.json.Json
+import play.api.libs.ws.WSClient
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
 import uk.gov.hmrc.http.{NotFoundException, Upstream5xxResponse}
 
 class DataMigrationJsonConnectorSpec extends ConnectorTest {
 
-  private val connector = new DataMigrationJsonConnector(appConfig, authenticatedHttpClient)
+  private val connector = new DataMigrationJsonConnector(appConfig, authenticatedHttpClient, inject[WSClient])
 
   private val file = FileUploaded("name", "published", "text/plain", None, None)
 
@@ -115,13 +116,15 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
       )
       val response = await(connector.downloadJson)
 
-      response.status shouldBe Status.OK
-      response.json shouldBe Json.parse("""{
-                                          |  "href": "url",
-                                          |  "fields": {
-                                          |    "field": "value"
-                                          |  }
-                                          |}""".stripMargin)
+      response.headers.status shouldBe Status.OK
+      response.body.map{ res =>
+        res shouldBe """{
+                   |  "href": "url",
+                   |  "fields": {
+                   |    "field": "value"
+                   |  }
+                   |}""".stripMargin
+        }
 
       verify(
         getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/tranformed-bti-records"))

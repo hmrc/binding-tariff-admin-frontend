@@ -17,20 +17,35 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
 import javax.inject.{Inject, Singleton}
-import play.api.libs.json.JsValue
+import play.api.libs.ws.{StreamedResponse, WSClient}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class DataMigrationJsonConnector @Inject()(configuration: AppConfig, http: AuthenticatedHttpClient) {
+class DataMigrationJsonConnector @Inject()(
+  configuration: AppConfig,
+  http: AuthenticatedHttpClient,
+  wsClient: WSClient) {
 
-  def generateJson(files: List[FileUploaded])(implicit hc: HeaderCarrier): Future[JsValue] = {
+  def sendDataForProcessing(files: List[FileUploaded])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
 
-    http.POST[List[FileUploaded], JsValue](
-      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/json", files)
+    http.POST[List[FileUploaded], HttpResponse](
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/send-data-for-processing", files)
+  }
+
+  def getStatusOfJsonProcessing(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+
+    http.GET[HttpResponse](
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/processing-status")
+  }
+
+  def downloadJson: Future[StreamedResponse] = {
+
+    wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/tranformed-bti-records")
+      .withMethod("GET").stream()
   }
 }

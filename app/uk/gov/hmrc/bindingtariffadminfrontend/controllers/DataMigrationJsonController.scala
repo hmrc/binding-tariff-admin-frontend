@@ -23,16 +23,18 @@ import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
+import uk.gov.hmrc.bindingtariffadminfrontend.views.html.csv_processing_status
+import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 @Singleton
 class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAction,
@@ -49,7 +51,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     "CaseTelephoneNo", "CaseFaxNo", "CaseAgentName", "CaseNameCompleted", "LiabilityPortOfficerName", "LiabilityPortOfficerTel",
     "SupressUserName", "InsBoardFileUserName")
 
-  def randomize(s: String): String = {
+  private def randomize(s: String): String = {
 
     def r(s: List[Char], n: Int): List[Char] = {
       if (n == 0) Nil
@@ -97,27 +99,50 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
           case (_, Some(data)) =>
             ByteString(data.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
         }
-
       Ok.chunked(result)
     }
   }
 
-  def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
+  def postDataAndRedirect: Action[AnyContent] = authenticatedAction.async { implicit request =>
 
-    val res = for {
+    for {
       files <- service.getDataMigrationFilesDetails(List("tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
         "eBTI_Addresses_csv", "tblCaseRecord_csv", "tblCaseBTI_csv", "tblImages_csv",
         "tblMovement_csv", "tblSample_csv", "tblUser_csv"))
-      result <- connector.generateJson(files)
+      result <- connector.sendDataForProcessing(files)
     } yield {
-      Json.prettyPrint(result).replaceAll("_x000D_", "\\\\r")
-    }
-
-    res.map { result =>
-      Ok(result).withHeaders(
-        "Content-Type" -> "application/json",
-        "Content-Disposition" -> s"attachment; filename=BTI-Data-Migration${DateTime.now().toString("yyyyMMddHHmmss")}.json"
-      )
+      result.status match {
+        case ACCEPTED => Redirect(routes.DataMigrationJsonController.checkStatus())
+        case _ => throw new RuntimeException("data processing error")
+      }
     }
   }
+
+  def checkStatus: Action[AnyContent] = authenticatedAction.async { implicit request =>
+    Future.successful(Ok(csv_processing_status()))
+  }
+
+  def getStatusOfJsonProcessing: Action[AnyContent] = authenticatedAction.async { implicit request =>
+
+    connector.getStatusOfJsonProcessing.map{
+      case response if response.status == OK => Ok(response.body).as("application/json")
+      case response => Status(response.status)(response.body).as("application/json")
+    }
+  }
+
+  def downloadJson: Action[AnyContent] = authenticatedAction.async {
+
+    connector.downloadJson.map{ res =>
+        res.headers.status match{
+          case OK => res.body
+          case _ => throw new BadRequestException("Failed to get mapped json from data migration api " + res.headers.status)
+        }
+      }
+      .map{ dataContent =>
+        Ok.chunked(dataContent).withHeaders(
+          "Content-Type" -> "application/json",
+          "Content-Disposition" -> s"attachment; filename=BTI-Data-Migration${DateTime.now().toString("yyyyMMddHHmmss")}.json")
+    }
+  }
+
 }

@@ -17,8 +17,10 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.common.{EntityStreamingSupport, JsonEntityStreamingSupport}
 import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
+import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
@@ -132,6 +134,12 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
 
   def downloadJson: Action[AnyContent] = authenticatedAction.async {
 
+    implicit val jsonStreamingSupport: JsonEntityStreamingSupport = EntityStreamingSupport.json()
+
+    val start = ByteString.fromString("[")
+    val between = ByteString.fromString(",")
+    val end = ByteString.fromString("]")
+
     connector.downloadJson.map{ res =>
         res.headers.status match{
           case OK => res.body
@@ -139,7 +147,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
         }
       }
       .map{ dataContent =>
-        Ok.chunked(dataContent).withHeaders(
+        Ok.chunked(dataContent.intersperse(start, between, end)).withHeaders(
           "Content-Type" -> "application/json",
           "Content-Disposition" -> s"attachment; filename=BTI-Data-Migration${DateTime.now().toString("yyyyMMddHHmmss")}.json")
     }

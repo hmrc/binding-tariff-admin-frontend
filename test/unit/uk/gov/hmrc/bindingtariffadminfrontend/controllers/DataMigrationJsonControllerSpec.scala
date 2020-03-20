@@ -178,12 +178,12 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
       val result = await(controller.downloadJson()(newFakeGETRequestWithCSRF))
 
       status(result) shouldBe OK
-      jsonBodyOf(result) shouldBe Json.parse("""{
+      jsonBodyOf(result) shouldBe Json.parse("""[{
                                                |  "href": "url",
                                                |  "fields": {
                                                |    "field": "value"
                                                |  }
-                                               |}""".stripMargin)
+                                               |}]""".stripMargin)
 
     }
 

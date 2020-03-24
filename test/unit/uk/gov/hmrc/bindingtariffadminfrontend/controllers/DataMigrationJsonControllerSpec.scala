@@ -27,9 +27,11 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import play.api.http.Status._
 import play.api.i18n.{DefaultLangs, DefaultMessagesApi}
+import play.api.libs.Files.TemporaryFile
 import play.api.libs.json.Json
 import play.api.libs.ws.{DefaultWSResponseHeaders, StreamedResponse}
-import play.api.mvc.{AnyContentAsEmpty, Result}
+import play.api.mvc.MultipartFormData.FilePart
+import play.api.mvc.{AnyContentAsEmpty, MultipartFormData, Result}
 import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.{Configuration, Environment}
 import play.filters.csrf.CSRF.{Token, TokenProvider}
@@ -68,6 +70,54 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
     reset(migrationService, migrationConnector)
   }
 
+  "getAnonymiseData /" should {
+
+    "return 200" in {
+
+      val result: Result = await(controller.getAnonymiseData()(newFakeRequestWithCSRF))
+
+      status(result) shouldBe OK
+    }
+  }
+
+  "anonymiseData /" should {
+
+    "return 200" in {
+
+      val filename: String = "file.txt"
+      val mimeType: String = "application/csv"
+      val data : MultipartFormData[TemporaryFile] = {
+        val file = TemporaryFile(filename)
+        val filePart = FilePart[TemporaryFile](key = "file", filename, contentType = Some(mimeType), ref = file)
+        MultipartFormData[TemporaryFile](
+          dataParts = Map("id" -> Seq(filename), "filename" -> Seq(filename), "mimetype" -> Seq(mimeType)),
+          files = Seq(filePart),
+          badParts = Seq.empty
+        )
+      }
+
+      val result = await(controller.anonymiseData()(newFakeRequestWithCSRF.withBody(data)))
+
+      status(result) shouldBe OK
+
+    }
+
+    "return 400" in {
+      val data : MultipartFormData[TemporaryFile] = {
+        MultipartFormData[TemporaryFile](
+          dataParts = Map("id" -> Seq.empty, "filename" -> Seq.empty, "mimetype" -> Seq.empty),
+          files = Seq.empty,
+          badParts = Seq.empty
+        )
+      }
+
+      val result = await(controller.anonymiseData()(newFakeRequestWithCSRF.withBody(data)))
+
+      status(result) shouldBe BAD_REQUEST
+
+    }
+  }
+
   "postDataAndRedirect /" should {
 
     "return 300" in {
@@ -76,7 +126,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
       given(migrationConnector.sendDataForProcessing(refEq(List(aSuccessfullyUploadedFile)))(any[HeaderCarrier]))
         .willReturn(Future.successful(HttpResponse.apply(202)))
 
-      val result: Result = await(controller.postDataAndRedirect()(newFakeGETRequestWithCSRF))
+      val result: Result = await(controller.postDataAndRedirect()(newFakeRequestWithCSRF))
 
       status(result) shouldBe SEE_OTHER
 
@@ -89,7 +139,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
         thenReturn(Future.failed(Upstream4xxResponse("error", 409, 0)))
 
       intercept[Upstream4xxResponse] {
-        await(controller.postDataAndRedirect()(newFakeGETRequestWithCSRF))
+        await(controller.postDataAndRedirect()(newFakeRequestWithCSRF))
       }
 
       verify(migrationService, atLeastOnce()).getDataMigrationFilesDetails(refEq(csvList))(any[HeaderCarrier])
@@ -103,7 +153,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
         .willReturn(Future.failed(Upstream5xxResponse("error", 500, 0)))
 
       intercept[Upstream5xxResponse] {
-        await(controller.postDataAndRedirect()(newFakeGETRequestWithCSRF))
+        await(controller.postDataAndRedirect()(newFakeRequestWithCSRF))
       }
 
       verify(migrationService, atLeastOnce()).getDataMigrationFilesDetails(refEq(csvList))(any[HeaderCarrier])
@@ -120,7 +170,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
         .willReturn(Future.successful(HttpResponse.apply(BAD_REQUEST)))
 
       intercept[RuntimeException] {
-        await(controller.postDataAndRedirect()(newFakeGETRequestWithCSRF))
+        await(controller.postDataAndRedirect()(newFakeRequestWithCSRF))
       }
 
       verify(migrationService, atLeastOnce()).getDataMigrationFilesDetails(refEq(csvList))(any[HeaderCarrier])
@@ -132,7 +182,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
 
     "return 200" in {
 
-      val result: Result = await(controller.checkStatus()(newFakeGETRequestWithCSRF))
+      val result: Result = await(controller.checkStatus()(newFakeRequestWithCSRF))
 
       status(result) shouldBe OK
     }
@@ -144,7 +194,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
       given(migrationConnector.getStatusOfJsonProcessing(any[HeaderCarrier]))
         .willReturn(Future.successful(HttpResponse.apply(200, responseJson= Some(Json.obj("status" -> "inserting")))))
 
-      val result: Result = await(controller.getStatusOfJsonProcessing()(newFakeGETRequestWithCSRF))
+      val result: Result = await(controller.getStatusOfJsonProcessing()(newFakeRequestWithCSRF))
 
       status(result) shouldBe OK
       jsonBodyOf(result) shouldBe Json.obj("status" -> "inserting")
@@ -154,7 +204,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
       given(migrationConnector.getStatusOfJsonProcessing(any[HeaderCarrier]))
         .willReturn(Future.successful(HttpResponse.apply(400, responseJson= Some(Json.obj("error" -> "error while inserting")))))
 
-      val result: Result = await(controller.getStatusOfJsonProcessing()(newFakeGETRequestWithCSRF))
+      val result: Result = await(controller.getStatusOfJsonProcessing()(newFakeRequestWithCSRF))
 
       status(result) shouldBe BAD_REQUEST
       jsonBodyOf(result) shouldBe Json.obj("error" -> "error while inserting")
@@ -175,7 +225,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
         DefaultWSResponseHeaders(200, Map.empty), body= Source.apply(List(ByteString(json.toString()))))
       given(migrationConnector.downloadJson).willReturn(Future.successful(response))
 
-      val result = await(controller.downloadJson()(newFakeGETRequestWithCSRF))
+      val result = await(controller.downloadJson()(newFakeRequestWithCSRF))
 
       status(result) shouldBe OK
       jsonBodyOf(result) shouldBe Json.parse("""[{
@@ -194,12 +244,12 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
       given(migrationConnector.downloadJson).willReturn(Future.successful(response))
 
       intercept[BadRequestException](
-        await(controller.downloadJson()(newFakeGETRequestWithCSRF))
+        await(controller.downloadJson()(newFakeRequestWithCSRF))
       )
     }
   }
 
-  private def newFakeGETRequestWithCSRF: FakeRequest[AnyContentAsEmpty.type] = {
+  private def newFakeRequestWithCSRF: FakeRequest[AnyContentAsEmpty.type] = {
     val tokenProvider: TokenProvider = fakeApplication.injector.instanceOf[TokenProvider]
     val csrfTags = Map(Token.NameRequestTag -> "csrfToken", Token.RequestTag -> tokenProvider.generateToken)
     FakeRequest("GET", "/", FakeHeaders(), AnyContentAsEmpty, tags = csrfTags)

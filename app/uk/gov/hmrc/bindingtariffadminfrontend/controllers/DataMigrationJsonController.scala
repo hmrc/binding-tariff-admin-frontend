@@ -20,16 +20,17 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.common.{EntityStreamingSupport, JsonEntityStreamingSupport}
 import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.FileIO
 import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.streams.Accumulator
+import play.api.libs.Files.TemporaryFile
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
+import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.csv_processing_status
 import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
@@ -37,6 +38,7 @@ import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.Future.successful
 
 @Singleton
 class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAction,
@@ -66,42 +68,51 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     r(s.toList, s.length).mkString
   }
 
-  def anonymiseData: EssentialAction = EssentialAction { requestHeader =>
+
+  def getAnonymiseData: Action[AnyContent] = authenticatedAction.async { implicit request =>
+    successful(Ok(views.html.file_anonymisation_upload()))
+  }
+
+  def anonymiseData: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
 
     var headers: Option[List[String]] = None
 
-    Accumulator.source.map { source =>
-
-      val result = source
-        .via(lineScanner())
-        .map(_.map(_.utf8String))
-        .map { list =>
-          headers match {
-            case None =>
-              headers = Some(list)
-              (list, None)
-            case Some(headers) =>
-              (headers, Some(list))
-          }
-        }
-        .map {
-          case (headers, None) =>
-            (headers, None)
-          case (headers, Some(data)) =>
-            val listMap = ListMap(headers.zip(data): _*) map {
-              case (key, v1) if keys.contains(key) => (key, randomize(v1))
-              case ("Postcode ", _ ) => ("Postcode ", "ZZ11ZZ")
-              case x => x
+    val file = request.body.files.find(_.filename.nonEmpty)
+    file match {
+      case Some(name) =>
+        val res = FileIO.fromFile(name.ref.file)
+          .via(lineScanner())
+          .map(_.map(_.utf8String))
+          .map { list =>
+            headers match {
+              case None =>
+                headers = Some(list)
+                (list, None)
+              case Some(headers) =>
+                (headers, Some(list))
             }
-            (headers, Some(listMap.values.toList))
-        }
-        .map {
-          case (headers, None) =>
-            ByteString(headers.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
-          case (_, Some(data)) =>
-            ByteString(data.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
-        }
-      Ok.chunked(result)
+          }
+          .map {
+            case (headers, None) =>
+              (headers, None)
+            case (headers, Some(data)) =>
+              val listMap = ListMap(headers.zip(data): _*) map {
+                case (key, v1) if keys.contains(key) => (key, randomize(v1))
+                case ("Postcode ", _) => ("Postcode ", "ZZ11ZZ")
+                case x => x
+              }
+              (headers, Some(listMap.values.toList))
+          }
+          .map {
+            case (headers, None) =>
+              ByteString(headers.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
+            case (_, Some(data)) =>
+              ByteString(data.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
+          }
+        successful(Ok.chunked(res).withHeaders(
+          "Content-Type" -> "application/json",
+          "Content-Disposition" -> s"attachment; filename=${name.filename}"))
+      case None => successful(BadRequest)
     }
   }
 

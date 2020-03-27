@@ -17,7 +17,6 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.common.{EntityStreamingSupport, JsonEntityStreamingSupport}
 import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.scaladsl.FileIO
@@ -49,7 +48,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
                                             override val messagesApi: MessagesApi,
                                             implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
 
- private lazy val keys = List("FirstName", "LastName", "ContactName", "CaseEmail", "Contact", "CancelledUser",
+  private lazy val keys = List("FirstName", "LastName", "ContactName", "CaseEmail", "Contact", "CancelledUser",
     "Name", "Address1", "Address2", "Address3", "TelephoneNo", "FaxNo", "Email", "City", "VATRegTurnNo", "Signature",
     "CaseName", "CaseAddress1", "CaseAddress2", "CaseAddress3", "CaseAddress4", "CaseAddress5", "CasePostCode",
     "CaseTelephoneNo", "CaseFaxNo", "CaseAgentName", "CaseNameCompleted", "LiabilityPortOfficerName", "LiabilityPortOfficerTel",
@@ -145,23 +144,17 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
 
   def downloadJson: Action[AnyContent] = authenticatedAction.async {
 
-    implicit val jsonStreamingSupport: JsonEntityStreamingSupport = EntityStreamingSupport.json()
-
-    val start = ByteString.fromString("[")
-    val between = ByteString.fromString(",")
-    val end = ByteString.fromString("]")
-
     connector.downloadJson.map{ res =>
-        res.headers.status match{
-          case OK => res.body
-          case _ => throw new BadRequestException("Failed to get mapped json from data migration api " + res.headers.status)
-        }
+      res.headers.status match{
+        case OK => res.body
+        case _ => throw new BadRequestException("Failed to get mapped json from data migration api " + res.headers.status)
       }
-      .map{ dataContent =>
-        Ok.chunked(dataContent.intersperse(start, between, end)).withHeaders(
-          "Content-Type" -> "application/json",
-          "Content-Disposition" -> s"attachment; filename=BTI-Data-Migration${DateTime.now().toString("yyyyMMddHHmmss")}.json")
     }
+      .map{ dataContent =>
+        Ok.chunked(dataContent).withHeaders(
+          "Content-Type" -> "application/json",
+          "Content-Disposition" -> s"attachment; filename=BTI-Data-Migration${DateTime.now().toString("ddMMyyyyHHmmss")}.json")
+      }
   }
 
 }

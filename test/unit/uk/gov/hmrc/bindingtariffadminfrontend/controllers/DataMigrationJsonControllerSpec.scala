@@ -211,7 +211,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
     }
   }
 
-  "downloadJson /" should {
+  "downloadBTIJson /" should {
 
     "return 200" in {
       val json = Json.parse("""{
@@ -223,9 +223,9 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
 
       val response = StreamedResponse.apply(
         DefaultWSResponseHeaders(200, Map.empty), body= Source.apply(List(ByteString(json.toString()))))
-      given(migrationConnector.downloadJson).willReturn(Future.successful(response))
+      given(migrationConnector.downloadBTIJson).willReturn(Future.successful(response))
 
-      val result = await(controller.downloadJson()(newFakeRequestWithCSRF))
+      val result = await(controller.downloadBTIJson()(newFakeRequestWithCSRF))
 
       status(result) shouldBe OK
       jsonBodyOf(result) shouldBe Json.parse("""{
@@ -241,10 +241,48 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
       val response = StreamedResponse.apply(
         DefaultWSResponseHeaders(400, Map.empty), body= Source.apply(
           List(ByteString(Json.obj("error" -> "error while building josn").toString()))))
-      given(migrationConnector.downloadJson).willReturn(Future.successful(response))
+      given(migrationConnector.downloadBTIJson).willReturn(Future.successful(response))
 
       intercept[BadRequestException](
-        await(controller.downloadJson()(newFakeRequestWithCSRF))
+        await(controller.downloadBTIJson()(newFakeRequestWithCSRF))
+      )
+    }
+  }
+
+  "downloadLiabilitiesJson /" should {
+
+    "return 200" in {
+      val json = Json.parse("""{
+                              |  "href": "url",
+                              |  "fields": {
+                              |    "field": "value"
+                              |  }
+                              |}""".stripMargin)
+
+      val response = StreamedResponse.apply(
+        DefaultWSResponseHeaders(200, Map.empty), body= Source.apply(List(ByteString(json.toString()))))
+      given(migrationConnector.downloadLiabilitiesJson).willReturn(Future.successful(response))
+
+      val result = await(controller.downloadLiabilitiesJson()(newFakeRequestWithCSRF))
+
+      status(result) shouldBe OK
+      jsonBodyOf(result) shouldBe Json.parse("""{
+                                               |  "href": "url",
+                                               |  "fields": {
+                                               |    "field": "value"
+                                               |  }
+                                               |}""".stripMargin)
+
+    }
+
+    "return 400" in {
+      val response = StreamedResponse.apply(
+        DefaultWSResponseHeaders(400, Map.empty), body= Source.apply(
+          List(ByteString(Json.obj("error" -> "error while building josn").toString()))))
+      given(migrationConnector.downloadLiabilitiesJson).willReturn(Future.successful(response))
+
+      intercept[BadRequestException](
+        await(controller.downloadLiabilitiesJson()(newFakeRequestWithCSRF))
       )
     }
   }

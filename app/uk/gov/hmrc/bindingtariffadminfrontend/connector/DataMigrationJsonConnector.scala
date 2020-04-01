@@ -43,9 +43,15 @@ class DataMigrationJsonConnector @Inject()(
       s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/processing-status")
   }
 
-  def downloadJson: Future[StreamedResponse] = {
+  def downloadBTIJson: Future[StreamedResponse] = {
 
-    wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/tranformed-bti-records")
+    wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/transformed-bti-records")
+      .withMethod("GET").stream()
+  }
+
+  def downloadLiabilitiesJson: Future[StreamedResponse] = {
+
+    wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/transformed-liabilities-records")
       .withMethod("GET").stream()
   }
 }

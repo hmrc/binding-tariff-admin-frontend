@@ -103,18 +103,18 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
     }
   }
 
-  "Connector downloadJson" should {
+  "Connector downloadBTIJson" should {
 
-    "return the json for the mutiple files" in {
+    "return the json for the multiple files" in {
       stubFor(
-        get("/binding-tariff-data-transformation/tranformed-bti-records")
+        get("/binding-tariff-data-transformation/transformed-bti-records")
           .willReturn(
             aResponse()
               .withStatus(Status.OK)
               .withBody(fromResource("filestore-initiate_response.json"))
           )
       )
-      val response = await(connector.downloadJson)
+      val response = await(connector.downloadBTIJson)
 
       response.headers.status shouldBe Status.OK
       response.body.map{ res =>
@@ -127,13 +127,13 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
         }
 
       verify(
-        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/tranformed-bti-records"))
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/transformed-bti-records"))
       )
     }
 
     "propagate errors" in {
       stubFor(
-        get("/binding-tariff-data-transformation/tranformed-bti-records")
+        get("/binding-tariff-data-transformation/transformed-bti-records")
           .willReturn(notFound()
             .withBody(Json.obj("status" -> "error").toString()))
       )
@@ -143,7 +143,52 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
       }
 
       verify(
-        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/tranformed-bti-records"))
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/transformed-bti-records"))
+      )
+    }
+  }
+
+  "Connector downloadLiabilitiesJson" should {
+
+    "return the json for the mutiple files" in {
+      stubFor(
+        get("/binding-tariff-data-transformation/transformed-liabilities-records")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+              .withBody(fromResource("filestore-initiate_response.json"))
+          )
+      )
+      val response = await(connector.downloadLiabilitiesJson)
+
+      response.headers.status shouldBe Status.OK
+      response.body.map{ res =>
+        res shouldBe """{
+                   |  "href": "url",
+                   |  "fields": {
+                   |    "field": "value"
+                   |  }
+                   |}""".stripMargin
+        }
+
+      verify(
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/transformed-liabilities-records"))
+      )
+    }
+
+    "propagate errors" in {
+      stubFor(
+        get("/binding-tariff-data-transformation/transformed-bti-records")
+          .willReturn(notFound()
+            .withBody(Json.obj("status" -> "error").toString()))
+      )
+
+      intercept[NotFoundException] {
+        await(connector.getStatusOfJsonProcessing)
+      }
+
+      verify(
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/transformed-liabilities-records"))
       )
     }
   }

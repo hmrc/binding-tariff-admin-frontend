@@ -73,6 +73,8 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     successful(Ok(views.html.file_anonymisation_upload()))
   }
 
+  // scalastyle:off method.length
+  // scalastyle:off cyclomatic.complexity
   def anonymiseData: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
 
     var headers: Option[List[String]] = None
@@ -107,7 +109,11 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
             case (headers, None) =>
               ByteString(headers.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
             case (_, Some(data)) =>
-              ByteString(data.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
+              if(name.filename.contains(".csv")) {
+                ByteString(data.map(_.replace("\"", "\\\"").replaceAll("\n", "\\\\n").replaceAll("\r", "\\\\r")).map(s => '"' + s + '"').mkString(",") + "\n")
+              } else {
+                ByteString(data.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
+              }
           }
         successful(Ok.chunked(res).withHeaders(
           "Content-Type" -> "application/json",

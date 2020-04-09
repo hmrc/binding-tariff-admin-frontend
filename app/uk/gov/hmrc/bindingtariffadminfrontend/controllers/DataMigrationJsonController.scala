@@ -18,8 +18,9 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
+import akka.stream.alpakka.csv.scaladsl.CsvFormatting
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
-import akka.stream.scaladsl.FileIO
+import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
@@ -105,16 +106,13 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
               }
               (headers, Some(listMap.values.toList))
           }
-          .map {
+          .flatMapMerge(1, {
             case (headers, None) =>
-              ByteString(headers.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
+              Source.single(headers).via(CsvFormatting.format())
             case (_, Some(data)) =>
-              if(name.filename.contains(".csv")) {
-                ByteString(data.map(_.replace("\"", "\\\"").replaceAll("\n", "\\\\n").replaceAll("\r", "\\\\r")).map(s => '"' + s + '"').mkString(",") + "\n")
-              } else {
-                ByteString(data.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
-              }
-          }
+              Source.single(data).via(CsvFormatting.format())
+          })
+
         successful(Ok.chunked(res).withHeaders(
           "Content-Type" -> "application/json",
           "Content-Disposition" -> s"attachment; filename=${name.filename}"))

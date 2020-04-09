@@ -18,13 +18,15 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
+import akka.stream.alpakka.csv.scaladsl.CsvFormatting
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
-import akka.stream.scaladsl.FileIO
+import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
+import play.api.libs.ws.StreamedResponse
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
@@ -72,6 +74,8 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     successful(Ok(views.html.file_anonymisation_upload()))
   }
 
+  // scalastyle:off method.length
+  // scalastyle:off cyclomatic.complexity
   def anonymiseData: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
 
     var headers: Option[List[String]] = None
@@ -102,12 +106,13 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
               }
               (headers, Some(listMap.values.toList))
           }
-          .map {
+          .flatMapMerge(1, {
             case (headers, None) =>
-              ByteString(headers.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
+              Source.single(headers).via(CsvFormatting.format())
             case (_, Some(data)) =>
-              ByteString(data.map(_.replace("\"", "\\\"")).map(s => '"' + s + '"').mkString(",") + "\n")
-          }
+              Source.single(data).via(CsvFormatting.format())
+          })
+
         successful(Ok.chunked(res).withHeaders(
           "Content-Type" -> "application/json",
           "Content-Disposition" -> s"attachment; filename=${name.filename}"))
@@ -142,19 +147,28 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     }
   }
 
-  def downloadJson: Action[AnyContent] = authenticatedAction.async {
+  def downloadBTIJson: Action[AnyContent] = authenticatedAction.async {
 
-    connector.downloadJson.map{ res =>
+    downloadJson(connector.downloadBTIJson, "BTI")
+  }
+
+  def downloadLiabilitiesJson: Action[AnyContent] = authenticatedAction.async {
+
+    downloadJson(connector.downloadLiabilitiesJson, "Liabilities")
+  }
+
+  private def downloadJson(download : Future[StreamedResponse], jsonType : String): Future[Result] ={
+    download.map{ res =>
       res.headers.status match{
         case OK => res.body
-        case _ => throw new BadRequestException("Failed to get mapped json from data migration api " + res.headers.status)
+        case _ => throw new BadRequestException(s"Failed to get mapped json from data migration api for $jsonType" + res.headers.status)
       }
     }
-      .map{ dataContent =>
-        Ok.chunked(dataContent).withHeaders(
-          "Content-Type" -> "application/json",
-          "Content-Disposition" -> s"attachment; filename=BTI-Data-Migration${DateTime.now().toString("ddMMyyyyHHmmss")}.json")
-      }
+    .map{ dataContent =>
+      Ok.chunked(dataContent).withHeaders(
+        "Content-Type" -> "application/json",
+        "Content-Disposition" -> s"attachment; filename=$jsonType-Data-Migration${DateTime.now().toString("ddMMyyyyHHmmss")}.json")
+    }
   }
 
 }

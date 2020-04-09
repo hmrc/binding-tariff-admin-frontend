@@ -41,20 +41,20 @@ var dataProcessing = {
                 }
 
                 function updateState(response) {
-                   var status = document.getElementById("processing-status");
-                    status.innerHTML = response.status;
+                    document.getElementById("bti-processing-status").innerHTML = response.status;
+                    document.getElementById("liabilities-processing-status").innerHTML = response.status;
                 }
 
                 function updateError(response) {
-                   var status = document.getElementById("processing-status");
-                    status.innerHTML = response.error;
+                    document.getElementById("bti-processing-status").innerHTML = response.error;
+                    document.getElementById("liabilities-processing-status").innerHTML = response.error;
                 }
 
                 function updateContinueMessage() {
-                    var status = document.getElementById("processing-status");
+                    var status = document.getElementById("bti-processing-status");
                     if(status.innerHTML == "done"){
-                        var data_migration_upload = document.getElementById("data_migration_processing-status");
-                        data_migration_upload.removeAttribute("disabled");
+                        document.getElementById("data_migration_bti_processing_status").removeAttribute("disabled");
+                        document.getElementById("data_migration_liabilities_processing_status").removeAttribute("disabled");
                     }
                 }
             }

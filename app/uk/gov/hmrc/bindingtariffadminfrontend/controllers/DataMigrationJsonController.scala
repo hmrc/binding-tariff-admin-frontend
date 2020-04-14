@@ -18,7 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.alpakka.csv.scaladsl.CsvFormatting
+import akka.stream.alpakka.csv.scaladsl.{CsvFormatting, CsvQuotingStyle}
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
@@ -108,9 +108,9 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
           }
           .flatMapMerge(1, {
             case (headers, None) =>
-              Source.single(headers).via(CsvFormatting.format())
+              Source.single(headers).via(CsvFormatting.format(quotingStyle = CsvQuotingStyle.Always))
             case (_, Some(data)) =>
-              Source.single(data).via(CsvFormatting.format())
+              Source.single(data).via(CsvFormatting.format(quotingStyle = CsvQuotingStyle.Always))
           })
 
         successful(Ok.chunked(res).withHeaders(

@@ -74,6 +74,8 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     successful(Ok(views.html.file_anonymisation_upload()))
   }
 
+  private def errorLog(filename:String) = s" ************ Error occurred while processing file $filename ************"
+
   // scalastyle:off method.length
   // scalastyle:off cyclomatic.complexity
   def anonymiseData: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
@@ -84,7 +86,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     file match {
       case Some(name) =>
         val res = FileIO.fromFile(name.ref.file)
-          .via(lineScanner())
+          .via(lineScanner()).log(errorLog(name.ref.file.getName))
           .map(_.map(_.utf8String))
           .map { list =>
             headers match {

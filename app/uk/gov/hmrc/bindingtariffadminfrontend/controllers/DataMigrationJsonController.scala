@@ -19,7 +19,8 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.{CsvFormatting, CsvQuotingStyle}
-import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
+//import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
+import uk.gov.hmrc.bindingtariffadminfrontend.akka_fix.csv.CsvParsing.lineScanner
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import akka.util.ByteString
 import javax.inject.{Inject, Singleton}

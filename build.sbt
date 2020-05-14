@@ -52,7 +52,8 @@ lazy val microservice = (project in file("."))
     parallelExecution in IntegrationTest := false)
   .settings(
     resolvers += Resolver.bintrayRepo("hmrc", "releases"),
-    resolvers += Resolver.jcenterRepo)
+    resolvers += Resolver.jcenterRepo,
+    resolvers += Resolver.bintrayRepo("akka", "snapshots"))
   .settings(ivyScala := ivyScala.value map {
     _.copy(overrideScalaVersion = true)
   })

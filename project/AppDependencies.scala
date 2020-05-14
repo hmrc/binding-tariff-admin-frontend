@@ -16,7 +16,7 @@ object AppDependencies {
     "uk.gov.hmrc"                 %% "play-scheduling"            % "5.4.0",
     "uk.gov.hmrc"                 %% "play-ui"                    % "7.40.0-play-25",
     "org.reactivemongo"           %% "reactivemongo-akkastream"   % "0.20.1",
-    "com.lightbend.akka"          %% "akka-stream-alpakka-csv"    % "2.0.0+10-668c6cac",
+    "com.lightbend.akka"          %% "akka-stream-alpakka-csv"    % "1.1.2",
     "com.typesafe.akka"           %% "akka-http"                  % "10.0.12",
     "com.typesafe.akka"           %% "akka-stream"                % "2.5.8"
   )

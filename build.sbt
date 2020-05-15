@@ -52,7 +52,8 @@ lazy val microservice = (project in file("."))
     parallelExecution in IntegrationTest := false)
   .settings(
     resolvers += Resolver.bintrayRepo("hmrc", "releases"),
-    resolvers += Resolver.jcenterRepo)
+    resolvers += Resolver.jcenterRepo,
+    resolvers += Resolver.bintrayRepo("akka", "snapshots"))
   .settings(ivyScala := ivyScala.value map {
     _.copy(overrideScalaVersion = true)
   })
@@ -74,4 +75,4 @@ def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] = {
 // Coverage configuration
 coverageMinimum := 74
 coverageFailOnMinimum := true
-coverageExcludedPackages := "<empty>;com.kenshoo.play.metrics.*;prod.*;testOnlyDoNotUseInAppConf.*;app.*;uk.gov.hmrc.BuildInfo"
+coverageExcludedPackages := "<empty>;com.kenshoo.play.metrics.*;prod.*;testOnlyDoNotUseInAppConf.*;app.*;uk.gov.hmrc.BuildInfo;uk.gov.hmrc.bindingtariffadminfrontend.akka_fix.csv.*"

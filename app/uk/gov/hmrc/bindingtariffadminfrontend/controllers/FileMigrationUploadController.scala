@@ -23,7 +23,7 @@ import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadRequest
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{UploadRequest, UploadAttachmentRequest}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.http.{Upstream4xxResponse, Upstream5xxResponse}
@@ -39,11 +39,11 @@ class FileMigrationUploadController @Inject()(authenticatedAction: Authenticated
                                               override val messagesApi: MessagesApi,
                                               implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
 
-  private lazy val form = Form[UploadRequest](
-    mapping[UploadRequest, String, String](
+  private lazy val form = Form[UploadAttachmentRequest](
+    mapping[UploadAttachmentRequest, String, String](
       "filename" -> text,
       "mimetype" -> text
-    )(UploadRequest.apply)(UploadRequest.unapply)
+    )(UploadAttachmentRequest.apply)(UploadAttachmentRequest.unapply)
   )
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>

@@ -31,7 +31,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassifica
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Cases.btiApplicationExample
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadMigrationDataRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -619,7 +619,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
   "Service initiate" should {
     "Delegate to connector" in {
-      val request = UploadRequest("name", "type")
+      val request = UploadMigrationDataRequest("name", "type")
       val template = UploadTemplate("href", Map())
 
       given(fileConnector.initiate(request)) willReturn Future.successful(template)
@@ -630,7 +630,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
   "Service upload" should {
     "Delegate to connector" in {
-      val request = UploadRequest("name", "type")
+      val request = UploadMigrationDataRequest("name", "type")
       val template = UploadTemplate("href", Map())
       val file = mock[TemporaryFile]
 

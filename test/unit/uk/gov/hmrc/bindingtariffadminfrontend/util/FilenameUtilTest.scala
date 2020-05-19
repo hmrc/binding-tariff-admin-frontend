@@ -20,9 +20,15 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 class FilenameUtilTest extends UnitSpec {
 
-  "Filename Util" should {
-    "Convert String to ID" in {
+  "FilenameUtil.toID" should {
+    "replace dots and spaces with underscores" in {
       FilenameUtil.toID("a file-name.jpg") shouldBe "a_file-name_jpg"
+    }
+  }
+
+  "FilenameUtil.toCsvID" should {
+    "also suffix filenames with _csv, replacing existing extension" in {
+      FilenameUtil.toCsvID("a file-name.jpg") shouldBe "a_file-name_csv"
     }
   }
 

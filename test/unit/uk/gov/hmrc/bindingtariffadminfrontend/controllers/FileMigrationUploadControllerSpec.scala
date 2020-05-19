@@ -30,7 +30,7 @@ import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.{Configuration, Environment}
 import play.filters.csrf.CSRF.{Token, TokenProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadRequest
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{UploadRequest, UploadAttachmentRequest}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse, Upstream5xxResponse}
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
@@ -59,7 +59,7 @@ class FileMigrationUploadControllerSpec extends WordSpec with Matchers
   }
 
   "POST /" should {
-    val request = UploadRequest(
+    val request = UploadAttachmentRequest(
       fileName = "filename",
       mimeType = "text/plain"
     )

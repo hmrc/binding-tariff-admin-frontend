@@ -19,7 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.http.Status
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadAttachmentRequest, UploadTemplate}
 
 class FileStoreConnectorTest extends ConnectorTest {
 
@@ -78,7 +78,7 @@ class FileStoreConnectorTest extends ConnectorTest {
           )
       )
 
-      val file = UploadRequest(fileName = "file name.jpg", mimeType = "type")
+      val file = UploadAttachmentRequest(fileName = "file name.jpg", mimeType = "type")
       val response = await(connector.initiate(file))
 
       response shouldBe UploadTemplate("url", Map("field" -> "value"))

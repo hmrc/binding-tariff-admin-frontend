@@ -19,7 +19,6 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 import javax.inject.Inject
 import play.api.Logger
 import play.api.libs.Files.TemporaryFile
-import play.api.libs.json.JsValue
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
@@ -29,9 +28,11 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
+import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.concurrent.Future.{sequence, successful}
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 import scala.util.Success
 
 class DataMigrationService @Inject()(repository: MigrationRepository,
@@ -62,11 +63,20 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
 
   def prepareMigration(cases: Seq[MigratableCase], priority: Boolean = false)(implicit hc: HeaderCarrier): Future[Boolean] = {
     val migrations = cases.map(Migration(_))
-    for {
-      _ <- repository.delete(migrations)
-      result <- repository.insert(migrations)
-      _ <- if(priority) Future.sequence(migrations.map(process(_).flatMap(update))) else Future.successful((): Unit)
-    } yield result
+    val groupSize = 5000
+    val grouped: immutable.Seq[Seq[Migration]] = migrations.grouped(groupSize).toList
+
+    for (group <- grouped) {
+      val delete = repository.delete(group)
+      Await.result(delete, 30.seconds)
+
+      val innerInsert = repository.insert(group)
+      Await.result(innerInsert, 30.seconds)
+
+      if (priority) Future.sequence(group.map(process(_).flatMap(update)))
+    }
+
+    Future.successful(true)
   }
 
   def getNextMigration: Future[Option[Migration]] = {

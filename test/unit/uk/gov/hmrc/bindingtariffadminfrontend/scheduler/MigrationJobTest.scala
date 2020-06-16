@@ -37,18 +37,28 @@ import uk.gov.hmrc.play.test.UnitSpec
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 
 class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
   private val config = mock[AppConfig]
   private val service = mock[DataMigrationService]
   private val lockRepository = mock[LockRepository]
+  private val appConfig = mock[AppConfig]
+  private def migrationLock = new MigrationLock(lockRepository, appConfig)
 
-  private def job = new MigrationJob(config, service, lockRepository)
+  private def withJob(test: MigrationJob => Any) = test(new MigrationJob(config, service, migrationLock, lockRepository))
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    Mockito.when(appConfig.dataMigrationLockLifetime) thenReturn FiniteDuration(60, TimeUnit.SECONDS)
+    Mockito.when(lockRepository.lock(anyString(), anyString(), any())) thenReturn Future.successful(true)
+    Mockito.when(lockRepository.releaseLock(anyString(), anyString())) thenReturn Future.successful(())
+  }
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    Mockito.reset(service, lockRepository)
+    Mockito.reset(service, appConfig, lockRepository)
   }
 
   "MigrationJob" should {
@@ -58,19 +68,19 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
     val `case` = mock[MigratableCase]
     given(`case`.reference) willReturn "reference"
 
-    "Configure 'lock Interval" in {
+    "Configure 'lock Interval" in withJob { job =>
       job.releaseLockAfter shouldBe Duration.standardSeconds(60)
     }
 
-    "Configure 'interval'" in {
+    "Configure 'interval'" in withJob { job =>
       job.interval shouldBe FiniteDuration(60, TimeUnit.SECONDS)
     }
 
-    "Configure 'initial delay'" in {
+    "Configure 'initial delay'" in withJob { job =>
       job.initialDelay shouldBe FiniteDuration(0, TimeUnit.SECONDS)
     }
 
-    "Configure 'name'" in {
+    "Configure 'name'" in withJob { job =>
       job.name shouldBe "DataMigration"
     }
   }
@@ -83,7 +93,7 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
     given(`case`.reference) willReturn "reference"
     val migration = Migration(`case`)
 
-    "Execute in Lock Successfully" in {
+    "Execute in Lock Successfully" in withJob { job =>
       val migrationComplete = Migration(`case`, MigrationStatus.SUCCESS)
       given(lockRepository.lock(anyString, anyString, any())) willReturn Future.successful(true)
       given(lockRepository.releaseLock(anyString, anyString)) willReturn Future.successful(())
@@ -97,7 +107,7 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(service).update(migrationComplete)
     }
 
-    "Execute batches of 100" in {
+    "Execute batches of 100" in withJob { job =>
       val migrationComplete = Migration(`case`, MigrationStatus.SUCCESS)
       given(lockRepository.lock(anyString, anyString, any())) willReturn Future.successful(true)
       given(lockRepository.releaseLock(anyString, anyString)) willReturn Future.successful(())
@@ -111,7 +121,7 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(service, times(100)).update(migrationComplete)
     }
 
-    "Execute in Lock handling Cleared" in {
+    "Execute in Lock handling Cleared" in withJob { job =>
       val migrationComplete = Migration(`case`, MigrationStatus.SUCCESS)
       given(lockRepository.lock(anyString, anyString, any())) willReturn Future.successful(true)
       given(lockRepository.releaseLock(anyString, anyString)) willReturn Future.successful(())
@@ -125,7 +135,7 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(service).update(migrationComplete)
     }
 
-    "Execute in Lock handling Failure" in {
+    "Execute in Lock handling Failure" in withJob { job =>
       given(lockRepository.lock(anyString, anyString, any())) willReturn Future.successful(true)
       given(lockRepository.releaseLock(anyString, anyString)) willReturn Future.successful(())
       given(service.getNextMigration) willReturn Future.successful(Some(migration)) willReturn Future.successful(None)
@@ -138,7 +148,7 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(service).update(Migration(`case`, status = MigrationStatus.FAILED, message = Seq("Error")))
     }
 
-    "Handle No Migrations Remaining" in {
+    "Handle No Migrations Remaining" in withJob { job =>
       given(lockRepository.lock(anyString, anyString, any())) willReturn Future.successful(true)
       given(lockRepository.releaseLock(anyString, anyString)) willReturn Future.successful(())
       given(service.getNextMigration) willReturn Future.successful(None)
@@ -146,7 +156,7 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       await(job.execute).message shouldBe "Job with DataMigration run and completed with result Processed 0 migrations"
     }
 
-    "Not execute if lock exists" in {
+    "Not execute if lock exists" in withJob { job =>
       given(lockRepository.lock(anyString, anyString, any())) willReturn Future.successful(false)
 
       await(job.execute)

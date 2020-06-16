@@ -73,7 +73,10 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       val innerInsert = repository.insert(group)
       Await.result(innerInsert, 30.seconds)
 
-      if (priority) Future.sequence(group.map(process(_).flatMap(update)))
+      if (priority) {
+        val future = Future.sequence(group.map(process(_).flatMap(update)))
+        Await.result(future, 30.seconds)
+      }
     }
 
     Future.successful(true)

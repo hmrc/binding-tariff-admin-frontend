@@ -107,7 +107,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       .grouped(groupSize)
       .toList
 
-    withMigrationLock(attemptNumber = 0, baseDelay = 2.seconds, delayCap = 60.seconds) {
+    withMigrationLock(attemptNumber = 0, baseDelay = 1.second, delayCap = 60.seconds) {
       (true, migrationGroups).tailRecM {
         // Processed all groups
         case (result, Nil) =>

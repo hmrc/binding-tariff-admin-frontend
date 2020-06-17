@@ -55,6 +55,7 @@ class MigrationJob @Inject()(appConfig: AppConfig,
   }
 
   private def process(count: Int = 0)(implicit ctx: ExecutionContext): Future[Int] = {
+    // TODO: Request migrations in batches rather than one at a time to improve performance
     service.getNextMigration flatMap {
       case Some(migration) if count < 100 =>
         process(migration).flatMap { result =>

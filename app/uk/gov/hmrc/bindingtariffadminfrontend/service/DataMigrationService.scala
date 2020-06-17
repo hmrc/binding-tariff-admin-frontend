@@ -86,17 +86,21 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     } yield result
   }
 
-  def withMigrationLock(attemptNumber: Int, baseDelay: FiniteDuration, delayCap: FiniteDuration)(block: => Future[Boolean]): Future[Boolean] = {
+  def withMigrationLock(attemptNumber: Int, baseDelay: FiniteDuration, delayCap: FiniteDuration, maxRetries: Int)(block: => Future[Boolean]): Future[Boolean] = {
     val exponentialBackoff = baseDelay.toMillis * math.pow(2, attemptNumber).longValue
     val backoffWithCap = math.min(delayCap.toMillis, exponentialBackoff)
     val backoffWithJitter = (backoffWithCap * Random.nextDouble()).longValue
     val retryDelay = FiniteDuration(backoffWithJitter, TimeUnit.MILLISECONDS)
 
-    migrationLock.tryLock(block).flatMap {
-      case Some(result) =>
-        Future.successful(result)
-      case None =>
-        after(retryDelay, actorSystem.scheduler)(withMigrationLock(attemptNumber + 1, baseDelay, delayCap)(block))
+    if (attemptNumber > maxRetries) {
+      Future.successful(false)
+    } else {
+      migrationLock.tryLock(block).flatMap {
+        case Some(result) =>
+          Future.successful(result)
+        case None =>
+          after(retryDelay, actorSystem.scheduler)(withMigrationLock(attemptNumber + 1, baseDelay, delayCap, maxRetries)(block))
+      }
     }
   }
 
@@ -107,7 +111,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       .grouped(groupSize)
       .toList
 
-    withMigrationLock(attemptNumber = 0, baseDelay = 1.second, delayCap = 60.seconds) {
+    withMigrationLock(attemptNumber = 0, baseDelay = 1.second, delayCap = 60.seconds, maxRetries = 10) {
       (true, migrationGroups).tailRecM {
         // Processed all groups
         case (result, Nil) =>

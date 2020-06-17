@@ -22,6 +22,7 @@ import javax.inject.Inject
 import org.joda.time.Duration
 import play.api.Logger
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Migration, MigrationStatus}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.HeaderCarrier
@@ -33,11 +34,14 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class MigrationJob @Inject()(appConfig: AppConfig,
                              service: DataMigrationService,
+                             migrationLock: MigrationLock,
                              override val lockRepository: LockRepository) extends LockedScheduledJob {
 
   private implicit val headers: HeaderCarrier = HeaderCarrier()
 
   override def name: String = "DataMigration"
+
+  override lazy val lockKeeper: MigrationLock = migrationLock
 
   override val releaseLockAfter: Duration = Duration.millis(appConfig.dataMigrationLockLifetime.toMillis)
 
@@ -51,6 +55,7 @@ class MigrationJob @Inject()(appConfig: AppConfig,
   }
 
   private def process(count: Int = 0)(implicit ctx: ExecutionContext): Future[Int] = {
+    // TODO: Request migrations in batches rather than one at a time to improve performance
     service.getNextMigration flatMap {
       case Some(migration) if count < 100 =>
         process(migration).flatMap { result =>

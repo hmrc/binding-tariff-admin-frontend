@@ -16,29 +16,45 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.service
 
+import java.util.UUID
 import javax.inject.Inject
 import play.api.Logger
 import play.api.libs.Files.TemporaryFile
-import play.api.libs.json.JsValue
+import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
+import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, Event}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
+import uk.gov.hmrc.bindingtariffadminfrontend.scheduler.MigrationJob
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.lock.LockKeeper
 
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.concurrent.Future.{sequence, successful}
+import scala.concurrent.{Await, Future}
 import scala.util.Success
 
+import akka.actor.ActorSystem
+import akka.pattern.after
+import cats._
+import cats.implicits._
+import scala.util.Random
+import java.util.concurrent.TimeUnit
+
 class DataMigrationService @Inject()(repository: MigrationRepository,
+                                     migrationLock: MigrationLock,
                                      fileConnector: FileStoreConnector,
                                      upscanS3Connector: UpscanS3Connector,
                                      rulingConnector: RulingConnector,
-                                     caseConnector: BindingTariffClassificationConnector) {
+                                     caseConnector: BindingTariffClassificationConnector,
+                                     actorSystem: ActorSystem) {
 
   def getDataMigrationFilesDetails(fileNames:List[String])(implicit hc: HeaderCarrier): Future[List[FileUploaded]] ={
 
@@ -60,13 +76,55 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     repository.countByStatus
   }
 
-  def prepareMigration(cases: Seq[MigratableCase], priority: Boolean = false)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    val migrations = cases.map(Migration(_))
+  def prepareMigrationGroup(migrations: Seq[Migration], priority: Boolean)(implicit hc: HeaderCarrier): Future[Boolean] = {
     for {
       _ <- repository.delete(migrations)
       result <- repository.insert(migrations)
-      _ <- if(priority) Future.sequence(migrations.map(process(_).flatMap(update))) else Future.successful((): Unit)
+      _ <- if (priority) {
+        Future.sequence(migrations.map(process(_).flatMap(update)))
+      } else Future.successful(())
     } yield result
+  }
+
+  def withMigrationLock(attemptNumber: Int, baseDelay: FiniteDuration, delayCap: FiniteDuration, maxRetries: Int)(block: => Future[Boolean]): Future[Boolean] = {
+    val exponentialBackoff = baseDelay.toMillis * math.pow(2, attemptNumber).longValue
+    val backoffWithCap = math.min(delayCap.toMillis, exponentialBackoff)
+    val backoffWithJitter = (backoffWithCap * Random.nextDouble()).longValue
+    val retryDelay = FiniteDuration(backoffWithJitter, TimeUnit.MILLISECONDS)
+
+    if (attemptNumber > maxRetries) {
+      Future.successful(false)
+    } else {
+      migrationLock.tryLock(block).flatMap {
+        case Some(result) =>
+          Future.successful(result)
+        case None =>
+          after(retryDelay, actorSystem.scheduler)(withMigrationLock(attemptNumber + 1, baseDelay, delayCap, maxRetries)(block))
+      }
+    }
+  }
+
+  def prepareMigration(cases: Seq[MigratableCase], priority: Boolean = false)(implicit hc: HeaderCarrier): Future[Boolean] = {
+    val groupSize = 5000
+
+    val migrationGroups = cases.map(Migration(_))
+      .grouped(groupSize)
+      .toList
+
+    withMigrationLock(attemptNumber = 0, baseDelay = 1.second, delayCap = 60.seconds, maxRetries = 10) {
+      (true, migrationGroups).tailRecM {
+        // Processed all groups
+        case (result, Nil) =>
+          Future.successful(Either.right(result))
+        // Failed processing a group
+        case (false, _) =>
+          Future.successful(Either.right(false))
+        // Process the next group
+        case (true, nextGroup :: remainingGroups) =>
+          prepareMigrationGroup(nextGroup, priority)
+            .map(result => Either.left((result, remainingGroups)))
+      }
+    }
   }
 
   def getNextMigration: Future[Option[Migration]] = {

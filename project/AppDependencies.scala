@@ -18,7 +18,9 @@ object AppDependencies {
     "org.reactivemongo"           %% "reactivemongo-akkastream"   % "0.20.1",
     "com.lightbend.akka"          %% "akka-stream-alpakka-csv"    % "1.1.2",
     "com.typesafe.akka"           %% "akka-http"                  % "10.0.12",
-    "com.typesafe.akka"           %% "akka-stream"                % "2.5.8"
+    "com.typesafe.akka"           %% "akka-stream"                % "2.5.8",
+    "org.typelevel"               %% "cats-core"                  % "2.0.0",
+    "org.typelevel"               %% "alleycats-core"             % "2.0.0"
   )
 
   private lazy val scope = "test, it"

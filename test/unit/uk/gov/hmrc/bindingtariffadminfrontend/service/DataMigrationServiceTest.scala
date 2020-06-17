@@ -38,6 +38,12 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.collection.JavaConverters
 import scala.concurrent.Future
+import akka.actor.ActorSystem
+import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
+import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+import uk.gov.hmrc.lock.LockRepository
+import scala.concurrent.duration.FiniteDuration
+import java.util.concurrent.TimeUnit
 
 class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
@@ -46,18 +52,29 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   private val fileConnector = mock[FileStoreConnector]
   private val rulingConnector = mock[RulingConnector]
   private val upscanS3Connector = mock[UpscanS3Connector]
-  private val service = new DataMigrationService(repository, fileConnector, upscanS3Connector, rulingConnector, caseConnector)
+  private val appConfig = mock[AppConfig]
+  private val lockRepository = mock[LockRepository]
+  private def migrationLock = new MigrationLock(lockRepository, appConfig)
+  private def actorSystem = ActorSystem.create("testActorSystem")
+  private def withService(test: DataMigrationService => Any) = test(new DataMigrationService(repository, migrationLock, fileConnector, upscanS3Connector, rulingConnector, caseConnector, actorSystem))
   private implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    reset(repository, caseConnector, fileConnector, rulingConnector, upscanS3Connector)
+    reset(repository, caseConnector, fileConnector, rulingConnector, upscanS3Connector, appConfig, lockRepository)
+  }
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    when(appConfig.dataMigrationLockLifetime) thenReturn FiniteDuration(60, TimeUnit.SECONDS)
+    when(lockRepository.lock(anyString(), anyString(), any())) thenReturn Future.successful(true)
+    when(lockRepository.releaseLock(anyString(), anyString())) thenReturn Future.successful(())
   }
 
   "Service getDataMigrationFilesDetails" should {
     val aSuccessfullyUploadedFile = FileUploaded("name", "published", "text/plain", None, None)
 
-    "if connector is returning the file metadata " in {
+    "if connector is returning the file metadata" in withService { service =>
 
       given(fileConnector.find(refEq("name"))(any[HeaderCarrier])).willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
 
@@ -67,7 +84,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(fileConnector, atLeastOnce()).find(refEq("name"))(any[HeaderCarrier])
     }
 
-    "if connector is returning the file metadata for mutiple callas " in {
+    "if connector is returning the file metadata for mutiple callers" in withService { service =>
 
       given(fileConnector.find(refEq("name1"))(any[HeaderCarrier])).willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
       given(fileConnector.find(refEq("name2"))(any[HeaderCarrier])).willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
@@ -79,7 +96,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(fileConnector, atLeastOnce()).find(refEq("name2"))(any[HeaderCarrier])
     }
 
-    "if connector is not returning the file metadata " in {
+    "if connector is not returning the file metadata" in withService { service =>
 
       given(fileConnector.find(any[String])(any[HeaderCarrier])).willReturn(Future.successful(None))
 
@@ -92,7 +109,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
   "Service 'Counts'" should {
 
-    "Delegate to Repository" in {
+    "Delegate to Repository" in withService { service =>
       val counts = mock[MigrationCounts]
       given(repository.countByStatus) willReturn Future.successful(counts)
       await(service.counts) shouldBe counts
@@ -103,7 +120,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val migration = mock[Migration]
     val migrations = Paged(Seq(migration))
 
-    "Delegate to Repository" in {
+    "Delegate to Repository" in withService { service =>
       given(repository.get(Seq.empty, Pagination())) willReturn Future.successful(migrations)
       await(service.getState(Seq.empty, Pagination())) shouldBe migrations
     }
@@ -112,7 +129,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   "Service 'Get Next Unprocessed'" should {
     val migration = mock[Migration]
 
-    "Delegate to Repository" in {
+    "Delegate to Repository" in withService { service =>
       given(repository.get(MigrationStatus.UNPROCESSED)) willReturn Future.successful(Some(migration))
       await(service.getNextMigration) shouldBe Some(migration)
     }
@@ -121,7 +138,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   "Service 'Prepare Migration'" should {
     val `case` = mock[MigratableCase]
 
-    "Delegate to Repository" in {
+    "Delegate to Repository" in withService { service =>
       given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
       given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
 
@@ -153,7 +170,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val migration = mock[Migration]
     val migrationUpdated = mock[Migration]
 
-    "Delegate to Repository" in {
+    "Delegate to Repository" in withService { service =>
       given(repository.update(migration)) willReturn Future.successful(Some(migrationUpdated))
 
       await(service.update(migration)) shouldBe Some(migrationUpdated)
@@ -163,7 +180,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   "Service 'Clear Environment'" should {
     val stores = Store.values
 
-    "Clear Back Ends" in {
+    "Clear Back Ends" in withService { service =>
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
@@ -179,7 +196,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(repository).delete(None)
     }
 
-    "Clear Files" in {
+    "Clear Files" in withService { service =>
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
 
       await(service.resetEnvironment(Set(Store.FILES)))
@@ -191,7 +208,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(repository, never()).delete(None)
     }
 
-    "Clear Cases" in {
+    "Clear Cases" in withService { service =>
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
 
       await(service.resetEnvironment(Set(Store.CASES)))
@@ -203,7 +220,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(repository, never()).delete(None)
     }
 
-    "Clear Events" in {
+    "Clear Events" in withService { service =>
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
 
       await(service.resetEnvironment(Set(Store.EVENTS)))
@@ -215,7 +232,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(repository, never()).delete(None)
     }
 
-    "Clear Rulings" in {
+    "Clear Rulings" in withService { service =>
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
 
       await(service.resetEnvironment(Set(Store.RULINGS)))
@@ -227,7 +244,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(repository, never()).delete(None)
     }
 
-    "Clear Migrations" in {
+    "Clear Migrations" in withService { service =>
       given(repository.delete(None)) willReturn Future.successful(true)
 
       await(service.resetEnvironment(Set(Store.MIGRATION)))
@@ -239,7 +256,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(repository).delete(None)
     }
 
-    "Handle FileStore Failure" in {
+    "Handle FileStore Failure" in withService { service =>
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
@@ -255,7 +272,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(repository).delete(None)
     }
 
-    "Handle CaseStore Case Delete Failure " in {
+    "Handle CaseStore Case Delete Failure " in withService { service =>
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
@@ -271,7 +288,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(repository).delete(None)
     }
 
-    "Handle CaseStore Event Delete Failure" in {
+    "Handle CaseStore Event Delete Failure" in withService { service =>
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
@@ -287,7 +304,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(repository).delete(None)
     }
 
-    "Handle Migrations Delete Failure" in {
+    "Handle Migrations Delete Failure" in withService { service =>
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
@@ -303,7 +320,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(repository).delete(None)
     }
 
-    "Handle Ruling Delete Failure" in {
+    "Handle Ruling Delete Failure" in withService { service =>
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
@@ -338,7 +355,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val anUnprocessedMigrationWithAttachments = Migration(migratableCaseWithAttachments)
     val anUnprocessedMigrationWithEvents = Migration(migratableCaseWithEvents)
 
-    "Migrate new Case" in {
+    "Migrate new Case" in withService { service =>
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturnsItself()
       givenNotifyingTheRulingStoreSucceeds()
@@ -350,7 +367,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       theCaseCreated shouldBe aCase
     }
 
-    "Migrate new Case - with Ruling Store failure" in {
+    "Migrate new Case - with Ruling Store failure" in withService { service =>
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturnsItself()
       givenNotifyingTheRulingStoreFails()
@@ -362,7 +379,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       theCaseCreated shouldBe aCase
     }
 
-    "Migrate new Case with Attachments - with no migrated files found" in {
+    "Migrate new Case with Attachments - with no migrated files found" in withService { service =>
       givenTheCaseDoesNotAlreadyExist()
       givenRetrievingTheUploadedFilesReturnsNone()
       givenUpsertingTheCaseReturnsItself()
@@ -378,7 +395,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       theCaseCreated shouldBe aCase
     }
 
-    "Migrate new Case with Attachments - with publish failure" in {
+    "Migrate new Case with Attachments - with publish failure" in withService { service =>
       val aSuccessfullyUploadedFile = FileUploaded("name", "published", "text/plain", None, None)
 
       givenTheCaseDoesNotAlreadyExist()
@@ -397,7 +414,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       theCaseCreated shouldBe aCaseWithAttachments
     }
 
-    "Migrate new Case with Attachments - with pre-published file" in {
+    "Migrate new Case with Attachments - with pre-published file" in withService { service =>
       val aSuccessfullyUploadedFile = FileUploaded("name", "published", "text/plain", None, None, published = true)
 
       givenTheCaseDoesNotAlreadyExist()
@@ -414,7 +431,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(fileConnector, never()).publish(any[String])(any[HeaderCarrier])
     }
 
-    "Migrate existing Case with Attachments" in {
+    "Migrate existing Case with Attachments" in withService { service =>
       val aSuccessfullyUploadedFile = FileUploaded("name", "published", "text/plain", None, None)
       val aSuccessfullyPublishedFile = FileUploaded("name", "published", "text/plain", None, None, published = true)
 
@@ -432,7 +449,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       theCaseCreated shouldBe aCaseWithAttachments
     }
 
-    "Migrate existing case with Attachments - removing missing attachments" in {
+    "Migrate existing case with Attachments - removing missing attachments" in withService { service =>
       val anExistingFile = FileUploaded("attachment-id", "published", "text/plain", None, None, published = true)
       val aSuccessfullyUploadedFile = FileUploaded("name", "published", "text/plain", None, None)
       val aSuccessfullyPublishedFile = FileUploaded("name", "published", "text/plain", None, None, published = true)
@@ -452,7 +469,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(fileConnector).delete("attachment-id")
     }
 
-    "Migrate existing Case with Events - ignoring existing events" in {
+    "Migrate existing Case with Events - ignoring existing events" in withService { service =>
       givenTheCaseExistsWithoutAttachments()
       givenTheCaseExistsWithEvents(migratedEvent1)
       givenUpsertingTheCaseReturnsItself()
@@ -467,7 +484,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       theEventsCreated shouldBe Seq(migratedEvent2)
     }
 
-    "Migrate new Case with attachments - with partial failures" in {
+    "Migrate new Case with attachments - with partial failures" in withService { service =>
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturnsItself()
       givenRetrievingTheUploadedFilesFails()
@@ -484,7 +501,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       theCaseCreated shouldBe aCase
     }
 
-    "Migrate new Case with events - with partial failures" in {
+    "Migrate new Case with events - with partial failures" in withService { service =>
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturnsItself()
       givenCreatingAnEventFails()
@@ -502,7 +519,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       theCaseCreated shouldBe aCase
     }
 
-    "Throw Exception on Upsert Failure" in {
+    "Throw Exception on Upsert Failure" in withService { service =>
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseFails()
 
@@ -606,19 +623,19 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   }
 
   "Service clear" should {
-    "Delegate to repository" in {
+    "Delegate to repository" in withService { service =>
       given(repository.delete(None)) willReturn Future.successful(true)
       await(service.clear()) shouldBe true
     }
 
-    "Delegate to repository with status" in {
+    "Delegate to repository with status" in withService { service =>
       given(repository.delete(Some(MigrationStatus.SUCCESS))) willReturn Future.successful(true)
       await(service.clear(Some(MigrationStatus.SUCCESS))) shouldBe true
     }
   }
 
   "Service initiate" should {
-    "Delegate to connector" in {
+    "Delegate to connector" in withService { service =>
       val request = UploadMigrationDataRequest("name", "type")
       val template = UploadTemplate("href", Map())
 
@@ -629,7 +646,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   }
 
   "Service upload" should {
-    "Delegate to connector" in {
+    "Delegate to connector" in withService { service =>
       val request = UploadMigrationDataRequest("name", "type")
       val template = UploadTemplate("href", Map())
       val file = mock[TemporaryFile]

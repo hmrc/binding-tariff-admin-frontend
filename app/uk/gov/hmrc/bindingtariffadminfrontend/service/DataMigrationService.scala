@@ -76,12 +76,12 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     repository.countByStatus
   }
 
-  def prepareMigrationGroup(cases: Seq[Migration], priority: Boolean)(implicit hc: HeaderCarrier): Future[Boolean] = {
+  def prepareMigrationGroup(migrations: Seq[Migration], priority: Boolean)(implicit hc: HeaderCarrier): Future[Boolean] = {
     for {
-      _ <- repository.delete(cases)
-      result <- repository.insert(cases)
+      _ <- repository.delete(migrations)
+      result <- repository.insert(migrations)
       _ <- if (priority) {
-        Future.sequence(cases.map(process(_).flatMap(update)))
+        Future.sequence(migrations.map(process(_).flatMap(update)))
       } else Future.successful(())
     } yield result
   }

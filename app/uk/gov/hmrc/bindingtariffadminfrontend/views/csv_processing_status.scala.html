@@ -53,7 +53,7 @@
 <script type="text/javascript">
  function fetchData(){
    var status = document.getElementById("bti-processing-status");
-   if(status.innerHTML != "done"){
+   if(status.innerHTML != "done" || status.innerHTML == !"failed"){
      dataProcessing.updateStatus("@routes.DataMigrationJsonController.getStatusOfJsonProcessing.url")
    }
  }

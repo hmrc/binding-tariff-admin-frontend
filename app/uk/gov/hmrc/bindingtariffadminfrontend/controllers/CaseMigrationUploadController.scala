@@ -56,10 +56,10 @@ class CaseMigrationUploadController @Inject()(authenticatedAction: Authenticated
   def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
     val priority: Boolean = request.body.dataParts.get("priority").exists(_.head.toBoolean)
     request.body.file("file").filter(_.filename.nonEmpty) match {
-      case None => successful(Redirect(routes.CaseMigrationUploadController.get()))
+      case None =>
+        successful(Redirect(routes.CaseMigrationUploadController.get()))
       case Some(part: FilePart[TemporaryFile]) =>
-        val result = toJson(part.ref.file, part.contentType)
-        result match {
+        toJson(part.ref.file, part.contentType) match {
           case JsError(errs) => successful(Ok(views.html.case_migration_file_error(errs)))
           case JsSuccess(migrations, _) =>
             service.prepareMigration(migrations, priority).map(_ => Redirect(routes.DataMigrationStateController.get()))
@@ -68,19 +68,22 @@ class CaseMigrationUploadController @Inject()(authenticatedAction: Authenticated
   }
 
   private def toJson(file: File, contentType: Option[String]): JsResult[Seq[MigratableCase]] = {
-    val jsonResult = if (contentType.getOrElse("") == "application/zip") {
+    val jsonResult = if (contentType.map(_ == "application/zip").getOrElse(false)) {
       Logger.info(s"Reading uploaded file ${file.getName()} as ZIP")
 
       val zipFile = new ZipFile(file)
       val zipEntry = zipFile.entries().nextElement()
-      val data = zipFile.getInputStream(zipEntry)
+      val zipIs = zipFile.getInputStream(zipEntry)
 
-      val fileString = Source
-        .fromInputStream(data, StandardCharsets.UTF_8.name())
-        .getLines()
-        .mkString(System.lineSeparator)
+      val fileSource = Source.fromInputStream(zipIs, StandardCharsets.UTF_8.name())
+      val fileString = fileSource.getLines().mkString(System.lineSeparator)
+
+      fileSource.close()
+      zipIs.close()
+      zipFile.close()
       
-      Try(Json.parse(fileString)).map(Json.fromJson[Seq[MigratableCase]](_))
+      Try(Json.parse(fileString))
+        .map(Json.fromJson[Seq[MigratableCase]](_))
     } else {
       Logger.info(s"Reading uploaded file ${file.getName()} as raw JSON")
 
@@ -90,8 +93,10 @@ class CaseMigrationUploadController @Inject()(authenticatedAction: Authenticated
     }
       
     jsonResult match {
-      case Success(result) => result
-      case Failure(throwable: Throwable) => JsError(JsPath(0), s"Invalid JSON: [${throwable.getMessage}]")
+      case Success(result) =>
+        result
+      case Failure(throwable: Throwable) =>
+        JsError(JsPath(0), s"Invalid JSON: [${throwable.getMessage}]")
     }
   }
 

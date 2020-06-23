@@ -11,7 +11,8 @@ var dataProcessing = {
                 mimeType: "application/json",
                 success: function (response) {
                     resolve({
-                        status: response.status
+                        status: response.status,
+                        errorCount: response.errorCount
                     });
                 },
                 error: function (response) {
@@ -33,6 +34,7 @@ var dataProcessing = {
                         .then(function (status) {
                             updateState(status);
                             updateContinueMessage();
+                            updateErrorCount(status);
                         })
                         .catch(function (err) {
                             updateError(err);
@@ -43,6 +45,15 @@ var dataProcessing = {
                 function updateState(response) {
                     document.getElementById("bti-processing-status").innerHTML = response.status;
                     document.getElementById("liabilities-processing-status").innerHTML = response.status;
+                }
+
+                function updateErrorCount(response) {
+                    if(response.errorCount > 0) {
+
+                        document.getElementById("error-count").innerHTML = response.errorCount;
+                        document.getElementById("error-row").removeAttribute("aria-hidden");
+                        document.getElementById("error-row").removeAttribute("hidden");
+                    }
                 }
 
                 function updateError(response) {

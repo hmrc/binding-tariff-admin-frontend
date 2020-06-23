@@ -169,8 +169,8 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     }
     .map{ dataContent =>
       Ok.chunked(dataContent).withHeaders(
-        "Content-Type" -> "application/json",
-        "Content-Disposition" -> s"attachment; filename=$jsonType-Data-Migration${DateTime.now().toString("ddMMyyyyHHmmss")}.json")
+        "Content-Type" -> "application/zip",
+        "Content-Disposition" -> s"attachment; filename=$jsonType-Data-Migration${DateTime.now().toString("ddMMyyyyHHmmss")}.zip")
     }
   }
 

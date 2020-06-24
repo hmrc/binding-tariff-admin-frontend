@@ -17,6 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import java.io.File
+import java.util.zip.{ZipFile, ZipEntry}
 
 import javax.inject.{Inject, Singleton}
 import org.apache.commons.io.FileUtils
@@ -35,6 +36,10 @@ import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 import scala.util.{Failure, Success, Try}
+import scala.io.Source
+import java.nio.charset.StandardCharsets
+import play.Logger
+import play.api.mvc.MultipartFormData.FilePart
 
 @Singleton
 class CaseMigrationUploadController @Inject()(authenticatedAction: AuthenticatedAction,
@@ -50,11 +55,11 @@ class CaseMigrationUploadController @Inject()(authenticatedAction: Authenticated
 
   def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
     val priority: Boolean = request.body.dataParts.get("priority").exists(_.head.toBoolean)
-    request.body.file("file").filter(_.filename.nonEmpty).map(_.ref.file) match {
-      case None => successful(Redirect(routes.CaseMigrationUploadController.get()))
-      case Some(f: File) =>
-        val result = toJson(f)
-        result match {
+    request.body.file("file").filter(_.filename.nonEmpty) match {
+      case None =>
+        successful(Redirect(routes.CaseMigrationUploadController.get()))
+      case Some(part: FilePart[TemporaryFile]) =>
+        toJson(part.ref.file, part.contentType) match {
           case JsError(errs) => successful(Ok(views.html.case_migration_file_error(errs)))
           case JsSuccess(migrations, _) =>
             service.prepareMigration(migrations, priority).map(_ => Redirect(routes.DataMigrationStateController.get()))
@@ -62,12 +67,37 @@ class CaseMigrationUploadController @Inject()(authenticatedAction: Authenticated
     }
   }
 
-  private def toJson(file: File): JsResult[Seq[MigratableCase]] =
-    Try(FileUtils.readFileToString(file))
-      .flatMap(body => Try(Json.parse(body)))
-      .map(Json.fromJson[Seq[MigratableCase]](_)) match {
-      case Success(result) => result
-      case Failure(throwable: Throwable) => JsError(JsPath(0), s"Invalid JSON: [${throwable.getMessage}]")
+  private def toJson(file: File, contentType: Option[String]): JsResult[Seq[MigratableCase]] = {
+    val jsonResult = if (contentType.map(_ == "application/zip").getOrElse(false)) {
+      Logger.info(s"Reading uploaded file ${file.getName()} as ZIP")
+
+      val zipFile = new ZipFile(file)
+      val zipEntry = zipFile.entries().nextElement()
+      val zipIs = zipFile.getInputStream(zipEntry)
+
+      val fileSource = Source.fromInputStream(zipIs, StandardCharsets.UTF_8.name())
+      val fileString = fileSource.getLines().mkString(System.lineSeparator)
+
+      fileSource.close()
+      zipIs.close()
+      zipFile.close()
+      
+      Try(Json.parse(fileString))
+        .map(Json.fromJson[Seq[MigratableCase]](_))
+    } else {
+      Logger.info(s"Reading uploaded file ${file.getName()} as raw JSON")
+
+      Try(FileUtils.readFileToString(file))
+        .flatMap(body => Try(Json.parse(body)))
+        .map(Json.fromJson[Seq[MigratableCase]](_))
     }
+      
+    jsonResult match {
+      case Success(result) =>
+        result
+      case Failure(throwable: Throwable) =>
+        JsError(JsPath(0), s"Invalid JSON: [${throwable.getMessage}]")
+    }
+  }
 
 }

@@ -39,7 +39,7 @@ import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.Future
 
-class DataMigrationStateControllerControllerSpec extends WordSpec
+class DataMigrationStateControllerSpec extends WordSpec
   with Matchers
   with UnitSpec
   with MockitoSugar

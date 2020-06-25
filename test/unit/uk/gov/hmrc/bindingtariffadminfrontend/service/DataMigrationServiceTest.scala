@@ -44,6 +44,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.lock.LockRepository
 import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.TimeUnit
+import akka.stream.scaladsl.Source
 
 class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
@@ -142,7 +143,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
       given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
 
-      await(service.prepareMigration(Seq(`case`))) shouldBe true
+      await(service.prepareMigration(Source(List(`case`)))) shouldBe true
 
       theMigrationsCreated shouldBe Seq(
         Migration(`case`, MigrationStatus.UNPROCESSED)

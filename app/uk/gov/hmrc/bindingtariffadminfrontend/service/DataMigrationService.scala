@@ -47,6 +47,11 @@ import cats._
 import cats.implicits._
 import scala.util.Random
 import java.util.concurrent.TimeUnit
+import akka.stream.scaladsl.Source
+import akka.stream.IOResult
+import akka.stream.scaladsl.Sink
+import akka.stream.Materializer
+import akka.stream.ActorMaterializer
 
 class DataMigrationService @Inject()(repository: MigrationRepository,
                                      migrationLock: MigrationLock,
@@ -55,6 +60,10 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
                                      rulingConnector: RulingConnector,
                                      caseConnector: BindingTariffClassificationConnector,
                                      actorSystem: ActorSystem) {
+
+
+  // TODO: Delete when we upgrade to a version of Play that uses Akka Stream 2.6+
+  implicit val materializer: Materializer = ActorMaterializer.create(actorSystem)
 
   def getDataMigrationFilesDetails(fileNames:List[String])(implicit hc: HeaderCarrier): Future[List[FileUploaded]] ={
 
@@ -104,26 +113,16 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     }
   }
 
-  def prepareMigration(cases: Seq[MigratableCase], priority: Boolean = false)(implicit hc: HeaderCarrier): Future[Boolean] = {
+  def prepareMigration(cases: Source[MigratableCase, _], priority: Boolean = false)(implicit hc: HeaderCarrier): Future[Boolean] = {
     val groupSize = 5000
 
-    val migrationGroups = cases.map(Migration(_))
-      .grouped(groupSize)
-      .toList
-
     withMigrationLock(attemptNumber = 0, baseDelay = 1.second, delayCap = 60.seconds, maxRetries = 10) {
-      (true, migrationGroups).tailRecM {
-        // Processed all groups
-        case (result, Nil) =>
-          Future.successful(Either.right(result))
-        // Failed processing a group
-        case (false, _) =>
-          Future.successful(Either.right(false))
-        // Process the next group
-        case (true, nextGroup :: remainingGroups) =>
-          prepareMigrationGroup(nextGroup, priority)
-            .map(result => Either.left((result, remainingGroups)))
-      }
+      cases
+        .map(Migration(_))
+        .grouped(groupSize)
+        .mapAsync(1)(prepareMigrationGroup(_, priority))
+        .takeWhile(identity)
+        .runWith(Sink.fold(true)(_ && _))
     }
   }
 

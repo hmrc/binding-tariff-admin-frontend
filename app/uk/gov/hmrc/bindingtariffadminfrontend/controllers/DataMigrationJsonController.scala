@@ -86,7 +86,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     val file = request.body.files.find(_.filename.nonEmpty)
     file match {
       case Some(name) =>
-        val res = FileIO.fromFile(name.ref.file)
+        val res = FileIO.fromPath(name.ref.file.toPath())
           .via(lineScanner()).log(errorLog(name.ref.file.getName))
           .map(_.map(_.utf8String))
           .map { list =>
@@ -169,8 +169,8 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     }
     .map{ dataContent =>
       Ok.chunked(dataContent).withHeaders(
-        "Content-Type" -> "application/json",
-        "Content-Disposition" -> s"attachment; filename=$jsonType-Data-Migration${DateTime.now().toString("ddMMyyyyHHmmss")}.json")
+        "Content-Type" -> "application/zip",
+        "Content-Disposition" -> s"attachment; filename=$jsonType-Data-Migration${DateTime.now().toString("ddMMyyyyHHmmss")}.zip")
     }
   }
 

@@ -17,6 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import java.io.File
+import java.util.zip.{ZipFile, ZipEntry}
 
 import javax.inject.{Inject, Singleton}
 import org.apache.commons.io.FileUtils
@@ -35,6 +36,24 @@ import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 import scala.util.{Failure, Success, Try}
+import akka.stream.scaladsl.FileIO
+import akka.stream.scaladsl.JsonFraming
+import akka.stream.scaladsl.Source
+import akka.NotUsed
+import scala.concurrent.Future
+import akka.stream.IOResult
+import akka.stream.Graph
+import akka.stream.scaladsl.Flow
+import scala.util.control.NonFatal
+import akka.stream.scaladsl.StreamConverters
+import play.api.mvc.MultipartFormData.FilePart
+import akka.util.ByteString
+import java.io.InputStream
+import akka.stream.Attributes
+import akka.event.Logging.LogLevel
+import akka.stream.scaladsl.Framing.FramingException
+import play.api.data.validation.ValidationError
+import akka.Done
 
 @Singleton
 class CaseMigrationUploadController @Inject()(authenticatedAction: AuthenticatedAction,
@@ -50,24 +69,55 @@ class CaseMigrationUploadController @Inject()(authenticatedAction: Authenticated
 
   def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
     val priority: Boolean = request.body.dataParts.get("priority").exists(_.head.toBoolean)
-    request.body.file("file").filter(_.filename.nonEmpty).map(_.ref.file) match {
-      case None => successful(Redirect(routes.CaseMigrationUploadController.get()))
-      case Some(f: File) =>
-        val result = toJson(f)
-        result match {
-          case JsError(errs) => successful(Ok(views.html.case_migration_file_error(errs)))
-          case JsSuccess(migrations, _) =>
-            service.prepareMigration(migrations, priority).map(_ => Redirect(routes.DataMigrationStateController.get()))
-        }
+    request.body.file("file").filter(_.filename.nonEmpty) match {
+      case None =>
+        successful(Redirect(routes.CaseMigrationUploadController.get()))
+      case Some(part: FilePart[TemporaryFile]) =>
+        service.prepareMigration(toJsonSource(part.ref.file, part.contentType), priority)
+          .map(_ => Redirect(routes.DataMigrationStateController.get()))
+          .recoverWith {
+            // Happens when Akka doesn't know how to split the file into JSON chunks
+            case framing: FramingException =>
+              val indexZero = JsPath.apply(0)
+              val validationErrors = Seq(ValidationError(Seq(framing.getMessage())))
+              val jsonErrors = Seq(indexZero -> validationErrors)
+              successful(Ok(views.html.case_migration_file_error(jsonErrors)))
+            // Happens when parsing JSON chunks with Play
+            case JsResultException(errs) =>
+              successful(Ok(views.html.case_migration_file_error(errs)))
+          }
     }
   }
 
-  private def toJson(file: File): JsResult[Seq[MigratableCase]] =
-    Try(FileUtils.readFileToString(file))
-      .flatMap(body => Try(Json.parse(body)))
-      .map(Json.fromJson[Seq[MigratableCase]](_)) match {
-      case Success(result) => result
-      case Failure(throwable: Throwable) => JsError(JsPath(0), s"Invalid JSON: [${throwable.getMessage}]")
-    }
+  private def toJsonSource(file: File, contentType: Option[String]): Source[MigratableCase, _] = {
+    val dataSource: Source[ByteString, _] = 
+      if (contentType.map(_ == "application/zip").getOrElse(false)) {
+        val zipFile = new ZipFile(file)
+        val zipEntries = zipFile.entries()
 
+        if (zipEntries.hasMoreElements())
+          StreamConverters.fromInputStream(() => zipFile.getInputStream(zipEntries.nextElement))
+        else
+          Source.empty[ByteString]
+
+      } else {
+        FileIO.fromPath(file.toPath())
+      }
+
+    dataSource
+      .via(JsonFraming.objectScanner(Int.MaxValue))
+      .map(_.utf8String)
+      .mapAsync(1) { str =>
+        Future.fromTry {
+          for {
+            json <- Try { Json.parse(str) }
+            // TODO: Use JsResult.toTry once we upgrade to Play 2.6
+            cse <- Json.fromJson[MigratableCase](json) match {
+              case JsSuccess(cse, _) => Success(cse)
+              case JsError(errors) => Failure(JsResultException(errors))
+            }
+          } yield cse
+        }
+      }
+  }
 }

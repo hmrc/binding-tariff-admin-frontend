@@ -143,7 +143,6 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
   }
 
   def getStatusOfJsonProcessing: Action[AnyContent] = authenticatedAction.async { implicit request =>
-    println("heyyy ::::: ")
     connector.getStatusOfJsonProcessing.map{
       case response if response.status == OK => Ok(response.body).as("application/json")
       case response => Status(response.status)(response.body).as("application/json")

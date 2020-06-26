@@ -45,6 +45,11 @@
    <td><span class="processing" id="liabilities-processing-status">Initiated</span></td>
    <td><button id="data_migration_liabilities_processing_status" class="button button-info" disabled="disabled">Download json</button></td>
   </tr>
+  <tr id="error-row" aria-hidden="true" hidden="true">
+   <td>Error count</td>
+   <td><span class="processing" id="error-count">Initiated</span></td>
+   <td></td>
+  </tr>
  </table>
 
 </div>
@@ -53,7 +58,7 @@
 <script type="text/javascript">
  function fetchData(){
    var status = document.getElementById("bti-processing-status");
-   if(status.innerHTML != "done"){
+   if(status.innerHTML !== "done" && status.innerHTML !== "failed"){
      dataProcessing.updateStatus("@routes.DataMigrationJsonController.getStatusOfJsonProcessing.url")
    }
  }

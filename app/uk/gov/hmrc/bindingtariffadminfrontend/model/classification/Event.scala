@@ -23,6 +23,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.AppealStatus.AppealStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.CaseStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.EventType.EventType
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ReferralReason.ReferralReason
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ReviewStatus.ReviewStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 import uk.gov.hmrc.play.json.Union
@@ -48,6 +49,7 @@ sealed trait Details {
 object Details {
   implicit val format: Format[Details] = Union.from[Details]("type")
     .and[CaseStatusChange](EventType.CASE_STATUS_CHANGE.toString)
+    .and[ReferralCaseStatusChange](EventType.CASE_REFERRAL.toString)
     .and[AppealStatusChange](EventType.APPEAL_STATUS_CHANGE.toString)
     .and[ReviewStatusChange](EventType.REVIEW_STATUS_CHANGE.toString)
     .and[ExtendedUseStatusChange](EventType.EXTENDED_USE_STATUS_CHANGE.toString)
@@ -73,6 +75,21 @@ case class CaseStatusChange
 
 object CaseStatusChange {
   implicit val format: OFormat[CaseStatusChange] = Json.format[CaseStatusChange]
+}
+
+case class ReferralCaseStatusChange
+(
+  override val from: CaseStatus,
+  override val to: CaseStatus,
+  override val comment: Option[String] = None,
+  referredTo: String,
+  reason: Seq[ReferralReason]
+) extends FieldChange[CaseStatus] {
+  override val `type`: EventType.Value = EventType.CASE_REFERRAL
+}
+
+object ReferralCaseStatusChange {
+  implicit val format: OFormat[ReferralCaseStatusChange] = Json.format[ReferralCaseStatusChange]
 }
 
 case class AppealStatusChange
@@ -140,6 +157,6 @@ object Note {
 
 object EventType extends Enumeration {
   type EventType = Value
-  val CASE_STATUS_CHANGE, APPEAL_STATUS_CHANGE, REVIEW_STATUS_CHANGE, EXTENDED_USE_STATUS_CHANGE, ASSIGNMENT_CHANGE, NOTE = Value
+  val CASE_STATUS_CHANGE, CASE_REFERRAL, APPEAL_STATUS_CHANGE, REVIEW_STATUS_CHANGE, EXTENDED_USE_STATUS_CHANGE, ASSIGNMENT_CHANGE, NOTE = Value
   implicit val format: Format[classification.EventType.Value] = JsonUtil.format(EventType)
 }

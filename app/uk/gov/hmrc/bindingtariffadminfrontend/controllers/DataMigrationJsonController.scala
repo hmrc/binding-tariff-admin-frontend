@@ -18,7 +18,8 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.alpakka.csv.scaladsl.{CsvFormatting, CsvQuotingStyle}
+import akka.stream.alpakka.csv.scaladsl.{ByteOrderMark, CsvFormatting, CsvQuotingStyle}
+import akka.stream.scaladsl.Flow
 //import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import uk.gov.hmrc.bindingtariffadminfrontend.akka_fix.csv.CsvParsing.lineScanner
 import akka.stream.scaladsl.{FileIO, Sink, Source}
@@ -55,7 +56,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     "Name", "Address1", "Address2", "Address3", "TelephoneNo", "FaxNo", "Email", "City", "VATRegTurnNo", "Signature",
     "CaseName", "CaseAddress1", "CaseAddress2", "CaseAddress3", "CaseAddress4", "CaseAddress5", "CasePostCode",
     "CaseTelephoneNo", "CaseFaxNo", "CaseAgentName", "CaseNameCompleted", "LiabilityPortOfficerName", "LiabilityPortOfficerTel",
-    "SupressUserName", "InsBoardFileUserName")
+    "SupressUserName", "InsBoardFileUserName", "Band7Name", "Band9Name", "Band11Name")
 
   private def randomize(s: String): String = {
 
@@ -87,6 +88,14 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     file match {
       case Some(name) =>
         val res = FileIO.fromPath(name.ref.file.toPath())
+          .via(Flow.fromFunction { file =>
+            //This is done because the byte order mark (BOM) causes problems with first column header
+            if (file.startsWith(ByteOrderMark.UTF_8)) {
+              file.drop(ByteOrderMark.UTF_8.length).dropWhile(b => b.toChar.isWhitespace)
+            } else {
+              file.dropWhile(b => b.toChar.isWhitespace)
+            }
+          })
           .via(lineScanner()).log(errorLog(name.ref.file.getName))
           .map(_.map(_.utf8String))
           .map { list =>

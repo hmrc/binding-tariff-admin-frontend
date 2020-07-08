@@ -82,7 +82,7 @@ object Anonymize {
 
   def anonymizeTblCaseRecord(data: Map[String, String]): Map[String, String] = data.map {
     case (k @ "InsBoardFileUserName", _) => (k, faker.name().fullName())
-    case (k @ "CaseName", _) => (k, faker.lorem().sentence())
+    case (k @ "CaseName", _) => (k, faker.name().fullName())
     case (k @ "CaseClosedReason", _) => (k, faker.lorem().sentence())
     case (k @ "CaseAddress1", _) => (k, faker.address().buildingNumber())
     case (k @ "CaseAddress2", _) => (k, faker.address().streetAddress())

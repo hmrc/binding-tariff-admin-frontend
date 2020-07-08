@@ -47,10 +47,10 @@ object Anonymize {
     case _ if tblName.contains("tblCaseLMComments") =>
       anonymizeTblCaseLMComments(data)
     case _ =>
-      data
+      throw new AnonymizationFailedException(s"The file name ${tblName} was not recognised")
   }
 
-  def anonymizeEBTIApplication(data: Map[String, String]): Map[String, String] = data.map {
+  private def anonymizeEBTIApplication(data: Map[String, String]): Map[String, String] = data.map {
     case (k, "") => (k, "")
     case (k @ "PreviousBTICountry", _) => (k, faker.country().name())
     case (k @ "GoodsDescription", _) => (k, faker.lorem().paragraph())
@@ -68,7 +68,7 @@ object Anonymize {
     case other => other
   }
 
-  def anonymizeEBTIAddresses(data: Map[String, String]): Map[String, String] = data.map {
+  private def anonymizeEBTIAddresses(data: Map[String, String]): Map[String, String] = data.map {
     case (k, "") => (k, "")
     case (k @ "Name", _) => (k, faker.name.fullName())
     case (k @ "Address1", _) => (k, faker.address().buildingNumber())
@@ -80,9 +80,10 @@ object Anonymize {
     case (k @ "TelephoneNo", _) => (k, faker.phoneNumber().phoneNumber())
     case (k @ "FaxNo", _) => (k, faker.phoneNumber().phoneNumber())
     case (k @ "Email", _) => (k, faker.internet().emailAddress())
+    case other => other
   }
 
-  def anonymizeTblCaseRecord(data: Map[String, String]): Map[String, String] = data.map {
+  private def anonymizeTblCaseRecord(data: Map[String, String]): Map[String, String] = data.map {
     case (k, "") => (k, "")
     case (k @ "InsBoardFileUserName", _) => (k, faker.name().fullName())
     case (k @ "CaseName", _) => (k, faker.name().fullName())
@@ -105,7 +106,7 @@ object Anonymize {
     case other => other
   }
 
-  def anonymizeTblCaseBTI(data: Map[String, String]): Map[String, String] = data.map {
+  private def anonymizeTblCaseBTI(data: Map[String, String]): Map[String, String] = data.map {
     case (k, "") => (k, "")
     case (k @ "Keywords1", _) => (k, faker.lorem().word())
     case (k @ "Keywords2", _) => (k, faker.lorem().word())
@@ -130,7 +131,7 @@ object Anonymize {
     case other => other
   }
 
-  def anonymizeTblCaseClassMeth(data: Map[String, String]): Map[String, String] = data.map {
+  private def anonymizeTblCaseClassMeth(data: Map[String, String]): Map[String, String] = data.map {
     case (k, "") => (k, "")
     case (k @ "MethodSearch", _) => (k, faker.lorem().paragraph())
     case (k @ "Justification", _) => (k, faker.lorem().paragraph())
@@ -139,26 +140,26 @@ object Anonymize {
     case other => other
   }
 
-  def anonymizeTblImages(data: Map[String, String]): Map[String, String] = data.map {
+  private def anonymizeTblImages(data: Map[String, String]): Map[String, String] = data.map {
     case (k, "") => (k, "")
     case (k @ "Description", _) => (k, faker.lorem().paragraph())
     case (k @ "FileName", _) => (k, faker.file().fileName())
     case other => other
   }
 
-  def anonymizeTblMovement(data: Map[String, String]): Map[String, String] = data.map {
+  private def anonymizeTblMovement(data: Map[String, String]): Map[String, String] = data.map {
     case (k, "") => (k, "")
     case (k @ "Reason", _) => (k, faker.lorem().paragraph())
     case other => other
   }
 
-  def anonymizeTblSample(data: Map[String, String]): Map[String, String] = data.map {
+  private def anonymizeTblSample(data: Map[String, String]): Map[String, String] = data.map {
     case (k, "") => (k, "")
     case (k @ "Action", _) => (k, faker.lorem().word())
     case other => other
   }
 
-  def anonymizeTblUser(data: Map[String, String]): Map[String, String] = data.map {
+  private def anonymizeTblUser(data: Map[String, String]): Map[String, String] = data.map {
     case (k, "") => (k, "")
     case (k @ "FirstName", _) => (k, faker.name().firstName())
     case (k @ "LastName", _) => (k, faker.name().lastName())
@@ -167,7 +168,7 @@ object Anonymize {
     case other => other
   }
 
-  def anonymizeTblCaseLMComments(data: Map[String, String]): Map[String, String] = data.map {
+  private def anonymizeTblCaseLMComments(data: Map[String, String]): Map[String, String] = data.map {
     case (k, "") => (k, "")
     case (k @ "Band7Name", _) => (k, faker.name().fullName())
     case (k @ "Band7Comments", _) => (k, faker.lorem().paragraph())

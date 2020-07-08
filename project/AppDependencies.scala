@@ -20,7 +20,8 @@ object AppDependencies {
     "com.typesafe.akka"           %% "akka-http"                  % "10.0.12",
     "com.typesafe.akka"           %% "akka-stream"                % "2.5.8",
     "org.typelevel"               %% "cats-core"                  % "2.0.0",
-    "org.typelevel"               %% "alleycats-core"             % "2.0.0"
+    "org.typelevel"               %% "alleycats-core"             % "2.0.0",
+    "com.github.javafaker"        %  "javafaker"                  % "1.0.2"
   )
 
   private lazy val scope = "test, it"

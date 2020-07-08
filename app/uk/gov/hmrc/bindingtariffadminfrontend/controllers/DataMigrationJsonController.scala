@@ -42,6 +42,7 @@ import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.successful
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
 
 @Singleton
 class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAction,
@@ -111,12 +112,9 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
             case (headers, None) =>
               (headers, None)
             case (headers, Some(data)) =>
-              val listMap = ListMap(headers.zip(data): _*) map {
-                case (key, v1) if keys.contains(key) => (key, randomize(v1))
-                case ("Postcode ", _) => ("Postcode ", "ZZ11ZZ")
-                case x => x
-              }
-              (headers, Some(listMap.values.toList))
+              val dataByColumn = ListMap(headers.zip(data): _*)
+              val anonymized = Anonymize.anonymize(name.filename, dataByColumn)
+              (headers, Some(anonymized.values.toList))
           }
           .flatMapMerge(1, {
             case (headers, None) =>

@@ -42,6 +42,7 @@ import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.successful
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
 
 @Singleton
 class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAction,
@@ -51,26 +52,6 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
                                             implicit val materializer: Materializer,
                                             override val messagesApi: MessagesApi,
                                             implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
-
-  private lazy val keys = List("FirstName", "LastName", "ContactName", "CaseEmail", "Contact", "CancelledUser",
-    "Name", "Address1", "Address2", "Address3", "TelephoneNo", "FaxNo", "Email", "City", "VATRegTurnNo", "Signature",
-    "CaseName", "CaseAddress1", "CaseAddress2", "CaseAddress3", "CaseAddress4", "CaseAddress5", "CasePostCode",
-    "CaseTelephoneNo", "CaseFaxNo", "CaseAgentName", "CaseNameCompleted", "LiabilityPortOfficerName", "LiabilityPortOfficerTel",
-    "SupressUserName", "InsBoardFileUserName", "Band7Name", "Band9Name", "Band11Name")
-
-  private def randomize(s: String): String = {
-
-    def r(s: List[Char], n: Int): List[Char] = {
-      if (n == 0) Nil
-      else {
-        val i = Math.floor(Math.random() * s.length).toInt
-        s(i) :: r(s, n - 1)
-      }
-    }
-
-    r(s.toList, s.length).mkString
-  }
-
 
   def getAnonymiseData: Action[AnyContent] = authenticatedAction.async { implicit request =>
     successful(Ok(views.html.file_anonymisation_upload()))
@@ -111,12 +92,9 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
             case (headers, None) =>
               (headers, None)
             case (headers, Some(data)) =>
-              val listMap = ListMap(headers.zip(data): _*) map {
-                case (key, v1) if keys.contains(key) => (key, randomize(v1))
-                case ("Postcode ", _) => ("Postcode ", "ZZ11ZZ")
-                case x => x
-              }
-              (headers, Some(listMap.values.toList))
+              val dataByColumn = ListMap(headers.zip(data): _*)
+              val anonymized = Anonymize.anonymize(name.filename, dataByColumn)
+              (headers, Some(anonymized.values.toList))
           }
           .flatMapMerge(1, {
             case (headers, None) =>

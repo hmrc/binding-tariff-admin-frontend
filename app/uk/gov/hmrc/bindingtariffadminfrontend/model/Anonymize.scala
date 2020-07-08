@@ -51,6 +51,7 @@ object Anonymize {
   }
 
   def anonymizeEBTIApplication(data: Map[String, String]): Map[String, String] = data.map {
+    case (k, "") => (k, "")
     case (k @ "PreviousBTICountry", _) => (k, faker.country().name())
     case (k @ "GoodsDescription", _) => (k, faker.lorem().paragraph())
     case (k @ "AdditionalInfo", _) => (k, faker.lorem().paragraph())
@@ -68,6 +69,7 @@ object Anonymize {
   }
 
   def anonymizeEBTIAddresses(data: Map[String, String]): Map[String, String] = data.map {
+    case (k, "") => (k, "")
     case (k @ "Name", _) => (k, faker.name.fullName())
     case (k @ "Address1", _) => (k, faker.address().buildingNumber())
     case (k @ "Address2", _) => (k, faker.address().streetAddress())
@@ -81,6 +83,7 @@ object Anonymize {
   }
 
   def anonymizeTblCaseRecord(data: Map[String, String]): Map[String, String] = data.map {
+    case (k, "") => (k, "")
     case (k @ "InsBoardFileUserName", _) => (k, faker.name().fullName())
     case (k @ "CaseName", _) => (k, faker.name().fullName())
     case (k @ "CaseClosedReason", _) => (k, faker.lorem().sentence())
@@ -103,6 +106,7 @@ object Anonymize {
   }
 
   def anonymizeTblCaseBTI(data: Map[String, String]): Map[String, String] = data.map {
+    case (k, "") => (k, "")
     case (k @ "Keywords1", _) => (k, faker.lorem().word())
     case (k @ "Keywords2", _) => (k, faker.lorem().word())
     case (k @ "Keywords3", _) => (k, faker.lorem().word())
@@ -127,6 +131,7 @@ object Anonymize {
   }
 
   def anonymizeTblCaseClassMeth(data: Map[String, String]): Map[String, String] = data.map {
+    case (k, "") => (k, "")
     case (k @ "MethodSearch", _) => (k, faker.lorem().paragraph())
     case (k @ "Justification", _) => (k, faker.lorem().paragraph())
     case (k @ "GoodsDescription", _) => (k, faker.lorem().paragraph())
@@ -135,22 +140,26 @@ object Anonymize {
   }
 
   def anonymizeTblImages(data: Map[String, String]): Map[String, String] = data.map {
+    case (k, "") => (k, "")
     case (k @ "Description", _) => (k, faker.lorem().paragraph())
     case (k @ "FileName", _) => (k, faker.file().fileName())
     case other => other
   }
 
   def anonymizeTblMovement(data: Map[String, String]): Map[String, String] = data.map {
+    case (k, "") => (k, "")
     case (k @ "Reason", _) => (k, faker.lorem().paragraph())
     case other => other
   }
 
   def anonymizeTblSample(data: Map[String, String]): Map[String, String] = data.map {
+    case (k, "") => (k, "")
     case (k @ "Action", _) => (k, faker.lorem().word())
     case other => other
   }
 
   def anonymizeTblUser(data: Map[String, String]): Map[String, String] = data.map {
+    case (k, "") => (k, "")
     case (k @ "FirstName", _) => (k, faker.name().firstName())
     case (k @ "LastName", _) => (k, faker.name().lastName())
     case (k @ "Extension", _) => (k, faker.phoneNumber().extension())
@@ -159,6 +168,7 @@ object Anonymize {
   }
 
   def anonymizeTblCaseLMComments(data: Map[String, String]): Map[String, String] = data.map {
+    case (k, "") => (k, "")
     case (k @ "Band7Name", _) => (k, faker.name().fullName())
     case (k @ "Band7Comments", _) => (k, faker.lorem().paragraph())
     case (k @ "Band9Name", _) => (k, faker.name().fullName())

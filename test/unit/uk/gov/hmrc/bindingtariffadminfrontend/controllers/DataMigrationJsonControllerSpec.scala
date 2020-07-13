@@ -16,9 +16,11 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
+import java.io.{BufferedWriter, FileWriter}
+
 import akka.actor.ActorSystem
 import akka.stream.Materializer
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import org.mockito.ArgumentMatchers.{any, refEq}
 import org.mockito.BDDMockito.given
@@ -35,13 +37,16 @@ import play.api.mvc.{AnyContentAsEmpty, MultipartFormData, Result}
 import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.{Configuration, Environment}
 import play.filters.csrf.CSRF.{Token, TokenProvider}
+import uk.gov.hmrc.bindingtariffadminfrontend.akka_fix.csv.CsvParsing.lineScanner
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 
 class DataMigrationJsonControllerSpec extends WordSpec with Matchers
@@ -61,9 +66,30 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
 
   private val csvList = List("tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
     "eBTI_Addresses_csv", "tblCaseRecord_csv", "tblCaseBTI_csv", "tblImages_csv",
-    "tblMovement_csv", "tblSample_csv", "tblUser_csv")
+    "tblMovement_csv", "tblCaseLMComments_csv", "tblSample_csv", "tblUser_csv")
+
+  private val anonymizedCsvList = csvList.filterNot(_ == "historicCases_csv")
 
   val aSuccessfullyUploadedFile: FileUploaded = FileUploaded("name", "published", "text/plain", None, None)
+
+  private def mockCsvField(row: Int, col: Int): String = s"$row-$col"
+  private val mockCsvRowCount = 100
+  private def mockCsv(headers: List[String], rowCount: Int = mockCsvRowCount): String = {
+    var result = headers.mkString(",")
+    result += "\n"
+
+    for (row <- 0 until rowCount) {
+      var rowFields = ListBuffer[String]()
+      for (col <- headers.indices) {
+        rowFields += mockCsvField(row, col)
+      }
+
+      result += rowFields.mkString(",")
+      result += "\n"
+    }
+
+    result
+  }
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -100,6 +126,66 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
 
       status(result) shouldBe OK
 
+    }
+
+    "return valid anonymised files" in {
+      anonymizedCsvList.foreach(filename => {
+        val headers = (filename match {
+          case _ if filename.contains("eBTI_Application") => "CaseNo,PreviousBTIRef,PreviousBTICountry,PreviousDateofValidity,PreviousNomenclature,PreviousNomenclatureCode,CustomsNomenclature,OtherNomenclature,EnvisagedImport,EnvisagedNomenclature,GoodsDescription,AdditionalInfo,Attachment,Samples,ReturnSamples,OtherApplications,Country1,Place1,DateOfApplication1,OtherBTIRef1,DateOfValidity1,OtherNomenclatureCode1,Country2,Place2,DateOfApplication2,OtherBTIRef2,DateOfValidity2,OtherNomenclatureCode2,OtherHolders,HolderCountry1,HolderOtherBTIRef1,HolderDateOfValidity1,HolderOtherNomenclatureCode1,HolderCountry2,HolderOtherBTIRef2,HolderDateOfValidity2,HolderOtherNomenclatureCode2,Contact,VATRegTurnNo,Reference,Created,Updated,Status,CancelledDate,CancelledUser,FastTrack,TransactionType,CustomsOther,LegalProceedingsPending,AdditionalInfo2,EnvisagedSpecialDesc,Signature,SignatureDate,CombinedNomenclature,TARICCode,TARICAdditionalCode1,TARICAdditionalCode2,NationalAdditionalCode,BrochureIncluded,PhotoIncluded,OtherIncluded"
+          case _ if filename.contains("eBTI_Addresses") => "CaseNo,Name,Address1,Address2,Address3,Postcode,Country,TelephoneNo,FaxNo,CustomsID,Type,Reference,Created,Updated,City,Email"
+          case _ if filename.contains("tblCaseRecord") => "CaseNo,InsCreatorID,InsCreationDate,InsCountryCode,InsGoodsID,InsBoardFileDatePrinted,InsBoardFilePrinted,InsBoardFileUserName,CaseName,CaseType,CaseFastTrack,CaseCategory,CaseBoardsFileNumber,CaseStatus,CaseDownLoaded,CaseSampleIndicator,CaseAppealIndicator,CaseReceiptDate,CaseClosedDate,CaseClosedReason,CaseInterimReplySentDate,CaseCompletedDate,CaseBoardFileRequestDate,CaseAddress1,CaseAddress2,CaseAddress3,CaseAddress4,CaseAddress5,CasePostCode,CaseTelephoneNo,CaseFaxNo,CaseAgentName,CaseCrossRefIndicator,CaseTeamCompleted,CaseUserCompleted,CaseNameCompleted,CaseSearchText,CaseReplacedBy,CaseReplacing,LiabilityPort,LiabilityPortOfficerName,LiabilityPortOfficerLoc,LiabilityPortOfficerTel,LiabilityEntryNo,LiabilityEntryDate,LiabilityStatus,AppealReceivedDate,AppealStatus,AppealTribunalDate,AppealCompletionDate,AppealResult,AppealResultDate,SupressDate,SupressTeam,SupressUserName,SupressReason,ElapsedDays,ElapsedDaysInterim,ApplicationRef,AppealDownloaded,CancelDownloaded,BTILetterPrintDate,CustAuthKey,CaseCustomsID,CaseEmail,ContactName"
+          case _ if filename.contains("tblCaseBTI") => "CaseNo,StatusDate,Status,MISStatus,PrintedDate,StartValidityDate,ApplicationDate,Keywords1,Keywords2,Keywords3,Keywords4,Keywords5,Keywords6,Keywords7,Keywords8,Keywords9,Keywords10,Keywords11,Keywords12,Keywords13,Keywords14,Keywords15,Keywords16,Keywords17,Keywords18,Keywords19,Keywords20,EndValidityDate"
+          case _ if filename.contains("tblCaseClassMeth") => "CaseNo,BERTISearch,EBTISearch,Justification,CommercialDenomenation,GoodsDescription,Exclusions,LGCExpertAdvice,OTCCommodityCode,ApplicantsCommodityCode,OTCImage,DescriptionIncluded,BrochureIncluded,PhotoIncluded,SampleIncluded,OtherIncluded,CombinedNomenclature,TARICCode,TARICAdditionalCode1,TARICAdditionalCode2,NationalAdditionalCode"
+          case _ if filename.contains("tblImages") => "CaseNo,DateAdded,TimeAdded,Description,FileName,Counter,SendWithBTI,Confidential,SavedToFile,DeleteFlag,DeletedDate,DeletedTime,DeletingUserID,AddingUserID,IsApplicationAttachment,SendWithApp"
+          case _ if filename.contains("tblMovement") => "CaseNo,DateSent,TimeSent,SenderID,SenderTeam,RecipientTeam,RecipientType,DateReceived,TimeReceived,RecipientID,Reason"
+          case _ if filename.contains("tblSample") => "CaseNo,Action,ActionDate,UserID,Deleted,Time,ID"
+          case _ if filename.contains("tblUser") => "UserID,FirstName,LastName,UserRights,Developer,Extension,Email,Disabled"
+          case _ if filename.contains("tblCaseLMComments") => "CaseNo,Band7DateChecked,Band7TimeChecked,Band7Name,Band7User,Band7Satisfied,Band7Comments,Band9DateChecked,Band9TimeChecked,Band9Name,Band9User,Band9Satisfied,Band9Comments,Band11DateChecked,Band11TimeChecked,Band11Name,Band11User,Band11Satisfied,Band11Comments"
+          case _ => throw new Exception("Incomplete test")
+        }).split(",").toList
+        val mimeType: String = "application/csv"
+        val data: MultipartFormData[TemporaryFile] = {
+          val file = TemporaryFile(filename)
+          val writer = new BufferedWriter(new FileWriter(file.file))
+          writer.write(mockCsv(headers))
+          writer.close()
+          val filePart = FilePart[TemporaryFile](key = "file", filename, contentType = Some(mimeType), ref = file)
+          MultipartFormData[TemporaryFile](
+            dataParts = Map("id" -> Seq(filename), "filename" -> Seq(filename), "mimetype" -> Seq(mimeType)),
+            files = Seq(filePart),
+            badParts = Seq.empty
+          )
+        }
+
+        // Read the output file
+        val result = await(controller.anonymiseData()(newFakeRequestWithCSRF.withBody(data)))
+        val outputBody = await(result.body.consumeData)
+        val outputLines = await(Source.single(outputBody)
+          .via(lineScanner())
+          .map(_.map(_.utf8String))
+          .runWith(Sink.seq))
+
+        val outputHeaders = outputLines.head
+        val outputDataRows = outputLines.tail
+
+        // Determine if a given field is anonymized (would be better if this could be obtained from a map)
+        val isAnonymized = headers.map(header => (header, Anonymize.anonymize(filename, Map((header -> "TEST")))(header) != "TEST")).toMap
+
+        // Ensure at least 1 field is anonymized
+        isAnonymized.values.count(_ == true) >= 1 shouldBe true
+
+        outputHeaders shouldBe headers
+
+        for (row <- 0 until mockCsvRowCount) {
+          for (col <- headers.indices) {
+            if (isAnonymized(headers(col))) {
+              outputDataRows(row)(col) shouldNot equal(mockCsvField(row, col))
+            } else {
+              outputDataRows(row)(col) shouldBe mockCsvField(row, col)
+            }
+          }
+        }
+      })
     }
 
     "return 400" in {

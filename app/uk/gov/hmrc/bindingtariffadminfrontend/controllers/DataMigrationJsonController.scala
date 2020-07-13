@@ -21,17 +21,17 @@ import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.{ByteOrderMark, CsvFormatting, CsvQuotingStyle}
 import akka.stream.scaladsl.Flow
 //import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
-import uk.gov.hmrc.bindingtariffadminfrontend.akka_fix.csv.CsvParsing.lineScanner
-import akka.stream.scaladsl.{FileIO, Sink, Source}
-import akka.util.ByteString
+import akka.stream.scaladsl.{FileIO, Source}
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.ws.StreamedResponse
 import play.api.mvc._
+import uk.gov.hmrc.bindingtariffadminfrontend.akka_fix.csv.CsvParsing.lineScanner
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.csv_processing_status
@@ -42,7 +42,6 @@ import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.successful
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
 
 @Singleton
 class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAction,
@@ -92,9 +91,9 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
             case (headers, None) =>
               (headers, None)
             case (headers, Some(data)) =>
-              val dataByColumn = ListMap(headers.zip(data): _*)
-              val anonymized = Anonymize.anonymize(name.filename, dataByColumn)
-              (headers, Some(anonymized.values.toList))
+              val dataByColumn: Map[String, String] = ListMap(headers.zip(data): _*)
+              val anonymized: Map[String, String] = Anonymize.anonymize(name.filename, dataByColumn)
+              (headers, Some(headers.map(col => anonymized(col))))
           }
           .flatMapMerge(1, {
             case (headers, None) =>
@@ -115,7 +114,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     for {
       files <- service.getDataMigrationFilesDetails(List("tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
         "eBTI_Addresses_csv", "tblCaseRecord_csv", "tblCaseBTI_csv", "tblImages_csv",
-        "tblMovement_csv", "tblSample_csv", "tblUser_csv"))
+        "tblMovement_csv", "tblCaseLMComments_csv", "tblSample_csv", "tblUser_csv"))
       result <- connector.sendDataForProcessing(files)
     } yield {
       result.status match {

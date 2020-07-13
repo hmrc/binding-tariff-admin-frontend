@@ -38,20 +38,60 @@ class AnonymizeSpec extends FlatSpec with Matchers {
     Anonymize.anonymize("tblMovement", Map("CaseName" -> "")) shouldBe Map("CaseName" -> "")
   }
 
+  it should "ignore NULL fields" in {
+    Anonymize.anonymize("eBTI_Application", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
+    Anonymize.anonymize("eBTI_Addresses", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
+    Anonymize.anonymize("tblCaseRecord", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
+    Anonymize.anonymize("tblCaseBTI", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
+    Anonymize.anonymize("tblCaseClassMeth", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
+    Anonymize.anonymize("tblCaseLMComments", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
+    Anonymize.anonymize("tblImages", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
+    Anonymize.anonymize("tblSample", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
+    Anonymize.anonymize("tblUser", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
+    Anonymize.anonymize("tblMovement", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
+  }
+
   it should "anonymize eBTI_Application" in {
+    Anonymize.anonymize("eBTI_Application", Map("PreviousBTIRef" -> "Yoda")) shouldNot contain("PreviousBTIRef" -> "Yoda")
     Anonymize.anonymize("eBTI_Application", Map("PreviousBTICountry" -> "Yoda")) shouldNot contain("PreviousBTICountry" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("PreviousDateofValidity" -> "Yoda")) shouldNot contain("PreviousDateofValidity" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("PreviousNomenclatureCode" -> "Yoda")) shouldNot contain("PreviousNomenclatureCode" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("EnvisagedNomenclature" -> "Yoda")) shouldNot contain("EnvisagedNomenclature" -> "Yoda")
     Anonymize.anonymize("eBTI_Application", Map("GoodsDescription" -> "Yoda")) shouldNot contain("GoodsDescription" -> "Yoda")
     Anonymize.anonymize("eBTI_Application", Map("AdditionalInfo" -> "Yoda")) shouldNot contain("AdditionalInfo" -> "Yoda")
     Anonymize.anonymize("eBTI_Application", Map("AdditionalInfo2" -> "Yoda")) shouldNot contain("AdditionalInfo2" -> "Yoda")
     Anonymize.anonymize("eBTI_Application", Map("Country1" -> "Yoda")) shouldNot contain("Country1" -> "Yoda")
     Anonymize.anonymize("eBTI_Application", Map("Place1" -> "Yoda")) shouldNot contain("Place1" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("DateOfApplication1" -> "Yoda")) shouldNot contain("DateOfApplication1" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("OtherBTIRef1" -> "Yoda")) shouldNot contain("OtherBTIRef1" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("DateOfValidity1" -> "Yoda")) shouldNot contain("DateOfValidity1" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("OtherNomenclatureCode1" -> "Yoda")) shouldNot contain("OtherNomenclatureCode1" -> "Yoda")
     Anonymize.anonymize("eBTI_Application", Map("Country2" -> "Yoda")) shouldNot contain("Country2" -> "Yoda")
     Anonymize.anonymize("eBTI_Application", Map("Place2" -> "Yoda")) shouldNot contain("Place2" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("DateOfApplication2" -> "Yoda")) shouldNot contain("DateOfApplication2" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("OtherBTIRef2" -> "Yoda")) shouldNot contain("OtherBTIRef2" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("DateOfValidity2" -> "Yoda")) shouldNot contain("DateOfValidity2" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("OtherNomenclatureCode2" -> "Yoda")) shouldNot contain("OtherNomenclatureCode2" -> "Yoda")
     Anonymize.anonymize("eBTI_Application", Map("HolderCountry1" -> "Yoda")) shouldNot contain("HolderCountry1" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("HolderOtherBTIRef1" -> "Yoda")) shouldNot contain("HolderOtherBTIRef1" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("HolderDateOfValidity1" -> "Yoda")) shouldNot contain("HolderDateOfValidity1" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("HolderOtherNomenclatureCode1" -> "Yoda")) shouldNot contain("HolderOtherNomenclatureCode1" -> "Yoda")
     Anonymize.anonymize("eBTI_Application", Map("HolderCountry2" -> "Yoda")) shouldNot contain("HolderCountry2" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("HolderOtherBTIRef2" -> "Yoda")) shouldNot contain("HolderOtherBTIRef2" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("HolderDateOfValidity2" -> "Yoda")) shouldNot contain("HolderDateOfValidity2" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("HolderOtherNomenclatureCode2" -> "Yoda")) shouldNot contain("HolderOtherNomenclatureCode2" -> "Yoda")
     Anonymize.anonymize("eBTI_Application", Map("Contact" -> "Yoda")) shouldNot contain("Contact" -> "Yoda")
     Anonymize.anonymize("eBTI_Application", Map("VATRegTurnNo" -> "Yoda")) shouldNot contain("VATRegTurnNo" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("CustomsOther" -> "Yoda")) shouldNot contain("CustomsOther" -> "Yoda")
     Anonymize.anonymize("eBTI_Application", Map("EnvisagedSpecialDesc" -> "Yoda")) shouldNot contain("EnvisagedSpecialDesc" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("Signature" -> "Yoda")) shouldNot contain("Signature" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("SignatureDate" -> "Yoda")) shouldNot contain("SignatureDate" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("CombinedNomenclature" -> "Yoda")) shouldNot contain("CombinedNomenclature" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("TARICCode" -> "Yoda")) shouldNot contain("TARICCode" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("TARICAdditionalCode1" -> "Yoda")) shouldNot contain("TARICAdditionalCode1" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("TARICAdditionalCode2" -> "Yoda")) shouldNot contain("TARICAdditionalCode2" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("NationalAdditionalCode" -> "Yoda")) shouldNot contain("NationalAdditionalCode" -> "Yoda")
+    Anonymize.anonymize("eBTI_Application", Map("OtherNomenclature" -> "Yoda")) shouldNot contain("OtherNomenclature" -> "Yoda")
   }
 
   it should "not anonymize eBTI_Application fields that contain no PII" in {
@@ -90,8 +130,8 @@ class AnonymizeSpec extends FlatSpec with Matchers {
     Anonymize.anonymize("tblCaseRecord", Map("CaseAgentName" -> "Yoda")) shouldNot contain("CaseAgentName" -> "Yoda")
     Anonymize.anonymize("tblCaseRecord", Map("LiabilityPortOfficerName" -> "Yoda")) shouldNot contain("LiabilityPortOfficerName" -> "Yoda")
     Anonymize.anonymize("tblCaseRecord", Map("LiabilityPortOfficerTel" -> "Yoda")) shouldNot contain("LiabilityPortOfficerTel" -> "Yoda")
-    Anonymize.anonymize("tblCaseRecord", Map("SuppressUserName" -> "Yoda")) shouldNot contain("SuppressUserName" -> "Yoda")
-    Anonymize.anonymize("tblCaseRecord", Map("SuppressReason" -> "Yoda")) shouldNot contain("SuppressReason" -> "Yoda")
+    Anonymize.anonymize("tblCaseRecord", Map("SupressUserName" -> "Yoda")) shouldNot contain("SupressUserName" -> "Yoda")
+    Anonymize.anonymize("tblCaseRecord", Map("SupressReason" -> "Yoda")) shouldNot contain("SupressReason" -> "Yoda")
     Anonymize.anonymize("tblCaseRecord", Map("CaseEmail" -> "Yoda")) shouldNot contain("CaseEmail" -> "Yoda")
     Anonymize.anonymize("tblCaseRecord", Map("ContactName" -> "Yoda")) shouldNot contain("ContactName" -> "Yoda")
   }
@@ -121,6 +161,10 @@ class AnonymizeSpec extends FlatSpec with Matchers {
     Anonymize.anonymize("tblCaseBTI", Map("Keywords18" -> "Yoda")) shouldNot contain("Keywords18" -> "Yoda")
     Anonymize.anonymize("tblCaseBTI", Map("Keywords19" -> "Yoda")) shouldNot contain("Keywords19" -> "Yoda")
     Anonymize.anonymize("tblCaseBTI", Map("Keywords20" -> "Yoda")) shouldNot contain("Keywords20" -> "Yoda")
+    Anonymize.anonymize("tblCaseBTI", Map("ApplicationDate" -> "Yoda")) shouldNot contain("ApplicationDate" -> "Yoda")
+    Anonymize.anonymize("tblCaseBTI", Map("PrintedDate" -> "Yoda")) shouldNot contain("PrintedDate" -> "Yoda")
+    Anonymize.anonymize("tblCaseBTI", Map("StatusDate" -> "Yoda")) shouldNot contain("StatusDate" -> "Yoda")
+    Anonymize.anonymize("tblCaseBTI", Map("MISStatus" -> "Yoda")) shouldNot contain("MISStatus" -> "Yoda")
   }
 
   it should "not anonymize tblCaseBTI fields that contain no PII" in {
@@ -131,7 +175,17 @@ class AnonymizeSpec extends FlatSpec with Matchers {
     Anonymize.anonymize("tblCaseClassMeth", Map("MethodSearch" -> "Yoda")) shouldNot contain("MethodSearch" -> "Yoda")
     Anonymize.anonymize("tblCaseClassMeth", Map("Justification" -> "Yoda")) shouldNot contain("Justification" -> "Yoda")
     Anonymize.anonymize("tblCaseClassMeth", Map("GoodsDescription" -> "Yoda")) shouldNot contain("GoodsDescription" -> "Yoda")
-    Anonymize.anonymize("tblCaseClassMeth", Map("LGCExpertAdvice" -> "Yoda")) shouldNot contain("LGCExpertAdvice" -> "Yoda")
+    Anonymize.anonymize("tblCaseClassMeth", Map("NationalAdditionalCode" -> "Yoda")) shouldNot contain("NationalAdditionalCode" -> "Yoda")
+    Anonymize.anonymize("tblCaseClassMeth", Map("TARICAdditionalCode2" -> "Yoda")) shouldNot contain("TARICAdditionalCode2" -> "Yoda")
+    Anonymize.anonymize("tblCaseClassMeth", Map("TARICAdditionalCode1" -> "Yoda")) shouldNot contain("TARICAdditionalCode1" -> "Yoda")
+    Anonymize.anonymize("tblCaseClassMeth", Map("TARICCode" -> "Yoda")) shouldNot contain("TARICCode" -> "Yoda")
+    Anonymize.anonymize("tblCaseClassMeth", Map("CombinedNomenclature" -> "Yoda")) shouldNot contain("CombinedNomenclature" -> "Yoda")
+    Anonymize.anonymize("tblCaseClassMeth", Map("ApplicantsCommodityCode" -> "Yoda")) shouldNot contain("ApplicantsCommodityCode" -> "Yoda")
+    Anonymize.anonymize("tblCaseClassMeth", Map("OTCCommodityCode" -> "Yoda")) shouldNot contain("OTCCommodityCode" -> "Yoda")
+    Anonymize.anonymize("tblCaseClassMeth", Map("Exclusions" -> "Yoda")) shouldNot contain("Exclusions" -> "Yoda")
+    Anonymize.anonymize("tblCaseClassMeth", Map("CommercialDenomenation" -> "Yoda")) shouldNot contain("CommercialDenomenation" -> "Yoda")
+    Anonymize.anonymize("tblCaseClassMeth", Map("EBTISearch" -> "Yoda")) shouldNot contain("EBTISearch" -> "Yoda")
+    Anonymize.anonymize("tblCaseClassMeth", Map("BERTISearch" -> "Yoda")) shouldNot contain("BERTISearch" -> "Yoda")
   }
 
   it should "not anonymize tblCaseClassMeth fields that contain no PII" in {
@@ -153,7 +207,9 @@ class AnonymizeSpec extends FlatSpec with Matchers {
   
   it should "anonymize tblImages" in {
     Anonymize.anonymize("tblImages", Map("Description" -> "Yoda")) shouldNot contain("Description" -> "Yoda")
-    Anonymize.anonymize("tblImages", Map("FileName" -> "Yoda")) shouldNot contain("FileName" -> "Yoda")
+    Anonymize.anonymize("tblImages", Map("DeletingUserID" -> "Yoda")) shouldNot contain("DeletingUserID" -> "Yoda")
+    Anonymize.anonymize("tblImages", Map("DeletedTime" -> "Yoda")) shouldNot contain("DeletedTime" -> "Yoda")
+    Anonymize.anonymize("tblImages", Map("DeletedDate" -> "Yoda")) shouldNot contain("DeletedDate" -> "Yoda")
   }
 
   it should "not anonymize tblImages fields that contain no PII" in {
@@ -161,6 +217,7 @@ class AnonymizeSpec extends FlatSpec with Matchers {
   }
 
   it should "anonymize tblMovement" in {
+    Anonymize.anonymize("tblMovement", Map("RecipientType" -> "Yoda")) shouldNot contain("RecipientType" -> "Yoda")
     Anonymize.anonymize("tblMovement", Map("Reason" -> "Yoda")) shouldNot contain("Reason" -> "Yoda")
   }
 
@@ -170,6 +227,10 @@ class AnonymizeSpec extends FlatSpec with Matchers {
 
   it should "anonymize tblSample" in {
     Anonymize.anonymize("tblSample", Map("Action" -> "Yoda")) shouldNot contain("Action" -> "Yoda")
+    Anonymize.anonymize("tblSample", Map("ActionDate" -> "Yoda")) shouldNot contain("Action" -> "Yoda")
+    Anonymize.anonymize("tblSample", Map("Deleted" -> "Yoda")) shouldNot contain("Action" -> "Yoda")
+    Anonymize.anonymize("tblSample", Map("Time" -> "Yoda")) shouldNot contain("Action" -> "Yoda")
+    Anonymize.anonymize("tblSample", Map("ID" -> "Yoda")) shouldNot contain("Action" -> "Yoda")
   }
 
   it should "not anonymize tblSample fields that contain no PII" in {
@@ -179,8 +240,11 @@ class AnonymizeSpec extends FlatSpec with Matchers {
   it should "anonymize tblUser" in {
     Anonymize.anonymize("tblUser", Map("FirstName" -> "Yoda")) shouldNot contain("FirstName" -> "Yoda")
     Anonymize.anonymize("tblUser", Map("LastName" -> "Yoda")) shouldNot contain("LastName" -> "Yoda")
+    Anonymize.anonymize("tblUser", Map("UserRights" -> "Yoda")) shouldNot contain("LastName" -> "Yoda")
+    Anonymize.anonymize("tblUser", Map("Developer" -> "Yoda")) shouldNot contain("LastName" -> "Yoda")
     Anonymize.anonymize("tblUser", Map("Extension" -> "Yoda")) shouldNot contain("Extension" -> "Yoda")
     Anonymize.anonymize("tblUser", Map("Email" -> "Yoda")) shouldNot contain("Email" -> "Yoda")
+    Anonymize.anonymize("tblUser", Map("Disabled" -> "Yoda")) shouldNot contain("Email" -> "Yoda")
   }
 
   it should "not anonymize tblUser fields that contain no PII" in {

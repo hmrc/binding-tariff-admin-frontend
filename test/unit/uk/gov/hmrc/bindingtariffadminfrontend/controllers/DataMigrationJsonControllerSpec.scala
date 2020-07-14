@@ -66,7 +66,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
 
   private val csvList = List("tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
     "eBTI_Addresses_csv", "tblCaseRecord_csv", "tblCaseBTI_csv", "tblImages_csv",
-    "tblMovement_csv", "tblCaseLMComments_csv", "tblSample_csv", "tblUser_csv")
+    "tblMovement_csv", "tblSample_csv", "tblUser_csv")
 
   private val anonymizedCsvList = csvList.filterNot(_ == "historicCases_csv")
 

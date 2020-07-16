@@ -78,6 +78,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
           })
           .via(lineScanner()).log(errorLog(name.ref.file.getName))
           .map(_.map(_.utf8String))
+          .filter(_.mkString.trim.nonEmpty) // ignore blank lines in CSV
           .map { list =>
             headers match {
               case None =>

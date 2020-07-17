@@ -15,15 +15,17 @@
  *@
 
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+@import play.twirl.api.HtmlFormat._
+
 @(appConfig: AppConfig,
   title: String,
   mainClass: Option[String] = None,
   mainDataAttributes: Option[Html] = None,
   bodyClasses: Option[String] = None,
-  sidebar: Html = HtmlFormat.empty,
+  sidebar: Html = empty,
   contentHeader: Option[Html] = None,
-  mainContent: Html = HtmlFormat.empty,
-  serviceInfoContent: Html = HtmlFormat.empty,
+  mainContent: Html = empty,
+  serviceInfoContent: Html = empty,
   scriptElem: Option[Html] = None)(implicit request: Request[_], messages: Messages)
 
 @import layouts.{govuk_template => hmrcGovUkTemplate}
@@ -63,7 +65,7 @@
 
 @serviceInfo = {
     @uiLayouts.serviceInfo(
-      betaBanner = HtmlFormat.empty,
+      betaBanner = empty,
       includeGridWrapper = false,
       serviceInfoContent = Some(serviceInfoContent))
 }

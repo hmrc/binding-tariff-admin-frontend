@@ -27,10 +27,13 @@ import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class MonitorController @Inject()(authenticatedAction: AuthenticatedAction,
+class MonitorController @Inject()(
+                                   authenticatedAction: AuthenticatedAction,
                                 monitorService: AdminMonitorService,
-                                override val messagesApi: MessagesApi,
-                                implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
+                                   mcc: MessagesControllerComponents,
+                                   override val messagesApi: MessagesApi,
+                                implicit val appConfig: AppConfig
+                                 ) extends FrontendController(mcc) with I18nSupport {
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
     for {

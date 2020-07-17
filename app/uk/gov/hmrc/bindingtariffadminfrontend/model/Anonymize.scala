@@ -23,8 +23,6 @@ import com.github.javafaker._
 import java.{util => ju}
 import java.util.UUID.randomUUID
 
-import scala.util.Random
-
 object Anonymize {
   private val faker = new Faker(ju.Locale.UK)
 

@@ -16,45 +16,29 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
-import akka.stream.Materializer
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterEach
 import play.api.http.Status.OK
-import play.api.i18n.{DefaultLangs, DefaultMessagesApi}
 import play.api.mvc.Result
 import play.api.test.FakeRequest
-import play.api.{Configuration, Environment}
-import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
-class IndexControllerControllerSpec extends WordSpec
-  with Matchers
-  with UnitSpec
-  with MockitoSugar
-  with WithFakeApplication
-  with BeforeAndAfterEach {
+class IndexControllerControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
-  private val env = Environment.simple()
-  private val configuration = Configuration.load(env)
   private val migrationService = mock[DataMigrationService]
-  private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
-  private val appConfig = mock[AppConfig]
-  private implicit val mat: Materializer = fakeApplication.materializer
-  private val controller = new IndexController(new SuccessfulAuthenticatedAction, messageApi, appConfig)
+  private val controller = new IndexController(new SuccessfulAuthenticatedAction, mcc, messageApi, mockAppConfig)
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    given(appConfig.analyticsToken) willReturn "token"
-    given(appConfig.analyticsHost) willReturn "host"
-    given(appConfig.resetPermitted) willReturn false
+    given(mockAppConfig.analyticsToken) willReturn "token"
+    given(mockAppConfig.analyticsHost) willReturn "host"
+    given(mockAppConfig.resetPermitted) willReturn false
   }
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    Mockito.reset(migrationService, appConfig)
+    Mockito.reset(migrationService, mockAppConfig)
   }
 
   "GET /" should {

@@ -20,13 +20,13 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.{ByteOrderMark, CsvFormatting, CsvQuotingStyle}
 import akka.stream.scaladsl.Flow
+import play.api.libs.ws.WSResponse
 //import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.scaladsl.{FileIO, Source}
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
-import play.api.libs.ws.StreamedResponse
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.akka_fix.csv.CsvParsing.lineScanner
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
@@ -44,13 +44,16 @@ import scala.concurrent.Future
 import scala.concurrent.Future.successful
 
 @Singleton
-class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAction,
+class DataMigrationJsonController @Inject()(
+                                             authenticatedAction: AuthenticatedAction,
                                             service: DataMigrationService,
                                             connector: DataMigrationJsonConnector,
                                             implicit val system: ActorSystem,
                                             implicit val materializer: Materializer,
-                                            override val messagesApi: MessagesApi,
-                                            implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
+                                             mcc: MessagesControllerComponents,
+                                             override val messagesApi: MessagesApi,
+                                            implicit val appConfig: AppConfig
+                                           ) extends FrontendController(mcc) with I18nSupport {
 
   def getAnonymiseData: Action[AnyContent] = authenticatedAction.async { implicit request =>
     successful(Ok(views.html.file_anonymisation_upload()))
@@ -67,7 +70,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     val file = request.body.files.find(_.filename.nonEmpty)
     file match {
       case Some(name) =>
-        val res = FileIO.fromPath(name.ref.file.toPath())
+        val res = FileIO.fromPath(name.ref.path)
           .via(Flow.fromFunction { file =>
             //This is done because the byte order mark (BOM) causes problems with first column header
             if (file.startsWith(ByteOrderMark.UTF_8)) {
@@ -76,7 +79,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
               file.dropWhile(b => b.toChar.isWhitespace)
             }
           })
-          .via(lineScanner()).log(errorLog(name.ref.file.getName))
+          .via(lineScanner()).log(errorLog(name.ref.path.toFile.getName))
           .map(_.map(_.utf8String))
           .filter(_.mkString.trim.nonEmpty) // ignore blank lines in CSV
           .map { list =>
@@ -147,15 +150,15 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     downloadJson(connector.downloadLiabilitiesJson, "Liabilities")
   }
 
-  private def downloadJson(download : Future[StreamedResponse], jsonType : String): Future[Result] ={
+  private def downloadJson(download : Future[WSResponse], jsonType : String): Future[Result] ={
     download.map{ res =>
-      res.headers.status match{
+      res.status match{
         case OK => res.body
-        case _ => throw new BadRequestException(s"Failed to get mapped json from data migration api for $jsonType" + res.headers.status)
+        case _ => throw new BadRequestException(s"Failed to get mapped json from data migration api for $jsonType" + res.status)
       }
     }
     .map{ dataContent =>
-      Ok.chunked(dataContent).withHeaders(
+      Ok.chunked[String](Source(List(dataContent))).withHeaders(
         "Content-Type" -> "application/zip",
         "Content-Disposition" -> s"attachment; filename=$jsonType-Data-Migration${DateTime.now().toString("ddMMyyyyHHmmss")}.zip")
     }

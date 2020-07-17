@@ -14,12 +14,13 @@
  * limitations under the License.
  *@
 
-@import play.api.data.validation.ValidationError
 @import play.api.libs.json.JsPath
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
-@(errors: Seq[(JsPath, Seq[ValidationError])])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
+@import play.api.libs.json.JsonValidationError
+
+@(errors: Seq[(JsPath, Seq[JsonValidationError])])(implicit request: Request[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
  <h1 class="heading-xlarge">Data Migration Failed</h1>

@@ -17,14 +17,17 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import java.io.File
-import java.util.zip.{ZipFile, ZipEntry}
+import java.util.zip._
 
+import akka.stream.scaladsl.Framing.FramingException
+import akka.stream.scaladsl.{FileIO, JsonFraming, Source, StreamConverters}
+import akka.util.ByteString
 import javax.inject.{Inject, Singleton}
-import org.apache.commons.io.FileUtils
 import play.api.data.{Form, Forms}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
+import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigratableCase
@@ -34,32 +37,18 @@ import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future.successful
-import scala.util.{Failure, Success, Try}
-import akka.stream.scaladsl.FileIO
-import akka.stream.scaladsl.JsonFraming
-import akka.stream.scaladsl.Source
-import akka.NotUsed
 import scala.concurrent.Future
-import akka.stream.IOResult
-import akka.stream.Graph
-import akka.stream.scaladsl.Flow
-import scala.util.control.NonFatal
-import akka.stream.scaladsl.StreamConverters
-import play.api.mvc.MultipartFormData.FilePart
-import akka.util.ByteString
-import java.io.InputStream
-import akka.stream.Attributes
-import akka.event.Logging.LogLevel
-import akka.stream.scaladsl.Framing.FramingException
-import play.api.data.validation.ValidationError
-import akka.Done
+import scala.concurrent.Future.successful
+import scala.util._
 
 @Singleton
-class CaseMigrationUploadController @Inject()(authenticatedAction: AuthenticatedAction,
+class CaseMigrationUploadController @Inject()(
+                                               authenticatedAction: AuthenticatedAction,
                                               service: DataMigrationService,
-                                              override val messagesApi: MessagesApi,
-                                              implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
+                                               mcc: MessagesControllerComponents,
+                                               override val messagesApi: MessagesApi,
+                                              implicit val appConfig: AppConfig
+                                             ) extends FrontendController(mcc) with I18nSupport {
 
   private lazy val form = Form("file" -> Forms.text)
 
@@ -73,13 +62,13 @@ class CaseMigrationUploadController @Inject()(authenticatedAction: Authenticated
       case None =>
         successful(Redirect(routes.CaseMigrationUploadController.get()))
       case Some(part: FilePart[TemporaryFile]) =>
-        service.prepareMigration(toJsonSource(part.ref.file, part.contentType), priority)
+        service.prepareMigration(toJsonSource(part.ref.path.toFile, part.contentType), priority)
           .map(_ => Redirect(routes.DataMigrationStateController.get()))
           .recoverWith {
             // Happens when Akka doesn't know how to split the file into JSON chunks
             case framing: FramingException =>
               val indexZero = JsPath.apply(0)
-              val validationErrors = Seq(ValidationError(Seq(framing.getMessage())))
+              val validationErrors = Seq(JsonValidationError(Seq(framing.getMessage)))
               val jsonErrors = Seq(indexZero -> validationErrors)
               successful(Ok(views.html.case_migration_file_error(jsonErrors)))
             // Happens when parsing JSON chunks with Play
@@ -90,18 +79,19 @@ class CaseMigrationUploadController @Inject()(authenticatedAction: Authenticated
   }
 
   private def toJsonSource(file: File, contentType: Option[String]): Source[MigratableCase, _] = {
-    val dataSource: Source[ByteString, _] = 
-      if (contentType.map(_ == "application/zip").getOrElse(false)) {
+    val dataSource: Source[ByteString, _] =
+      if (contentType.contains("application/zip")) {
         val zipFile = new ZipFile(file)
         val zipEntries = zipFile.entries()
 
-        if (zipEntries.hasMoreElements())
+        if (zipEntries.hasMoreElements) {
           StreamConverters.fromInputStream(() => zipFile.getInputStream(zipEntries.nextElement))
-        else
+        } else {
           Source.empty[ByteString]
+        }
 
       } else {
-        FileIO.fromPath(file.toPath())
+        FileIO.fromPath(file.toPath)
       }
 
     dataSource

@@ -19,16 +19,14 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.matching.{MultipartValuePattern, MultipartValuePatternBuilder}
 import play.api.http.Status
-import play.api.libs.Files.TemporaryFile
+import play.api.libs.Files.SingletonTemporaryFileCreator
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadTemplate
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class UpscanS3ConnectorTest extends ConnectorTest {
 
   private implicit val multipartBuilder: MultipartValuePatternBuilder => MultipartValuePattern = _.build()
 
-  private val connector = new UpscanS3Connector(appConfig, standardHttpClient)
+  private val connector = new UpscanS3Connector()
 
   "Upload" should {
 
@@ -48,7 +46,7 @@ class UpscanS3ConnectorTest extends ConnectorTest {
         )
       )
 
-      await(connector.upload(templateUploading, TemporaryFile("example-file.json"))) shouldBe ((): Unit)
+      await(connector.upload(templateUploading, SingletonTemporaryFileCreator.create("example-file.json"))) shouldBe ((): Unit)
 
       verify(
         postRequestedFor(urlEqualTo("/path"))
@@ -76,7 +74,7 @@ class UpscanS3ConnectorTest extends ConnectorTest {
       )
 
       intercept[RuntimeException] {
-        await(connector.upload(templateUploading, TemporaryFile("example-file.json")))
+        await(connector.upload(templateUploading, SingletonTemporaryFileCreator.create("example-file.json")))
       }.getMessage shouldBe "Bad AWS response with status [502] body [content]"
 
       verify(

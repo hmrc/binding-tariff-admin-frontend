@@ -21,22 +21,17 @@ import java.io.{BufferedWriter, FileWriter}
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import akka.util.ByteString
 import org.mockito.ArgumentMatchers.{any, refEq}
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterEach
 import play.api.http.Status._
-import play.api.i18n.{DefaultLangs, DefaultMessagesApi}
-import play.api.libs.Files.TemporaryFile
+import play.api.libs.Files.{SingletonTemporaryFileCreator, TemporaryFile}
 import play.api.libs.json.Json
-import play.api.libs.ws.{DefaultWSResponseHeaders, StreamedResponse}
+import play.api.libs.ws._
 import play.api.mvc.MultipartFormData.FilePart
-import play.api.mvc.{AnyContentAsEmpty, MultipartFormData, Result}
-import play.api.test.{FakeHeaders, FakeRequest}
+import play.api.mvc.{MultipartFormData, Result}
 import play.api.{Configuration, Environment}
-import play.filters.csrf.CSRF.{Token, TokenProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.akka_fix.csv.CsvParsing.lineScanner
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
@@ -44,24 +39,17 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 
-class DataMigrationJsonControllerSpec extends WordSpec with Matchers
-  with UnitSpec with MockitoSugar with WithFakeApplication with BeforeAndAfterEach {
+class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
-  private val env = Environment.simple()
-  private val configuration = Configuration.load(env)
   private val migrationService = mock[DataMigrationService]
   private val migrationConnector = mock[DataMigrationJsonConnector]
   private val actorSystem = mock[ActorSystem]
-  private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
-  private val appConfig = new AppConfig(configuration, env)
-  private implicit val mat: Materializer = fakeApplication.materializer
   private val controller = new DataMigrationJsonController(
-    new SuccessfulAuthenticatedAction, migrationService, migrationConnector, actorSystem, mat, messageApi, appConfig
+    new SuccessfulAuthenticatedAction, migrationService, migrationConnector, actorSystem, mat, mcc, messageApi, realConfig
   )
 
   private val csvList = List(
@@ -114,7 +102,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
       val filename: String = "file.txt"
       val mimeType: String = "application/csv"
       val data : MultipartFormData[TemporaryFile] = {
-        val file = TemporaryFile(filename)
+        val file = SingletonTemporaryFileCreator.create(filename)
         val filePart = FilePart[TemporaryFile](key = "file", filename, contentType = Some(mimeType), ref = file)
         MultipartFormData[TemporaryFile](
           dataParts = Map("id" -> Seq(filename), "filename" -> Seq(filename), "mimetype" -> Seq(mimeType)),
@@ -146,7 +134,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
         }).split(",").toList
         val mimeType: String = "application/csv"
         val data: MultipartFormData[TemporaryFile] = {
-          val file = TemporaryFile(filename)
+          val file = SingletonTemporaryFileCreator.create(filename)
           val writer = new BufferedWriter(new FileWriter(file.file))
           writer.write(mockCsv(headers))
           writer.close()
@@ -308,8 +296,10 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
                               |  }
                               |}""".stripMargin)
 
-      val response = StreamedResponse.apply(
-        DefaultWSResponseHeaders(200, Map.empty), body= Source.apply(List(ByteString(json.toString()))))
+      val response: WSResponse = mock[WSResponse]
+      when(response.status).thenReturn(200)
+      when(response.body).thenReturn(json.toString())
+
       given(migrationConnector.downloadBTIJson).willReturn(Future.successful(response))
 
       val result = await(controller.downloadBTIJson()(newFakeRequestWithCSRF))
@@ -325,9 +315,11 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
     }
 
     "return 400" in {
-      val response = StreamedResponse.apply(
-        DefaultWSResponseHeaders(400, Map.empty), body= Source.apply(
-          List(ByteString(Json.obj("error" -> "error while building josn").toString()))))
+      val json = Json.obj("error" -> "error while building josn")
+      val response: WSResponse = mock[WSResponse]
+      when(response.status).thenReturn(400)
+      when(response.body).thenReturn(json.toString())
+
       given(migrationConnector.downloadBTIJson).willReturn(Future.successful(response))
 
       intercept[BadRequestException](
@@ -346,8 +338,9 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
                               |  }
                               |}""".stripMargin)
 
-      val response = StreamedResponse.apply(
-        DefaultWSResponseHeaders(200, Map.empty), body= Source.apply(List(ByteString(json.toString()))))
+      val response: WSResponse = mock[WSResponse]
+      when(response.status).thenReturn(200)
+      when(response.body).thenReturn(json.toString())
       given(migrationConnector.downloadLiabilitiesJson).willReturn(Future.successful(response))
 
       val result = await(controller.downloadLiabilitiesJson()(newFakeRequestWithCSRF))
@@ -363,9 +356,11 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
     }
 
     "return 400" in {
-      val response = StreamedResponse.apply(
-        DefaultWSResponseHeaders(400, Map.empty), body= Source.apply(
-          List(ByteString(Json.obj("error" -> "error while building josn").toString()))))
+      val json = Json.obj("error" -> "error while building josn")
+      val response: WSResponse = mock[WSResponse]
+      when(response.status).thenReturn(400)
+      when(response.body).thenReturn(json.toString())
+
       given(migrationConnector.downloadLiabilitiesJson).willReturn(Future.successful(response))
 
       intercept[BadRequestException](
@@ -373,11 +368,4 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
       )
     }
   }
-
-  private def newFakeRequestWithCSRF: FakeRequest[AnyContentAsEmpty.type] = {
-    val tokenProvider: TokenProvider = fakeApplication.injector.instanceOf[TokenProvider]
-    val csrfTags = Map(Token.NameRequestTag -> "csrfToken", Token.RequestTag -> tokenProvider.generateToken)
-    FakeRequest("GET", "/", FakeHeaders(), AnyContentAsEmpty, tags = csrfTags)
-  }
-
 }

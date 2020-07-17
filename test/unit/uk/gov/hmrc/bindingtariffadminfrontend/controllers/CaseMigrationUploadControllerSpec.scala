@@ -17,51 +17,35 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import java.io.{BufferedWriter, File, FileWriter}
+import java.nio.file.{Files, Path, StandardCopyOption}
 import java.time.{Instant, LocalDate, ZoneOffset}
 
-import akka.stream.Materializer
+import akka.actor.ActorSystem
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers._
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterEach
 import play.api.http.HeaderNames.LOCATION
 import play.api.http.Status.{OK, SEE_OTHER}
-import play.api.i18n.{DefaultLangs, DefaultMessagesApi}
-import play.api.libs.Files.TemporaryFile
+import play.api.i18n.MessagesApi
+import play.api.libs.Files.{SingletonTemporaryFileCreator, TemporaryFile}
 import play.api.mvc.MultipartFormData.FilePart
-import play.api.mvc.{AnyContentAsEmpty, MultipartFormData, Result}
-import play.api.test.{FakeHeaders, FakeRequest}
+import play.api.mvc.{MultipartFormData, Result}
+import play.api.test.FakeRequest
 import play.api.{Configuration, Environment}
-import play.filters.csrf.CSRF.{Token, TokenProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigratableCase, MigratableDecision, MigratableEvent, MigratedAttachment}
-import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
-
-import scala.io
-import scala.concurrent.Future
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.Sink
-import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
-import uk.gov.hmrc.lock.LockRepository
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.FileStoreConnector
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.RulingConnector
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.UpscanS3Connector
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.BindingTariffClassificationConnector
-import akka.actor.ActorSystem
-import org.scalatest.BeforeAndAfterEach
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Migration
-import java.nio.file.Files
-import java.nio.file.CopyOption
-import java.nio.file.StandardCopyOption
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
+import uk.gov.hmrc.bindingtariffadminfrontend.model._
+import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
+import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
+import uk.gov.hmrc.lock.LockRepository
 
-class CaseMigrationUploadControllerSpec extends WordSpec with Matchers
-  with UnitSpec with MockitoSugar with WithFakeApplication with BeforeAndAfterEach {
+import scala.concurrent.Future
+
+class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
   private val fakeRequest = FakeRequest()
   private val env = Environment.simple()
@@ -72,13 +56,11 @@ class CaseMigrationUploadControllerSpec extends WordSpec with Matchers
   private val upscanS3Connector = mock[UpscanS3Connector]
   private val caseConnector = mock[BindingTariffClassificationConnector]
   private val lockRepository = mock[LockRepository]
-  private val appConfig = new AppConfig(configuration, env)
+  private val appConfig = new AppConfig(configuration, runMode)
   private def migrationLock = new MigrationLock(lockRepository, appConfig)
   private def actorSystem = ActorSystem.create("testActorSystem")
   private val migrationService = new DataMigrationService(repository, migrationLock, fileConnector, upscanS3Connector, rulingConnector, caseConnector, actorSystem)
-  private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
-  private implicit val mat: Materializer = fakeApplication.materializer
-  private val controller = new CaseMigrationUploadController(new SuccessfulAuthenticatedAction, migrationService, messageApi, appConfig)
+  private val controller = new CaseMigrationUploadController(new SuccessfulAuthenticatedAction, migrationService, mcc, messageApi, appConfig)
 
   override protected def afterEach(): Unit = {
     super.afterEach()
@@ -147,7 +129,7 @@ class CaseMigrationUploadControllerSpec extends WordSpec with Matchers
       given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
       given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
 
-      val file = TemporaryFile(withJson(fromFile("migration.json")))
+      val file = SingletonTemporaryFileCreator.create(withJson(fromFile("migration.json")))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
@@ -163,7 +145,7 @@ class CaseMigrationUploadControllerSpec extends WordSpec with Matchers
       given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
       given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
 
-      val file = TemporaryFile(withZip("migration.zip"))
+      val file = SingletonTemporaryFileCreator.create(withZip("migration.zip"))
       val filePart = FilePart[TemporaryFile](key = "file", "file.zip", contentType = Some("application/zip"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
@@ -256,7 +238,7 @@ class CaseMigrationUploadControllerSpec extends WordSpec with Matchers
     }*/
 
     "return 200 with Json Errors" in {
-      val file = TemporaryFile(withJson("[{}]"))
+      val file = SingletonTemporaryFileCreator.create(withJson("[{}]"))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
@@ -267,7 +249,7 @@ class CaseMigrationUploadControllerSpec extends WordSpec with Matchers
     }
 
     "return 200 with Json Errors on invalid json" in {
-      val file = TemporaryFile(withJson("xyz"))
+      val file = SingletonTemporaryFileCreator.create(withJson("xyz"))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
@@ -294,19 +276,19 @@ class CaseMigrationUploadControllerSpec extends WordSpec with Matchers
     captor.getValue.map(_.`case`)
   }
 
-  private def withJson(json: String): File = {
+  private def withJson(json: String): Path = {
     val file = File.createTempFile("tmp", ".json")
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(json)
     bw.close()
-    file
+    file.toPath
   }
 
-  private def withZip(path: String): File = {
+  private def withZip(path: String): Path = {
     val resourceStream = getClass.getClassLoader.getResourceAsStream(path)
     val tempFile = File.createTempFile("tmp", ".zip")
-    Files.copy(resourceStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
-    tempFile.getAbsoluteFile()
+    Files.copy(resourceStream, tempFile.toPath, StandardCopyOption.REPLACE_EXISTING)
+    tempFile.getAbsoluteFile().toPath
   }
 
   private def locationOf(result: Result): Option[String] = {
@@ -315,7 +297,7 @@ class CaseMigrationUploadControllerSpec extends WordSpec with Matchers
 
   private def fromFile(path: String): String = {
     val url = getClass.getClassLoader.getResource(path)
-    io.Source.fromURL(url, "UTF-8").getLines().mkString
+    scala.io.Source.fromURL(url, "UTF-8").getLines().mkString
   }
 
   private implicit def str2instant: String => Instant = LocalDate.parse(_).atStartOfDay.toInstant(ZoneOffset.UTC)

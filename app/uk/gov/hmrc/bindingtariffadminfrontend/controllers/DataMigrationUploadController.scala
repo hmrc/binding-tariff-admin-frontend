@@ -23,7 +23,7 @@ import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{UploadRequest, UploadMigrationDataRequest}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadMigrationDataRequest
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.http.{Upstream4xxResponse, Upstream5xxResponse}
@@ -33,10 +33,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
 @Singleton
-class DataMigrationUploadController @Inject()(authenticatedAction: AuthenticatedAction,
+class DataMigrationUploadController @Inject()(
+                                               authenticatedAction: AuthenticatedAction,
                                               service: DataMigrationService,
-                                              override val messagesApi: MessagesApi,
-                                              implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
+                                               mcc: MessagesControllerComponents,
+                                               override val messagesApi: MessagesApi,
+                                              implicit val appConfig: AppConfig
+                                             ) extends FrontendController(mcc) with I18nSupport {
 
   private lazy val form = Form[UploadMigrationDataRequest](
     mapping[UploadMigrationDataRequest, String, String](

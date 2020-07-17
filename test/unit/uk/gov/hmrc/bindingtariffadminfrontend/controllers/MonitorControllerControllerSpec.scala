@@ -20,7 +20,7 @@ import akka.stream.Materializer
 import org.mockito.ArgumentMatchers._
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import play.api.http.Status.OK
 import play.api.i18n.{DefaultLangs, DefaultMessagesApi}
@@ -34,30 +34,20 @@ import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.Future
 
-class MonitorControllerControllerSpec extends WordSpec
-  with Matchers
-  with UnitSpec
-  with MockitoSugar
-  with WithFakeApplication
-  with BeforeAndAfterEach {
+class MonitorControllerControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
-  private val env = Environment.simple()
-  private val configuration = Configuration.load(env)
-  private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
-  private val appConfig = mock[AppConfig]
   private val service = mock[AdminMonitorService]
-  private implicit val mat: Materializer = fakeApplication.materializer
-  private val controller = new MonitorController(new SuccessfulAuthenticatedAction, service, messageApi, appConfig)
+  private val controller = new MonitorController(new SuccessfulAuthenticatedAction, service, mcc, messageApi, mockAppConfig)
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    given(appConfig.analyticsToken) willReturn "token"
-    given(appConfig.analyticsHost) willReturn "host"
+    given(mockAppConfig.analyticsToken) willReturn "token"
+    given(mockAppConfig.analyticsHost) willReturn "host"
   }
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    Mockito.reset(appConfig)
+    Mockito.reset(mockAppConfig)
   }
 
   "GET /" should {

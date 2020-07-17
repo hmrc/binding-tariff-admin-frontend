@@ -32,10 +32,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class SearchController @Inject()(authenticatedAction: AuthenticatedAction,
+class SearchController @Inject()(
+                                  authenticatedAction: AuthenticatedAction,
                                  monitorService: AdminMonitorService,
+                                  mcc: MessagesControllerComponents,
                                  override val messagesApi: MessagesApi,
-                                 implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
+                                 implicit val appConfig: AppConfig
+                                ) extends FrontendController(mcc) with I18nSupport {
 
   private val form: Form[CaseSearch] = CaseSearch.form
 

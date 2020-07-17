@@ -23,17 +23,21 @@ import com.google.common.io.BaseEncoding
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.mvc.Results._
-import play.api.mvc.{ActionBuilder, Request, Result}
+import play.api.mvc.{ActionBuilder, AnyContent, BodyParser, BodyParsers, Request, Result}
 import play.mvc.Http.HeaderNames.{AUTHORIZATION, WWW_AUTHENTICATE}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Credentials}
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.password_expired
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class AuthenticatedAction @Inject()(appConfig: AppConfig) extends ActionBuilder[AuthenticatedRequest] {
+class AuthenticatedAction @Inject()(
+                                     appConfig: AppConfig,
+                                     bodyParser: BodyParsers.Default
+                                   ) extends ActionBuilder[AuthenticatedRequest, AnyContent] {
 
   private lazy val year: Int = LocalDate.now(appConfig.clock).getYear
   private lazy val credentials: Seq[Credentials] = appConfig.credentials
@@ -77,4 +81,7 @@ class AuthenticatedAction @Inject()(appConfig: AppConfig) extends ActionBuilder[
       .map("%02x".format(_)).mkString.toUpperCase()
   }
 
+  override def parser: BodyParser[AnyContent] = bodyParser
+
+  override protected def executionContext: ExecutionContext = global
 }

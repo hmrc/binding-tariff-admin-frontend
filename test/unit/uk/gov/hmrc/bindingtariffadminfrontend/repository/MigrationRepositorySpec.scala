@@ -17,7 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.repository
 
 import org.scalatest.concurrent.Eventually
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import reactivemongo.api.DB
 import reactivemongo.bson._

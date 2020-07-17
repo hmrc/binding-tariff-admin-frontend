@@ -16,28 +16,29 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.mvc.{AnyContentAsEmpty, Request}
+import org.scalatest.{BeforeAndAfterEach, Matchers}
+import play.api.mvc.{AnyContentAsEmpty, AnyContentAsJson, Request}
 import play.api.test.{FakeHeaders, FakeRequest}
-import play.api.{Configuration, Environment}
+import uk.gov.hmrc.bindingtariffadminfrontend.base.BaseSpec
 import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
-import uk.gov.hmrc.play.test.UnitSpec
+import play.api.test.CSRFTokenHelper._
 
-abstract class ControllerSpec extends WordSpec
+abstract class ControllerSpec
+  extends BaseSpec
   with Matchers
-  with UnitSpec
-  with MockitoSugar
-  with GuiceOneAppPerSuite
   with BeforeAndAfterEach {
 
-  def inject[T](implicit m: Manifest[T]) = app.injector.instanceOf[T]
-
-  private val env = Environment.simple()
-  private val configuration = Configuration.load(env)
-
   protected def authenticatedRequest(request: Request[AnyContentAsEmpty.type]): AuthenticatedRequest[AnyContentAsEmpty.type] = AuthenticatedRequest("operator", request)
+
+  def newFakeRequestWithCSRF: FakeRequest[AnyContentAsEmpty.type] =
+    FakeRequest("GET", "/", FakeHeaders(), AnyContentAsEmpty).withCSRFToken.asInstanceOf[FakeRequest[AnyContentAsEmpty.type]]
+
+  def newFakeGETRequestWithCSRF: FakeRequest[AnyContentAsEmpty.type] =
+    FakeRequest("GET", "/", FakeHeaders(), AnyContentAsEmpty).withCSRFToken.asInstanceOf[FakeRequest[AnyContentAsEmpty.type]]
+
+  def newFakePOSTRequestWithCSRF: FakeRequest[AnyContentAsJson.type] =
+    FakeRequest("POST", "/", FakeHeaders(), AnyContentAsJson).withCSRFToken.asInstanceOf[FakeRequest[AnyContentAsJson.type]]
+
 }
 
 object  ControllerSpec {

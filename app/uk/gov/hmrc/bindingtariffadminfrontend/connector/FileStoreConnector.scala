@@ -19,8 +19,8 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, FileSearch, UploadRequest, UploadTemplate}
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadTemplate}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -29,11 +29,11 @@ import scala.concurrent.Future
 class FileStoreConnector @Inject()(configuration: AppConfig, http: AuthenticatedHttpClient) {
 
   def delete()(implicit hc: HeaderCarrier): Future[Unit] = {
-    http.DELETE(s"${configuration.filestoreUrl}/file").map(_ => ())
+    http.DELETE[HttpResponse](s"${configuration.filestoreUrl}/file").map(_ => ())
   }
 
   def delete(id: String)(implicit hc: HeaderCarrier): Future[Unit] = {
-    http.DELETE(s"${configuration.filestoreUrl}/file/$id").map(_ => ())
+    http.DELETE[HttpResponse](s"${configuration.filestoreUrl}/file/$id").map(_ => ())
   }
 
   def find(id: String)(implicit hc: HeaderCarrier): Future[Option[FileUploaded]] = {

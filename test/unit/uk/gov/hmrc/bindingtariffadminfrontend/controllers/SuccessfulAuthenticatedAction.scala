@@ -17,13 +17,16 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import org.mockito.Mockito
-import play.api.mvc.{Request, Result}
+import play.api.mvc.{BodyParsers, Request, Result}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
 
 import scala.concurrent.Future
 
-class SuccessfulAuthenticatedAction(operator: String = "operator") extends AuthenticatedAction(Mockito.mock(classOf[AppConfig])) {
+class SuccessfulAuthenticatedAction(operator: String = "operator") extends AuthenticatedAction(
+  Mockito.mock(classOf[AppConfig]),
+  Mockito.mock(classOf[BodyParsers.Default])
+) {
   override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] = {
     block(AuthenticatedRequest(operator, request))
   }

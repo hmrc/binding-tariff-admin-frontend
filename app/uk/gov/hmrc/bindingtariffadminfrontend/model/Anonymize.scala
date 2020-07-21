@@ -48,10 +48,6 @@ object Anonymize {
       anonymizeTblImages(data)
     case _ if tblName.contains("tblMovement") =>
       anonymizeTblMovement(data)
-    case _ if tblName.contains("tblSample") =>
-      anonymizeTblSample(data)
-    case _ if tblName.contains("tblUser") =>
-      anonymizeTblUser(data)
     case _ if tblName.contains("tblCaseLMComments") =>
       anonymizeTblCaseLMComments(data)
     case _ =>
@@ -235,30 +231,6 @@ object Anonymize {
     case (k, "NULL") => (k, "NULL")
     case (k @ "RecipientType", _) => (k, faker.lorem().characters(50))
     case (k @ "Reason", _) => (k, faker.lorem().paragraph())
-    case other => other
-  }
-
-  private def anonymizeTblSample(data: Map[String, String]): Map[String, String] = data.map {
-    case (k, "") => (k, "")
-    case (k, "NULL") => (k, "NULL")
-    case (k @ "Action", _) => (k, faker.lorem().word())
-    case (k @ "ActionDate", _) => (k, dateFormat.format(faker.date().past(50, TimeUnit.DAYS)))
-    case (k @ "Deleted", _) => (k, faker.bool().toString)
-    case (k @ "Time", _) => (k, timeFormat.format(faker.date().past(10, TimeUnit.DAYS)))
-    case (k @ "ID", _) => (k, randomUUID().toString)
-    case other => other
-  }
-
-  private def anonymizeTblUser(data: Map[String, String]): Map[String, String] = data.map {
-    case (k, "") => (k, "")
-    case (k, "NULL") => (k, "NULL")
-    case (k @ "FirstName", _) => (k, faker.name().firstName())
-    case (k @ "LastName", _) => (k, faker.name().lastName())
-    case (k @ "UserRights", _) => (k, faker.lorem().characters(1))
-    case (k @ "Developer", _) => (k, faker.number().numberBetween(0,1).toString)
-    case (k @ "Extension", _) => (k, faker.phoneNumber().extension())
-    case (k @ "Email", _) => (k, faker.internet().emailAddress())
-    case (k @ "Disabled", _) => (k, faker.lorem().word())
     case other => other
   }
 

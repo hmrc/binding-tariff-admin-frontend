@@ -33,8 +33,6 @@ class AnonymizeSpec extends FlatSpec with Matchers {
     Anonymize.anonymize("tblCaseClassMeth", Map("CaseName" -> "")) shouldBe Map("CaseName" -> "")
     Anonymize.anonymize("tblCaseLMComments", Map("CaseName" -> "")) shouldBe Map("CaseName" -> "")
     Anonymize.anonymize("tblImages", Map("CaseName" -> "")) shouldBe Map("CaseName" -> "")
-    Anonymize.anonymize("tblSample", Map("CaseName" -> "")) shouldBe Map("CaseName" -> "")
-    Anonymize.anonymize("tblUser", Map("CaseName" -> "")) shouldBe Map("CaseName" -> "")
     Anonymize.anonymize("tblMovement", Map("CaseName" -> "")) shouldBe Map("CaseName" -> "")
   }
 
@@ -46,8 +44,6 @@ class AnonymizeSpec extends FlatSpec with Matchers {
     Anonymize.anonymize("tblCaseClassMeth", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
     Anonymize.anonymize("tblCaseLMComments", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
     Anonymize.anonymize("tblImages", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
-    Anonymize.anonymize("tblSample", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
-    Anonymize.anonymize("tblUser", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
     Anonymize.anonymize("tblMovement", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
   }
 
@@ -223,31 +219,5 @@ class AnonymizeSpec extends FlatSpec with Matchers {
 
   it should "not anonymize tblMovement fields that contain no PII" in {
     Anonymize.anonymize("tblMovement", Map("CaseNo" -> "123456")) should contain("CaseNo" -> "123456")
-  }
-
-  it should "anonymize tblSample" in {
-    Anonymize.anonymize("tblSample", Map("Action" -> "Yoda")) shouldNot contain("Action" -> "Yoda")
-    Anonymize.anonymize("tblSample", Map("ActionDate" -> "Yoda")) shouldNot contain("Action" -> "Yoda")
-    Anonymize.anonymize("tblSample", Map("Deleted" -> "Yoda")) shouldNot contain("Action" -> "Yoda")
-    Anonymize.anonymize("tblSample", Map("Time" -> "Yoda")) shouldNot contain("Action" -> "Yoda")
-    Anonymize.anonymize("tblSample", Map("ID" -> "Yoda")) shouldNot contain("Action" -> "Yoda")
-  }
-
-  it should "not anonymize tblSample fields that contain no PII" in {
-    Anonymize.anonymize("tblSample", Map("CaseNo" -> "123456")) should contain("CaseNo" -> "123456")
-  }
-
-  it should "anonymize tblUser" in {
-    Anonymize.anonymize("tblUser", Map("FirstName" -> "Yoda")) shouldNot contain("FirstName" -> "Yoda")
-    Anonymize.anonymize("tblUser", Map("LastName" -> "Yoda")) shouldNot contain("LastName" -> "Yoda")
-    Anonymize.anonymize("tblUser", Map("UserRights" -> "Yoda")) shouldNot contain("LastName" -> "Yoda")
-    Anonymize.anonymize("tblUser", Map("Developer" -> "Yoda")) shouldNot contain("LastName" -> "Yoda")
-    Anonymize.anonymize("tblUser", Map("Extension" -> "Yoda")) shouldNot contain("Extension" -> "Yoda")
-    Anonymize.anonymize("tblUser", Map("Email" -> "Yoda")) shouldNot contain("Email" -> "Yoda")
-    Anonymize.anonymize("tblUser", Map("Disabled" -> "Yoda")) shouldNot contain("Email" -> "Yoda")
-  }
-
-  it should "not anonymize tblUser fields that contain no PII" in {
-    Anonymize.anonymize("tblUser", Map("CaseNo" -> "123456")) should contain("CaseNo" -> "123456")
   }
 }

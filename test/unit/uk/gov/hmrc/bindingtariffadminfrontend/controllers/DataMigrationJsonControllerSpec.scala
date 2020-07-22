@@ -67,7 +67,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
   private val csvList = List(
     "tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
     "eBTI_Addresses_csv", "tblCaseRecord_csv", "tblCaseBTI_csv", "tblImages_csv",
-    "tblCaseLMComments_csv", "tblMovement_csv", "tblSample_csv", "tblUser_csv")
+    "tblCaseLMComments_csv", "tblMovement_csv")
 
   private val anonymizedCsvList = csvList.filterNot(_ == "historicCases_csv")
 
@@ -139,8 +139,6 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
           case _ if filename.contains("tblCaseClassMeth") => "CaseNo,BERTISearch,EBTISearch,Justification,CommercialDenomenation,GoodsDescription,Exclusions,LGCExpertAdvice,OTCCommodityCode,ApplicantsCommodityCode,OTCImage,DescriptionIncluded,BrochureIncluded,PhotoIncluded,SampleIncluded,OtherIncluded,CombinedNomenclature,TARICCode,TARICAdditionalCode1,TARICAdditionalCode2,NationalAdditionalCode"
           case _ if filename.contains("tblImages") => "CaseNo,DateAdded,TimeAdded,Description,FileName,Counter,SendWithBTI,Confidential,SavedToFile,DeleteFlag,DeletedDate,DeletedTime,DeletingUserID,AddingUserID,IsApplicationAttachment,SendWithApp"
           case _ if filename.contains("tblMovement") => "CaseNo,DateSent,TimeSent,SenderID,SenderTeam,RecipientTeam,RecipientType,DateReceived,TimeReceived,RecipientID,Reason"
-          case _ if filename.contains("tblSample") => "CaseNo,Action,ActionDate,UserID,Deleted,Time,ID"
-          case _ if filename.contains("tblUser") => "UserID,FirstName,LastName,UserRights,Developer,Extension,Email,Disabled"
           case _ if filename.contains("tblCaseLMComments") => "CaseNo,Band7DateChecked,Band7TimeChecked,Band7Name,Band7User,Band7Satisfied,Band7Comments,Band9DateChecked,Band9TimeChecked,Band9Name,Band9User,Band9Satisfied,Band9Comments,Band11DateChecked,Band11TimeChecked,Band11Name,Band11User,Band11Satisfied,Band11Comments"
           case _ => throw new Exception("Incomplete test")
         }).split(",").toList

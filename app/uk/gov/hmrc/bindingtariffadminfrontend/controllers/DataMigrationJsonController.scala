@@ -106,7 +106,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
               val anonymized: Map[String, String] = Anonymize.anonymize(name.filename, dataByColumn)
 
               if (data.length != headers.length) {
-                Logger.error(s"Row ${rowIndex + 1} did not have the expected number of columns: (${headers.length}) instead of (${data.length})")
+                Logger.error(s"Row ${rowIndex + 1} did not have the expected number of columns: (${data.length}) instead of (${headers.length})")
               }
 
               (headers, Some(headers.map(col => anonymized(col))))

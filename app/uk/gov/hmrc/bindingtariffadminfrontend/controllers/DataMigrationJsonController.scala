@@ -41,6 +41,7 @@ import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.successful
+import play.api.Logger
 
 @Singleton
 class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAction,
@@ -94,12 +95,20 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
                 (headers, Some(list))
             }
           }
+          .zipWithIndex
           .map {
-            case (headers, None) =>
+            case ((headers, None), _) =>
               (headers, None)
-            case (headers, Some(data)) =>
+
+            case ((headers, Some(data)), rowIndex) =>
               val dataByColumn: Map[String, String] = ListMap(headers.zip(data): _*)
+
               val anonymized: Map[String, String] = Anonymize.anonymize(name.filename, dataByColumn)
+
+              if (data.length != headers.length) {
+                Logger.error(s"Row ${rowIndex + 1} did not have the expected number of columns: (${headers.length}) instead of (${data.length})")
+              }
+
               (headers, Some(headers.map(col => anonymized(col))))
           }
           .flatMapConcat {

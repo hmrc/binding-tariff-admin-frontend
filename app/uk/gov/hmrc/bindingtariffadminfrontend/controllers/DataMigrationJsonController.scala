@@ -69,7 +69,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
         val csvData = FileIO
           .fromPath(name.ref.file.toPath())
           .zipWithIndex
-          .via(Flow.fromFunction {
+          .map {
             case (file, chunkIndex) =>
               //This is done because the byte order mark (BOM) causes problems with first column header
               if (chunkIndex == 0L) {
@@ -81,7 +81,7 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
               } else {
                 file
               }
-          })
+          }
           .via(lineScanner()).log(errorLog(name.ref.file.getName))
           .map(_.map(_.utf8String))
           .filter(_.mkString.trim.nonEmpty) // ignore blank lines in CSV

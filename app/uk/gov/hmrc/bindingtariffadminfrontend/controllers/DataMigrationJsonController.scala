@@ -18,9 +18,9 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
+import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.alpakka.csv.scaladsl.{ByteOrderMark, CsvFormatting, CsvQuotingStyle}
 import akka.stream.scaladsl.Flow
-//import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.scaladsl.{FileIO, Source}
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
@@ -28,7 +28,6 @@ import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.ws.StreamedResponse
 import play.api.mvc._
-import uk.gov.hmrc.bindingtariffadminfrontend.akka_fix.csv.CsvParsing.lineScanner
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
@@ -42,6 +41,7 @@ import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.successful
+import play.api.Logger
 
 @Singleton
 class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAction,
@@ -67,15 +67,22 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     val file = request.body.files.find(_.filename.nonEmpty)
     file match {
       case Some(name) =>
-        val res = FileIO.fromPath(name.ref.file.toPath())
-          .via(Flow.fromFunction { file =>
-            //This is done because the byte order mark (BOM) causes problems with first column header
-            if (file.startsWith(ByteOrderMark.UTF_8)) {
-              file.drop(ByteOrderMark.UTF_8.length).dropWhile(b => b.toChar.isWhitespace)
-            } else {
-              file.dropWhile(b => b.toChar.isWhitespace)
-            }
-          })
+        val csvData = FileIO
+          .fromPath(name.ref.file.toPath())
+          .zipWithIndex
+          .map {
+            case (file, chunkIndex) =>
+              //This is done because the byte order mark (BOM) causes problems with first column header
+              if (chunkIndex == 0L) {
+                if (file.startsWith(ByteOrderMark.UTF_8)) {
+                  file.drop(ByteOrderMark.UTF_8.length).dropWhile(b => b.toChar.isWhitespace)
+                } else {
+                  file.dropWhile(b => b.toChar.isWhitespace)
+                }
+              } else {
+                file
+              }
+          }
           .via(lineScanner()).log(errorLog(name.ref.file.getName))
           .map(_.map(_.utf8String))
           .filter(_.mkString.trim.nonEmpty) // ignore blank lines in CSV
@@ -88,25 +95,36 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
                 (headers, Some(list))
             }
           }
+          .zipWithIndex
           .map {
-            case (headers, None) =>
+            case ((headers, None), _) =>
               (headers, None)
-            case (headers, Some(data)) =>
+
+            case ((headers, Some(data)), rowIndex) =>
               val dataByColumn: Map[String, String] = ListMap(headers.zip(data): _*)
+
               val anonymized: Map[String, String] = Anonymize.anonymize(name.filename, dataByColumn)
+
+              if (data.length != headers.length) {
+                Logger.error(s"Row ${rowIndex + 1} did not have the expected number of columns: (${data.length}) instead of (${headers.length})")
+              }
+
               (headers, Some(headers.map(col => anonymized(col))))
           }
-          .flatMapMerge(1, {
+          .flatMapConcat {
             case (headers, None) =>
               Source.single(headers).via(CsvFormatting.format(quotingStyle = CsvQuotingStyle.Always))
             case (_, Some(data)) =>
               Source.single(data).via(CsvFormatting.format(quotingStyle = CsvQuotingStyle.Always))
-          })
+          }
 
-        successful(Ok.chunked(res).withHeaders(
+        successful(
+          Ok.chunked(csvData).withHeaders(
           "Content-Type" -> "application/json",
           "Content-Disposition" -> s"attachment; filename=${name.filename}"))
-      case None => successful(BadRequest)
+
+      case None =>
+        successful(BadRequest)
     }
   }
 

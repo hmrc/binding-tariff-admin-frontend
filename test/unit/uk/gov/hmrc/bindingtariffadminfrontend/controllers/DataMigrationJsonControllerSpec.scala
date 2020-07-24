@@ -19,6 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 import java.io.{BufferedWriter, FileWriter}
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
@@ -37,7 +38,6 @@ import play.api.mvc.{AnyContentAsEmpty, MultipartFormData, Result}
 import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.{Configuration, Environment}
 import play.filters.csrf.CSRF.{Token, TokenProvider}
-import uk.gov.hmrc.bindingtariffadminfrontend.akka_fix.csv.CsvParsing.lineScanner
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
@@ -47,6 +47,7 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration._
 import scala.concurrent.Future
 
 class DataMigrationJsonControllerSpec extends WordSpec with Matchers
@@ -60,6 +61,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
   private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
   private val appConfig = new AppConfig(configuration, env)
   private implicit val mat: Materializer = fakeApplication.materializer
+  override implicit val defaultTimeout: FiniteDuration = 30.seconds
   private val controller = new DataMigrationJsonController(
     new SuccessfulAuthenticatedAction, migrationService, migrationConnector, actorSystem, mat, messageApi, appConfig
   )
@@ -74,7 +76,7 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
   val aSuccessfullyUploadedFile: FileUploaded = FileUploaded("name", "published", "text/plain", None, None)
 
   private def mockCsvField(row: Int, col: Int): String = s"$row-$col"
-  private val mockCsvRowCount = 100
+  private val mockCsvRowCount = 250
   private def mockCsv(headers: List[String], rowCount: Int = mockCsvRowCount): String = {
     var result = headers.mkString(",")
     result += "\n"
@@ -100,7 +102,6 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
   "getAnonymiseData /" should {
 
     "return 200" in {
-
       val result: Result = await(controller.getAnonymiseData()(newFakeRequestWithCSRF))
 
       status(result) shouldBe OK
@@ -168,7 +169,9 @@ class DataMigrationJsonControllerSpec extends WordSpec with Matchers
         val outputDataRows = outputLines.tail
 
         // Determine if a given field is anonymized (would be better if this could be obtained from a map)
-        val isAnonymized = headers.map(header => (header, Anonymize.anonymize(filename, Map((header -> "TEST")))(header) != "TEST")).toMap
+        val isAnonymized = headers.map(header =>
+          (header, Anonymize.anonymize(filename, Map(header -> "TEST"))(header) != "TEST")
+        ).toMap
 
         // Ensure at least 1 field is anonymized
         isAnonymized.values.count(_ == true) >= 1 shouldBe true

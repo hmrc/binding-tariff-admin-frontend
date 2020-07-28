@@ -50,8 +50,7 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
   private val migrationService = mock[DataMigrationService]
   private val migrationConnector = mock[DataMigrationJsonConnector]
   private val actorSystem = mock[ActorSystem]
-  private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
-  private implicit val mat: Materializer = fakeApplication.materializer
+  override implicit val mat: Materializer = fakeApplication.materializer
   override implicit val defaultTimeout: FiniteDuration = 30.seconds
   private val controller = new DataMigrationJsonController(
     new SuccessfulAuthenticatedAction, migrationService, migrationConnector, actorSystem, mat, mcc, messageApi, realConfig

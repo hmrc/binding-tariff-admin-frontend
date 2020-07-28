@@ -22,7 +22,6 @@ import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.alpakka.csv.scaladsl.{ByteOrderMark, CsvFormatting, CsvQuotingStyle}
 import akka.stream.scaladsl.Flow
 import play.api.libs.ws.WSResponse
-//import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.scaladsl.{FileIO, Source}
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime

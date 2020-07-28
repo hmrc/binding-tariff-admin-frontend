@@ -19,6 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 import java.io.{BufferedWriter, FileWriter}
 
 import akka.actor.ActorSystem
+import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
 import org.mockito.ArgumentMatchers.{any, refEq}
@@ -32,7 +33,7 @@ import play.api.libs.ws._
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{MultipartFormData, Result}
 import play.api.{Configuration, Environment}
-import uk.gov.hmrc.bindingtariffadminfrontend.akka_fix.csv.CsvParsing.lineScanner
+import play.filters.csrf.CSRF.{Token, TokenProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
@@ -41,6 +42,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http._
 
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration._
 import scala.concurrent.Future
 
 class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfterEach {
@@ -48,6 +50,9 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
   private val migrationService = mock[DataMigrationService]
   private val migrationConnector = mock[DataMigrationJsonConnector]
   private val actorSystem = mock[ActorSystem]
+  private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
+  private implicit val mat: Materializer = fakeApplication.materializer
+  override implicit val defaultTimeout: FiniteDuration = 30.seconds
   private val controller = new DataMigrationJsonController(
     new SuccessfulAuthenticatedAction, migrationService, migrationConnector, actorSystem, mat, mcc, messageApi, realConfig
   )
@@ -55,14 +60,14 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
   private val csvList = List(
     "tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
     "eBTI_Addresses_csv", "tblCaseRecord_csv", "tblCaseBTI_csv", "tblImages_csv",
-    "tblCaseLMComments_csv", "tblMovement_csv", "tblSample_csv", "tblUser_csv")
+    "tblCaseLMComments_csv", "tblMovement_csv")
 
   private val anonymizedCsvList = csvList.filterNot(_ == "historicCases_csv")
 
   val aSuccessfullyUploadedFile: FileUploaded = FileUploaded("name", "published", "text/plain", None, None)
 
   private def mockCsvField(row: Int, col: Int): String = s"$row-$col"
-  private val mockCsvRowCount = 100
+  private val mockCsvRowCount = 250
   private def mockCsv(headers: List[String], rowCount: Int = mockCsvRowCount): String = {
     var result = headers.mkString(",")
     result += "\n"
@@ -88,7 +93,6 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
   "getAnonymiseData /" should {
 
     "return 200" in {
-
       val result: Result = await(controller.getAnonymiseData()(newFakeRequestWithCSRF))
 
       status(result) shouldBe OK
@@ -127,8 +131,6 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
           case _ if filename.contains("tblCaseClassMeth") => "CaseNo,BERTISearch,EBTISearch,Justification,CommercialDenomenation,GoodsDescription,Exclusions,LGCExpertAdvice,OTCCommodityCode,ApplicantsCommodityCode,OTCImage,DescriptionIncluded,BrochureIncluded,PhotoIncluded,SampleIncluded,OtherIncluded,CombinedNomenclature,TARICCode,TARICAdditionalCode1,TARICAdditionalCode2,NationalAdditionalCode"
           case _ if filename.contains("tblImages") => "CaseNo,DateAdded,TimeAdded,Description,FileName,Counter,SendWithBTI,Confidential,SavedToFile,DeleteFlag,DeletedDate,DeletedTime,DeletingUserID,AddingUserID,IsApplicationAttachment,SendWithApp"
           case _ if filename.contains("tblMovement") => "CaseNo,DateSent,TimeSent,SenderID,SenderTeam,RecipientTeam,RecipientType,DateReceived,TimeReceived,RecipientID,Reason"
-          case _ if filename.contains("tblSample") => "CaseNo,Action,ActionDate,UserID,Deleted,Time,ID"
-          case _ if filename.contains("tblUser") => "UserID,FirstName,LastName,UserRights,Developer,Extension,Email,Disabled"
           case _ if filename.contains("tblCaseLMComments") => "CaseNo,Band7DateChecked,Band7TimeChecked,Band7Name,Band7User,Band7Satisfied,Band7Comments,Band9DateChecked,Band9TimeChecked,Band9Name,Band9User,Band9Satisfied,Band9Comments,Band11DateChecked,Band11TimeChecked,Band11Name,Band11User,Band11Satisfied,Band11Comments"
           case _ => throw new Exception("Incomplete test")
         }).split(",").toList
@@ -158,7 +160,9 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
         val outputDataRows = outputLines.tail
 
         // Determine if a given field is anonymized (would be better if this could be obtained from a map)
-        val isAnonymized = headers.map(header => (header, Anonymize.anonymize(filename, Map((header -> "TEST")))(header) != "TEST")).toMap
+        val isAnonymized = headers.map(header =>
+          (header, Anonymize.anonymize(filename, Map(header -> "TEST"))(header) != "TEST")
+        ).toMap
 
         // Ensure at least 1 field is anonymized
         isAnonymized.values.count(_ == true) >= 1 shouldBe true

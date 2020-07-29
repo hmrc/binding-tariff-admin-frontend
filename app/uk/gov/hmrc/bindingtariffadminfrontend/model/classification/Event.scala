@@ -50,6 +50,7 @@ object Details {
   implicit val format: Format[Details] = Union.from[Details]("type")
     .and[CaseStatusChange](EventType.CASE_STATUS_CHANGE.toString)
     .and[ReferralCaseStatusChange](EventType.CASE_REFERRAL.toString)
+    .and[CompletedCaseStatusChange](EventType.CASE_COMPLETED.toString)
     .and[AppealStatusChange](EventType.APPEAL_STATUS_CHANGE.toString)
     .and[ReviewStatusChange](EventType.REVIEW_STATUS_CHANGE.toString)
     .and[ExtendedUseStatusChange](EventType.EXTENDED_USE_STATUS_CHANGE.toString)
@@ -90,6 +91,20 @@ case class ReferralCaseStatusChange
 
 object ReferralCaseStatusChange {
   implicit val format: OFormat[ReferralCaseStatusChange] = Json.format[ReferralCaseStatusChange]
+}
+
+case class CompletedCaseStatusChange
+(
+  override val from: CaseStatus,
+  override val comment: Option[String] = None,
+  email: Option[String]
+) extends FieldChange[CaseStatus] {
+  override val to: CaseStatus = CaseStatus.COMPLETED
+  override val `type`: EventType.Value = EventType.CASE_COMPLETED
+}
+
+object CompletedCaseStatusChange {
+  implicit val format: OFormat[CompletedCaseStatusChange] = Json.format[CompletedCaseStatusChange]
 }
 
 case class AppealStatusChange
@@ -157,6 +172,13 @@ object Note {
 
 object EventType extends Enumeration {
   type EventType = Value
-  val CASE_STATUS_CHANGE, CASE_REFERRAL, APPEAL_STATUS_CHANGE, REVIEW_STATUS_CHANGE, EXTENDED_USE_STATUS_CHANGE, ASSIGNMENT_CHANGE, NOTE = Value
+  val CASE_STATUS_CHANGE = Value
+  val CASE_REFERRAL = Value
+  val CASE_COMPLETED = Value
+  val APPEAL_STATUS_CHANGE = Value
+  val REVIEW_STATUS_CHANGE = Value
+  val EXTENDED_USE_STATUS_CHANGE = Value
+  val ASSIGNMENT_CHANGE = Value
+  val NOTE = Value
   implicit val format: Format[classification.EventType.Value] = JsonUtil.format(EventType)
 }

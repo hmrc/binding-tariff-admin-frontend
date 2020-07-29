@@ -21,11 +21,12 @@ import javax.inject.{Inject, Singleton}
 import com.kenshoo.play.metrics.MetricsFilter
 import play.api.Configuration
 import play.api.http.HttpFilters
+import play.api.mvc.EssentialFilter
 import play.filters.csrf.CSRFFilter
 import play.filters.headers.SecurityHeadersFilter
 import uk.gov.hmrc.play.bootstrap.filters.{CacheControlFilter, LoggingFilter, MDCFilter}
 import uk.gov.hmrc.play.bootstrap.filters.frontend._
-import uk.gov.hmrc.play.bootstrap.filters.frontend.crypto.CookieCryptoFilter
+import uk.gov.hmrc.play.bootstrap.filters.frontend.crypto.SessionCookieCryptoFilter
 import uk.gov.hmrc.play.bootstrap.filters.frontend.deviceid.DeviceIdFilter
 
 @Singleton
@@ -34,11 +35,11 @@ class CustomFrontendFilters @Inject()(
   loggingFilter: LoggingFilter,
   headersFilter: HeadersFilter,
   securityFilter: SecurityHeadersFilter,
-  frontendAuditFilter: FrontendAuditFilter,
+//  frontendAuditFilter: FrontendAuditFilter,
   metricsFilter: MetricsFilter,
   deviceIdFilter: DeviceIdFilter,
   csrfFilter: CSRFFilter,
-  cookieCryptoFilter: CookieCryptoFilter,
+  cookieCryptoFilter: SessionCookieCryptoFilter,
   sessionTimeoutFilter: SessionTimeoutFilter,
   cacheControlFilter: CacheControlFilter,
   mdcFilter: MDCFilter
@@ -56,9 +57,9 @@ class CustomFrontendFilters @Inject()(
   )
 
   lazy val enableSecurityHeaderFilter: Boolean =
-    configuration.getBoolean("security.headers.filter.enabled").getOrElse(true)
+    configuration.getOptional[Boolean]("security.headers.filter.enabled").getOrElse(true)
 
-  override val filters =
+  override val filters: Seq[EssentialFilter] =
     if (enableSecurityHeaderFilter) Seq(securityFilter) ++ frontendFilters else frontendFilters
 
 }

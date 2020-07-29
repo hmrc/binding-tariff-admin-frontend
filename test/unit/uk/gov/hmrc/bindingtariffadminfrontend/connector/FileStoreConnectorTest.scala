@@ -23,7 +23,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileU
 
 class FileStoreConnectorTest extends ConnectorTest {
 
-  private val connector = new FileStoreConnector(appConfig, authenticatedHttpClient)
+  private val connector = new FileStoreConnector(mockAppConfig, authenticatedHttpClient)
 
   "Connector Delete" should {
     "DELETE from the File Store" in {

@@ -18,7 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -27,11 +27,11 @@ import scala.concurrent.Future
 class RulingConnector @Inject()(configuration: AppConfig, http: AuthenticatedHttpClient) {
 
   def notify(id: String)(implicit hc: HeaderCarrier): Future[Unit] = {
-    http.POSTEmpty(s"${configuration.rulingUrl}/binding-tariff-rulings/ruling/$id").map(_ => ())
+    http.POSTEmpty[HttpResponse](s"${configuration.rulingUrl}/binding-tariff-rulings/ruling/$id").map(_ => ())
   }
 
   def delete()(implicit hc: HeaderCarrier): Future[Unit] = {
-    http.DELETE(s"${configuration.rulingUrl}/binding-tariff-rulings/ruling").map(_ => ())
+    http.DELETE[HttpResponse](s"${configuration.rulingUrl}/binding-tariff-rulings/ruling").map(_ => ())
   }
 
 }

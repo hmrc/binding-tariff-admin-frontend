@@ -25,7 +25,7 @@ import uk.gov.hmrc.http.{NotFoundException, Upstream5xxResponse}
 
 class DataMigrationJsonConnectorSpec extends ConnectorTest {
 
-  private val connector = new DataMigrationJsonConnector(appConfig, authenticatedHttpClient, inject[WSClient])
+  private val connector = new DataMigrationJsonConnector(mockAppConfig, authenticatedHttpClient, inject[WSClient])
 
   private val file = FileUploaded("name", "published", "text/plain", None, None)
 
@@ -106,25 +106,21 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
   "Connector downloadBTIJson" should {
 
     "return the json for the multiple files" in {
+      val expected = fromResource("filestore-initiate_response.json")
+      val expectedJson = Json.prettyPrint(Json.parse(expected))
+
       stubFor(
         get("/binding-tariff-data-transformation/transformed-bti-records")
           .willReturn(
             aResponse()
               .withStatus(Status.OK)
-              .withBody(fromResource("filestore-initiate_response.json"))
+              .withBody(expectedJson)
           )
       )
       val response = await(connector.downloadBTIJson)
 
-      response.headers.status shouldBe Status.OK
-      response.body.map{ res =>
-        res shouldBe """{
-                   |  "href": "url",
-                   |  "fields": {
-                   |    "field": "value"
-                   |  }
-                   |}""".stripMargin
-        }
+      response.status shouldBe Status.OK
+      Json.prettyPrint(Json.parse(response.body)) shouldBe expectedJson
 
       verify(
         getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/transformed-bti-records"))
@@ -151,25 +147,22 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
   "Connector downloadLiabilitiesJson" should {
 
     "return the json for the mutiple files" in {
+      val expected = fromResource("filestore-initiate_response.json")
+      val expectedJson = Json.prettyPrint(Json.parse(expected))
+
       stubFor(
         get("/binding-tariff-data-transformation/transformed-liabilities-records")
           .willReturn(
             aResponse()
               .withStatus(Status.OK)
-              .withBody(fromResource("filestore-initiate_response.json"))
+              .withBody(expected)
           )
       )
+
       val response = await(connector.downloadLiabilitiesJson)
 
-      response.headers.status shouldBe Status.OK
-      response.body.map{ res =>
-        res shouldBe """{
-                   |  "href": "url",
-                   |  "fields": {
-                   |    "field": "value"
-                   |  }
-                   |}""".stripMargin
-        }
+      response.status shouldBe Status.OK
+      Json.prettyPrint(Json.parse(response.body)) shouldBe expectedJson
 
       verify(
         getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/transformed-liabilities-records"))

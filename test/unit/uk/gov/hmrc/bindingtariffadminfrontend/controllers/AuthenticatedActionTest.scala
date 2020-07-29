@@ -24,22 +24,18 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.BDDMockito._
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
 import play.api.mvc.{Headers, Request, Result, Results}
-import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Credentials}
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.password_expired
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-class AuthenticatedActionTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
+class AuthenticatedActionTest extends ControllerSpec with BeforeAndAfterEach {
 
-  private val config = mock[AppConfig]
   private val request = mock[Request[_]]
   private val headers = mock[Headers]
   private val block= mock[AuthenticatedRequest[_] => Future[Result]]
-  private def action = new AuthenticatedAction(config)
+  private def action = new AuthenticatedAction(mockAppConfig, defaultBodyParser)
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -48,7 +44,7 @@ class AuthenticatedActionTest extends UnitSpec with MockitoSugar with BeforeAndA
 
   override def afterEach(): Unit = {
     super.afterEach()
-    reset(config, request, block)
+    reset(mockAppConfig, request, block)
   }
 
   "Authenticated Action" should {
@@ -140,11 +136,11 @@ class AuthenticatedActionTest extends UnitSpec with MockitoSugar with BeforeAndA
   }
 
   private def givenAnOperatorIsPermittedWith(credentials: Credentials): Unit = {
-    given(config.credentials) willReturn Seq(credentials)
+    given(mockAppConfig.credentials) willReturn Seq(credentials)
   }
 
   private def givenTheCurrentDateIs(date: String): Unit = {
-    given(config.clock) willReturn Clock.fixed(LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant, ZoneOffset.UTC)
+    given(mockAppConfig.clock) willReturn Clock.fixed(LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant, ZoneOffset.UTC)
   }
 
 }

@@ -21,12 +21,12 @@ import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.alpakka.csv.scaladsl.{ByteOrderMark, CsvFormatting, CsvQuotingStyle}
 import akka.stream.scaladsl.Flow
+import play.api.libs.ws.WSResponse
 import akka.stream.scaladsl.{FileIO, Source}
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
-import play.api.libs.ws.StreamedResponse
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
@@ -44,13 +44,16 @@ import scala.concurrent.Future.successful
 import play.api.Logger
 
 @Singleton
-class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAction,
+class DataMigrationJsonController @Inject()(
+                                             authenticatedAction: AuthenticatedAction,
                                             service: DataMigrationService,
                                             connector: DataMigrationJsonConnector,
                                             implicit val system: ActorSystem,
                                             implicit val materializer: Materializer,
-                                            override val messagesApi: MessagesApi,
-                                            implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
+                                             mcc: MessagesControllerComponents,
+                                             override val messagesApi: MessagesApi,
+                                            implicit val appConfig: AppConfig
+                                           ) extends FrontendController(mcc) with I18nSupport {
 
   def getAnonymiseData: Action[AnyContent] = authenticatedAction.async { implicit request =>
     successful(Ok(views.html.file_anonymisation_upload()))
@@ -165,15 +168,15 @@ class DataMigrationJsonController @Inject()(authenticatedAction: AuthenticatedAc
     downloadJson(connector.downloadLiabilitiesJson, "Liabilities")
   }
 
-  private def downloadJson(download : Future[StreamedResponse], jsonType : String): Future[Result] ={
+  private def downloadJson(download : Future[WSResponse], jsonType : String): Future[Result] ={
     download.map{ res =>
-      res.headers.status match{
+      res.status match{
         case OK => res.body
-        case _ => throw new BadRequestException(s"Failed to get mapped json from data migration api for $jsonType" + res.headers.status)
+        case _ => throw new BadRequestException(s"Failed to get mapped json from data migration api for $jsonType" + res.status)
       }
     }
     .map{ dataContent =>
-      Ok.chunked(dataContent).withHeaders(
+      Ok.chunked[String](Source(List(dataContent))).withHeaders(
         "Content-Type" -> "application/zip",
         "Content-Disposition" -> s"attachment; filename=$jsonType-Data-Migration${DateTime.now().toString("ddMMyyyyHHmmss")}.zip")
     }

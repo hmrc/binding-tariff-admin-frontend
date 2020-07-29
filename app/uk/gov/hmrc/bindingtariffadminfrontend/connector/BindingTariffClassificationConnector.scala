@@ -21,7 +21,7 @@ import javax.inject.Singleton
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch, Event, EventSearch}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -63,17 +63,17 @@ class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, c
 
   def deleteCases()(implicit hc: HeaderCarrier): Future[Unit] = {
     val url = s"${configuration.classificationBackendUrl}/cases"
-    client.DELETE(url = url).map(_ => ())
+    client.DELETE[Option[Case]](url = url).map(_ => ())
   }
 
   def deleteEvents()(implicit hc: HeaderCarrier): Future[Unit] = {
     val url = s"${configuration.classificationBackendUrl}/events"
-    client.DELETE(url = url).map(_ => ())
+    client.DELETE[Option[Event]](url = url).map(_ => ())
   }
 
   def runDaysElapsed(implicit hc: HeaderCarrier): Future[Unit] = {
     val url = s"${configuration.classificationBackendUrl}/scheduler/days-elapsed"
-    client.PUT(url = url, body = "").map(_ => ())
+    client.PUT[String, HttpResponse](url = url, body = "").map(_ => ())
   }
 
 }

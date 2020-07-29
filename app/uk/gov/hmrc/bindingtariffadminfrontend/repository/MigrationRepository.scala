@@ -18,19 +18,21 @@ package uk.gov.hmrc.bindingtariffadminfrontend.repository
 
 import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Singleton}
-import play.api.libs.json.{JsObject, JsString, Json}
+import play.api.libs.json.{JsObject, Json}
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.{Cursor, QueryOpts}
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{Migration, MigrationCounts, Paged, Pagination}
+import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MongoIndexCreator.createSingleFieldAscendingIndex
 import uk.gov.hmrc.mongo.ReactiveRepository
 
+import scala.collection.immutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 @ImplementedBy(classOf[MigrationMongoRepository])
 trait MigrationRepository {
@@ -70,7 +72,7 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
   )
 
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
-    Future.sequence(indexes.map(collection.indexesManager.ensure(_)))
+    Future.sequence(indexes.map(collection.indexesManager(ec).ensure(_)))(implicitly, ec)
   }
 
   override def get(status: Seq[MigrationStatus], pagination: Pagination): Future[Paged[Migration]] = {
@@ -101,7 +103,7 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
       selector = byReference(c.`case`.reference),
       update = c,
       fetchNewObject = true
-    ).map(_.value.map(_.as[Migration]))
+    ).map(_.value.map(_.as[Migration](Migration.Mongo.format)))
   }
 
   override def delete(c: Migration): Future[Boolean] = {
@@ -109,20 +111,23 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
   }
 
   override def insert(c: Seq[Migration]): Future[Boolean] = {
-    val producers = c.map(implicitly[collection.ImplicitlyDocumentProducer](_))
-    collection.bulkInsert(ordered = false)(producers: _*).map(_.ok)
+    val producers: immutable.Seq[JsObject] = c.map(implicitly[collection.ImplicitlyDocumentProducer](_)).toStream.map(_.produce).toSeq
+    collection.insert(ordered = false).many(producers).map(_.ok)
   }
 
   def countByStatus: Future[MigrationCounts] = {
 
-    import collection.BatchCommands.AggregationFramework.{Group, SumAll}
+    val list = MigrationStatus.values.toSeq.map(status => {
+      val filter = Json.obj("status" -> Json.obj("$in" -> List(status)))
 
-    val group = Group(JsString("$status"))("count" -> SumAll)
-    collection.aggregate(group).map(_.firstBatch.map { json =>
-      val status = json.value("_id").as[MigrationStatus]
-      val count = json.value("count").as[Int]
-      (status, count)
-    }).map(list => new MigrationCounts(list.toMap))
+      val count = for {
+        count <- collection.count(Some(filter))
+      } yield count
+
+      status -> Await.result(count, 1.minutes)
+    })
+
+    Future.successful(new MigrationCounts(list.toMap))
   }
 
   override def delete(status: Option[MigrationStatus]): Future[Boolean] = {

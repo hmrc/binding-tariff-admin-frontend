@@ -19,7 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model
 import java.time.Instant
 
 import org.mockito.BDDMockito.given
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.SUPPRESSED
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SampleStatus.DESTROYED
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._

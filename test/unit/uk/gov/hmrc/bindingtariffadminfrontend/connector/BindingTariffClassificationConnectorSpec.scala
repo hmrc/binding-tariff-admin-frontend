@@ -28,7 +28,7 @@ import uk.gov.hmrc.http.{NotFoundException, Upstream5xxResponse}
 
 class BindingTariffClassificationConnectorSpec extends ConnectorTest {
 
-  private val connector = new BindingTariffClassificationConnector(appConfig, authenticatedHttpClient)
+  private val connector = new BindingTariffClassificationConnector(mockAppConfig, authenticatedHttpClient)
 
   "Connector 'Create Case'" should {
     val request = Cases.btiCaseExample
@@ -314,10 +314,18 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
   "Connector Run Days Elapsed" should {
     "PUT to the Case Store" in {
       stubFor(
-        put("/scheduler/days-elapsed")
+        put(urlEqualTo("/scheduler/days-elapsed"))
           .willReturn(
             aResponse()
-              .withStatus(Status.ACCEPTED)
+              .withHeader("Content-Type", "text/html")
+//              .withStatusMessage("Everything was just fine!")
+              .withStatus(Status.NO_CONTENT)
+//              .withBody("holy".getBytes)
+//                          |  "href": "url",
+//                          |  "fields": {
+//                          |    "field": "value"
+//                          |  }
+//                          |}""".stripMargin)
           )
       )
 

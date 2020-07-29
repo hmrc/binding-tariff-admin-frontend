@@ -18,8 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model
 
 import java.time.Instant
 
-import play.api.libs.json.Format
-import play.json.extra.Jsonx
+import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Operator}
 import uk.gov.hmrc.bindingtariffadminfrontend.util.FilenameUtil
 
@@ -38,5 +37,5 @@ case class MigratedAttachment
 }
 
 object MigratedAttachment {
-  implicit val format: Format[MigratedAttachment] = Jsonx.formatCaseClass[MigratedAttachment]
+  implicit val format: Format[MigratedAttachment] = Json.using[Json.WithDefaultValues].format[MigratedAttachment]
 }

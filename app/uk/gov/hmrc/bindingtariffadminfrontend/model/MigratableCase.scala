@@ -19,7 +19,6 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model
 import java.time.Instant
 
 import play.api.libs.json.{JsObject, Json, OFormat}
-import play.json.extra.{InvariantFormat, Jsonx}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.CaseStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SampleStatus.SampleStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
@@ -71,8 +70,8 @@ case class MigratableCase
 
 object MigratableCase {
   object Mongo {
-    private val fmt: InvariantFormat[MigratableCase] = Jsonx.formatCaseClass[MigratableCase]
-    implicit val format: OFormat[MigratableCase] = OFormat(fmt.reads, fmt.writes(_).as[JsObject])
+//    private val fmt = Json.using[Json.WithDefaultValues].format[MigratableCase]
+    implicit val format: OFormat[MigratableCase] = Json.using[Json.WithDefaultValues].format[MigratableCase]
   }
   object REST {
     implicit val format: OFormat[MigratableCase] = Json.format[MigratableCase]

@@ -32,10 +32,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
 @Singleton
-class DataMigrationStateController @Inject()(authenticatedAction: AuthenticatedAction,
+class DataMigrationStateController @Inject()(
+                                              authenticatedAction: AuthenticatedAction,
                                              service: DataMigrationService,
-                                             override val messagesApi: MessagesApi,
-                                             implicit val appConfig: AppConfig) extends FrontendController with I18nSupport {
+                                              mcc: MessagesControllerComponents,
+                                              override val messagesApi: MessagesApi,
+                                             implicit val appConfig: AppConfig
+                                            ) extends FrontendController(mcc) with I18nSupport {
 
   def get(page: Int, status: Seq[String]): Action[AnyContent] = authenticatedAction.async { implicit request =>
     for {
@@ -45,7 +48,7 @@ class DataMigrationStateController @Inject()(authenticatedAction: AuthenticatedA
     } yield Ok(view)
   }
 
-  def delete(status: Option[String]): Action[AnyContent] = authenticatedAction.async { implicit request =>
+  def delete(status: Option[String]): Action[AnyContent] = authenticatedAction.async {
     val statusFilter = status.flatMap(MigrationStatus(_))
     service.clear(statusFilter).map(_ => Redirect(routes.DataMigrationStateController.get()))
   }

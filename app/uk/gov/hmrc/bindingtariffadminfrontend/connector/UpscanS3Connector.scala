@@ -26,21 +26,16 @@ import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.http.util.EntityUtils
 import play.api.Logger
 import play.api.libs.Files.TemporaryFile
-import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadTemplate
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
+import scala.concurrent.Future
 import scala.concurrent.Future.{failed, successful}
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 @Singleton
-class UpscanS3Connector @Inject()(appConfig: AppConfig, http: HttpClient)(
-  implicit executionContext: ExecutionContext) {
+class UpscanS3Connector @Inject()() {
 
-  def upload(template: UploadTemplate, file: TemporaryFile)
-            (implicit headerCarrier: HeaderCarrier): Future[Unit] = {
+  def upload(template: UploadTemplate, file: TemporaryFile): Future[Unit] = {
     Logger.info(s"Uploading file with template [$template]")
 
     val builder: MultipartEntityBuilder = MultipartEntityBuilder.create

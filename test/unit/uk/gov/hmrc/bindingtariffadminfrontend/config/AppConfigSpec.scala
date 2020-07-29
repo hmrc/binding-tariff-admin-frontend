@@ -20,15 +20,17 @@ import java.util.concurrent.TimeUnit
 
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.{Configuration, Environment}
+import uk.gov.hmrc.bindingtariffadminfrontend.base.BaseSpec
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Credentials
+import uk.gov.hmrc.play.bootstrap.config.RunMode
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.duration.FiniteDuration
 
-class AppConfigSpec extends UnitSpec with GuiceOneAppPerSuite {
+class AppConfigSpec extends BaseSpec {
 
   private def configWith(pairs: (String, String)*): AppConfig = {
-    new AppConfig(Configuration.from(pairs.map(e => e._1 -> e._2).toMap), Environment.simple())
+    new AppConfig(Configuration.from(pairs.map(e => e._1 -> e._2).toMap), runMode)
   }
 
   "Config" should {

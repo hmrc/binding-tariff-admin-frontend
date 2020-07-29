@@ -17,7 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
 import javax.inject.{Inject, Singleton}
-import play.api.libs.ws.{StreamedResponse, WSClient}
+import play.api.libs.ws._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
@@ -43,13 +43,13 @@ class DataMigrationJsonConnector @Inject()(
       s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/processing-status")
   }
 
-  def downloadBTIJson: Future[StreamedResponse] = {
+  def downloadBTIJson: Future[WSResponse] = {
 
     wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/transformed-bti-records")
       .withMethod("GET").stream()
   }
 
-  def downloadLiabilitiesJson: Future[StreamedResponse] = {
+  def downloadLiabilitiesJson: Future[WSResponse] = {
 
     wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/transformed-liabilities-records")
       .withMethod("GET").stream()

@@ -19,35 +19,29 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 import akka.stream.Materializer
 import org.mockito.ArgumentMatchers._
 import org.mockito.BDDMockito.given
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import play.api.http.Status.OK
 import play.api.i18n.{DefaultLangs, DefaultMessagesApi}
-import play.api.libs.Files.TemporaryFile
+import play.api.libs.Files.{SingletonTemporaryFileCreator, TemporaryFile}
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsEmpty, AnyContentAsJson, MultipartFormData, Result}
 import play.api.test.{FakeHeaders, FakeRequest}
 import play.api.{Configuration, Environment}
 import play.filters.csrf.CSRF.{Token, TokenProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{UploadRequest, UploadAttachmentRequest}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{UploadAttachmentRequest, UploadRequest}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse, Upstream5xxResponse}
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.Future
 
-class FileMigrationUploadControllerSpec extends WordSpec with Matchers
-  with UnitSpec with MockitoSugar with WithFakeApplication {
+class FileMigrationUploadControllerSpec extends ControllerSpec {
 
-  private val env = Environment.simple()
-  private val configuration = Configuration.load(env)
   private val migrationService = mock[DataMigrationService]
-  private val messageApi = new DefaultMessagesApi(env, configuration, new DefaultLangs(configuration))
-  private val appConfig = new AppConfig(configuration, env)
-  private implicit val mat: Materializer = fakeApplication.materializer
   private val controller = new FileMigrationUploadController(
-    new SuccessfulAuthenticatedAction, migrationService, messageApi, appConfig
+    new SuccessfulAuthenticatedAction, migrationService, mcc, messageApi, realConfig
   )
 
   "GET /" should {
@@ -98,7 +92,7 @@ class FileMigrationUploadControllerSpec extends WordSpec with Matchers
     }
 
     def aForm(filename: String = "file.txt", mimeType: String = "text/html"): MultipartFormData[TemporaryFile] = {
-      val file = TemporaryFile(filename)
+      val file = SingletonTemporaryFileCreator.create(filename)
       val filePart = FilePart[TemporaryFile](key = "file", filename, contentType = Some(mimeType), ref = file)
       MultipartFormData[TemporaryFile](
         dataParts = Map("id" -> Seq(filename), "filename" -> Seq(filename), "mimetype" -> Seq(mimeType)),
@@ -108,17 +102,4 @@ class FileMigrationUploadControllerSpec extends WordSpec with Matchers
     }
 
   }
-
-  private def newFakeGETRequestWithCSRF: FakeRequest[AnyContentAsEmpty.type] = {
-    val tokenProvider: TokenProvider = fakeApplication.injector.instanceOf[TokenProvider]
-    val csrfTags = Map(Token.NameRequestTag -> "csrfToken", Token.RequestTag -> tokenProvider.generateToken)
-    FakeRequest("GET", "/", FakeHeaders(), AnyContentAsEmpty, tags = csrfTags)
-  }
-
-  private def newFakePOSTRequestWithCSRF: FakeRequest[AnyContentAsJson.type] = {
-    val tokenProvider: TokenProvider = fakeApplication.injector.instanceOf[TokenProvider]
-    val csrfTags = Map(Token.NameRequestTag -> "csrfToken", Token.RequestTag -> tokenProvider.generateToken)
-    FakeRequest("POST", "/", FakeHeaders(), AnyContentAsJson, tags = csrfTags)
-  }
-
 }

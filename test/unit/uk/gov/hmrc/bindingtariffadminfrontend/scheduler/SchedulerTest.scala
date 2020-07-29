@@ -24,7 +24,7 @@ import org.mockito.BDDMockito.given
 import org.mockito.Mockito.verify
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.play.scheduling.ScheduledJob
 import uk.gov.hmrc.play.test.UnitSpec
 

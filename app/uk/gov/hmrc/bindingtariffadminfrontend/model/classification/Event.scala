@@ -80,11 +80,11 @@ object CaseStatusChange {
 case class ReferralCaseStatusChange
 (
   override val from: CaseStatus,
-  override val to: CaseStatus,
   override val comment: Option[String] = None,
   referredTo: String,
   reason: Seq[ReferralReason]
 ) extends FieldChange[CaseStatus] {
+  override val to: CaseStatus = CaseStatus.REFERRED
   override val `type`: EventType.Value = EventType.CASE_REFERRAL
 }
 

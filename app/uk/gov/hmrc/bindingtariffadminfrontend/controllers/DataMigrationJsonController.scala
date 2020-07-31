@@ -169,14 +169,13 @@ class DataMigrationJsonController @Inject()(
   }
 
   private def downloadJson(download : Future[WSResponse], jsonType : String): Future[Result] ={
-    download.map{ res =>
-      res.status match{
-        case OK => res.body
+    download.map { res =>
+      res.status match {
+        case OK => res.bodyAsSource
         case _ => throw new BadRequestException(s"Failed to get mapped json from data migration api for $jsonType" + res.status)
       }
-    }
-    .map{ dataContent =>
-      Ok.chunked[String](Source(List(dataContent))).withHeaders(
+    }.map{ dataContent =>
+      Ok.chunked(dataContent).withHeaders(
         "Content-Type" -> "application/zip",
         "Content-Disposition" -> s"attachment; filename=$jsonType-Data-Migration${DateTime.now().toString("ddMMyyyyHHmmss")}.zip")
     }

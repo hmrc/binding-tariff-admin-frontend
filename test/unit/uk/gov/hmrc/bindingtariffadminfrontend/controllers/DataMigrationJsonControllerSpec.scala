@@ -44,6 +44,8 @@ import uk.gov.hmrc.http._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 import scala.concurrent.Future
+import akka.util.ByteString
+import org.mockito.Mockito
 
 class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
@@ -299,9 +301,11 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
                               |  }
                               |}""".stripMargin)
 
+      val jsonData = Source.single(ByteString.fromString(json.toString()))
+
       val response: WSResponse = mock[WSResponse]
       when(response.status).thenReturn(200)
-      when(response.body).thenReturn(json.toString())
+      when(response.bodyAsSource: Source[ByteString, Any]).thenReturn(jsonData)
 
       given(migrationConnector.downloadBTIJson).willReturn(Future.successful(response))
 
@@ -341,9 +345,11 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
                               |  }
                               |}""".stripMargin)
 
+      val jsonData = Source.single(ByteString.fromString(json.toString()))
+
       val response: WSResponse = mock[WSResponse]
       when(response.status).thenReturn(200)
-      when(response.body).thenReturn(json.toString())
+      when(response.bodyAsSource: Source[ByteString, Any]).thenReturn(jsonData)
       given(migrationConnector.downloadLiabilitiesJson).willReturn(Future.successful(response))
 
       val result = await(controller.downloadLiabilitiesJson()(newFakeRequestWithCSRF))

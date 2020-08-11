@@ -78,7 +78,10 @@ case class LiabilityOrder
   status: LiabilityStatus,
   traderName: String,
   entryDate: Option[Instant] = None,
-  entryNumber: Option[String] = None
+  entryNumber: Option[String] = None,
+  dateOfReceipt: Option[Instant] = None,
+  traderContactDetails: Option[TraderContactDetails]
+
 ) extends Application {
   override val `type`: ApplicationType.Value = ApplicationType.LIABILITY_ORDER
 

@@ -39,6 +39,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassifica
 import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.EventType.CASE_COMPLETED
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.lock.LockRepository
@@ -122,8 +123,98 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
         events =  Seq(MigratableEvent(Note("Note"), Operator("Event Operator Id",  Some("Event Operator")), "2019-01-01")),
         keywords = Set("Keyword"),
         sampleStatus = Some(SampleStatus.AWAITING)
+      ),
+      MigratableCase(
+        reference = "111111111",
+        status = CaseStatus.COMPLETED,
+        createdDate = "2011-01-01T12:00:00Z",
+        daysElapsed = 27,
+        closedDate = Some("2012-05-14T12:00:00Z"),
+        caseBoardsFileNumber = Some("111"),
+        assignee = Some(Operator(id = "7099633", name = Some("7099633"))),
+        queueId = None,
+        application = LiabilityOrder(
+          contact = Contact(
+            name = "PortOfficer1",
+            email = "-",
+            phone = Some("PortLoc1")
+          ),
+          goodName = None,
+          status = LiabilityStatus.NON_LIVE,
+          traderName = "traderName",
+          entryDate = Some("2011-01-01T12:00:00Z"),
+          entryNumber = Some("1"),
+          dateOfReceipt = Some("2001-01-01T12:00:00Z"),
+          traderContactDetails = Some(TraderContactDetails (
+            email = Some("email1@example.com"),
+            phone = Some("phone1"),
+            address = Some(Address(
+              buildingAndStreet = "address1-1",
+              townOrCity = "address1-1",
+              county = Some("address3-1\naddress4-1\naddress5-1"),
+              postCode = Some("PCODE1")
+            ))
+          ))
+        ),
+        decision = Some(MigratableDecision(
+          bindingCommodityCode = "0100000000",
+          effectiveStartDate = None,
+          effectiveEndDate = None,
+          justification = "Justification 1",
+          goodsDescription = "Description 1",
+          methodSearch = Some("BertiSearch1\nEBTISearch1"),
+          methodCommercialDenomination = None,
+          methodExclusion = Some("Exclusions 1"),
+          appeal = None,
+          cancellation = None
+        )
+        ),
+        attachments = Nil,
+        events = Seq(MigratableEvent(
+          CompletedCaseStatusChange(
+            from = CaseStatus.OPEN,
+            comment = Some("Case completed"),
+            email = None
+          ),
+          operator = Operator(
+            id = "7099633",
+            name = Some("7099633")
+          ),
+          timestamp = "2012-05-14T12:00:00Z"
+        ),
+          MigratableEvent(
+            Note(
+              "Liability case created"),
+            operator = Operator(
+              "1234567",
+              Some("1234567")
+            ),
+            timestamp = "2011-01-01T12:00:00Z"
+          ),
+          MigratableEvent(
+            Note(
+              "Band7Comments 1"),
+            operator = Operator(
+              "1111",
+              Some("1111")
+            ),
+            timestamp = "2009-05-11T15:30:00Z"
+          ),
+          MigratableEvent(
+            Note(
+              "C592 received"),
+            operator = Operator(
+              "1234567",
+              Some("1234567")
+            ),
+            timestamp = "2001-01-01T12:00:00"
+          )
+        ),
+        keywords = Set(),
+        sampleStatus = None
       )
     )
+
 
     "Prepare Upload and Redirect To Migration State Controller with a plain JSON file" in {
       given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)

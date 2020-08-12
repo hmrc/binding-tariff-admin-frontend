@@ -144,6 +144,7 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
           traderName = "ContactName1",
           entryDate = Some(Instant.parse("2011-01-01T12:00:00Z")),
           entryNumber = Some("1"),
+          traderCommodityCode = Some("1000000000"),
           dateOfReceipt = Some(Instant.parse("2001-01-01T12:00:00Z")),
           traderContactDetails = Some(TraderContactDetails (
             email = Some("email1@example.com"),

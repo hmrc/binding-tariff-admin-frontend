@@ -127,9 +127,9 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
       MigratableCase(
         reference = "111111111",
         status = CaseStatus.COMPLETED,
-        createdDate = "2011-01-01T12:00:00Z",
+        createdDate = Instant.parse("2011-01-01T12:00:00Z"),
         daysElapsed = 27,
-        closedDate = Some("2012-05-14T12:00:00Z"),
+        closedDate = Some(Instant.parse("2012-05-14T12:00:00Z")),
         caseBoardsFileNumber = Some("111"),
         assignee = Some(Operator(id = "7099633", name = Some("7099633"))),
         queueId = None,
@@ -141,10 +141,10 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
           ),
           goodName = None,
           status = LiabilityStatus.NON_LIVE,
-          traderName = "traderName",
-          entryDate = Some("2011-01-01T12:00:00Z"),
+          traderName = "ContactName1",
+          entryDate = Some(Instant.parse("2011-01-01T12:00:00Z")),
           entryNumber = Some("1"),
-          dateOfReceipt = Some("2001-01-01T12:00:00Z"),
+          dateOfReceipt = Some(Instant.parse("2001-01-01T12:00:00Z")),
           traderContactDetails = Some(TraderContactDetails (
             email = Some("email1@example.com"),
             phone = Some("phone1"),
@@ -180,7 +180,7 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
             id = "7099633",
             name = Some("7099633")
           ),
-          timestamp = "2012-05-14T12:00:00Z"
+          timestamp = Instant.parse("2012-05-14T12:00:00Z")
         ),
           MigratableEvent(
             Note(
@@ -189,7 +189,7 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
               "1234567",
               Some("1234567")
             ),
-            timestamp = "2011-01-01T12:00:00Z"
+            timestamp = Instant.parse("2011-01-01T12:00:00Z")
           ),
           MigratableEvent(
             Note(
@@ -198,7 +198,7 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
               "1111",
               Some("1111")
             ),
-            timestamp = "2009-05-11T15:30:00Z"
+            timestamp = Instant.parse("2009-05-11T15:30:00Z")
           ),
           MigratableEvent(
             Note(
@@ -207,7 +207,7 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
               "1234567",
               Some("1234567")
             ),
-            timestamp = "2001-01-01T12:00:00"
+            timestamp = Instant.parse("2001-01-01T12:00:00Z")
           )
         ),
         keywords = Set(),

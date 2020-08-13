@@ -18,8 +18,9 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.form_button
-@(form: Form[_])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.submit_button
+@import helper._
+@()(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
  <a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
@@ -64,9 +65,15 @@
 
   <table id="success-table"></table>
 
-  <div class="mt-30">
-   @form_button(call = routes.DataMigrationJsonController.postDataAndRedirect(), label = "Continue to build Json", css = "display-none")
-  </div>
+  <div class="mt-30 form-group">
+   @form(action = routes.DataMigrationJsonController.postDataAndRedirect()) {
+   <p>
+    <h3 class="heading-small"><label for="extractionDate">Date of Extraction</label></h3>
+    <div><input type="date" id="extractionDate" name="extractionDate" required></div>
+   </p>
+   <input type="submit" id="label" class="button display-none" value="Continue to build Json"/>
+   }
+   </div>
 
  </div>
 

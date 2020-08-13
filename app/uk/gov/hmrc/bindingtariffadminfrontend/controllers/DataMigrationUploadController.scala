@@ -49,7 +49,7 @@ class DataMigrationUploadController @Inject()(
   )
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
-    successful(Ok(views.html.data_migration_upload(form)))
+    successful(Ok(views.html.data_migration_upload()))
   }
 
   def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>

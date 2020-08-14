@@ -26,9 +26,7 @@ import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import scala.concurrent.duration.FiniteDuration
 
 @Singleton
-class AppConfig @Inject()(
-                           val configuration: Configuration,
-                         ) extends ServicesConfig(configuration) {
+class AppConfig @Inject()(val configuration: Configuration) extends ServicesConfig(configuration) {
 
   private def loadConfig(key: String): String =
     configuration.getOptional[String](key).getOrElse(throw new Exception(s"Missing configuration key: $key"))

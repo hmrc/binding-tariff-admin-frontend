@@ -26,7 +26,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.AdminMonitorService
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.search
-import uk.gov.hmrc.play.bootstrap.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

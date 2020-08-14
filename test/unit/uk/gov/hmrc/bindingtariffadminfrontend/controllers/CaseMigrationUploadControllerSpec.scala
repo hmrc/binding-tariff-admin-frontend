@@ -56,7 +56,7 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
   private val upscanS3Connector = mock[UpscanS3Connector]
   private val caseConnector = mock[BindingTariffClassificationConnector]
   private val lockRepository = mock[LockRepository]
-  private val appConfig = new AppConfig(configuration, runMode)
+  private val appConfig = new AppConfig(configuration)
   private def migrationLock = new MigrationLock(lockRepository, appConfig)
   private def actorSystem = ActorSystem.create("testActorSystem")
   private val migrationService = new DataMigrationService(repository, migrationLock, fileConnector, upscanS3Connector, rulingConnector, caseConnector, actorSystem)

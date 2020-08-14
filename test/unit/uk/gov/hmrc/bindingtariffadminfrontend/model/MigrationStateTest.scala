@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 class MigrationStateTest extends UnitSpec {
 

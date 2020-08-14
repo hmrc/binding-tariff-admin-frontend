@@ -20,7 +20,7 @@ import java.time.Instant
 
 import org.mockito.BDDMockito._
 import org.scalatestplus.mockito.MockitoSugar
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 class CaseTest extends UnitSpec with MockitoSugar {
 

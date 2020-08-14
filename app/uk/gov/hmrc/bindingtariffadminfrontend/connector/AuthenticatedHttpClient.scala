@@ -34,7 +34,7 @@ class AuthenticatedHttpClient @Inject()(
                                          actorSystem: ActorSystem,
                                          implicit val config: AppConfig
                                        )
-  extends DefaultHttpClient(config.runModeConfiguration, httpAuditing, wsClient, actorSystem)
+  extends DefaultHttpClient(config.configuration, httpAuditing, wsClient, actorSystem)
     with InjectAuthHeader {
 
   override def doGet(url: String, headers: Seq[(String, String)])

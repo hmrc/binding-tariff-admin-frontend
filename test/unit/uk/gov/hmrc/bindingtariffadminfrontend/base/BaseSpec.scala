@@ -28,8 +28,7 @@ import play.api.mvc.{BodyParsers, MessagesControllerComponents}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.ResourceFiles
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.config.RunMode
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 abstract class BaseSpec
   extends UnitSpec
@@ -52,7 +51,6 @@ abstract class BaseSpec
 
   implicit val realConfig: AppConfig = app.injector.instanceOf[AppConfig]
   val mockAppConfig: AppConfig = mock[AppConfig]
-  val runMode: RunMode = app.injector.instanceOf[RunMode]
 
   val defaultBodyParser: BodyParsers.Default = app.injector.instanceOf[BodyParsers.Default]
   val mcc: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]

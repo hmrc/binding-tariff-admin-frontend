@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.util
 
-import uk.gov.hmrc.play.test.UnitSpec
-
 class FilenameUtilTest extends UnitSpec {
 
   "FilenameUtil.toID" should {

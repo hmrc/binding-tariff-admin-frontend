@@ -23,7 +23,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.SUPPRESSED
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SampleStatus.DESTROYED
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 class MigratableCaseTest extends UnitSpec with MockitoSugar {
 

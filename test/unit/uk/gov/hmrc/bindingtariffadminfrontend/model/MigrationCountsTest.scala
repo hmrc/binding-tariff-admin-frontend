@@ -17,7 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus._
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 class MigrationCountsTest extends UnitSpec {
 

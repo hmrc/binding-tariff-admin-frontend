@@ -86,5 +86,93 @@
         "timestamp": "2019-01-01T00:00:00Z"
       }
     ]
+  },
+  {
+    "reference" : "111111111",
+    "status" : "COMPLETED",
+    "createdDate" : "2011-01-01T12:00:00Z",
+    "daysElapsed" : 27,
+    "closedDate" : "2012-05-14T12:00:00Z",
+    "caseBoardsFileNumber" : "111",
+    "keywords" : [ ],
+    "assignee" : {
+      "id" : "7099633",
+      "name" : "7099633"
+    },
+    "decision" : {
+      "bindingCommodityCode" : "0100000000",
+      "justification" : "Justification 1",
+      "goodsDescription" : "Description 1",
+      "methodSearch" : "BertiSearch1\nEBTISearch1",
+      "methodExclusion" : "Exclusions 1"
+    },
+    "application" : {
+      "status" : "NON_LIVE",
+      "traderName" : "ContactName1",
+      "contact" : {
+        "name" : "PortOfficer1",
+        "email" : "-",
+        "phone" : "PortLoc1"
+      },
+      "entryNumber" : "1",
+      "entryDate" : "2011-01-01T12:00:00Z",
+      "dateOfReceipt" : "2001-01-01T12:00:00Z",
+      "type" : "LIABILITY_ORDER",
+      "traderContactDetails" : {
+        "email" : "email1@example.com",
+        "phone" : "phone1",
+        "address" : {
+          "buildingAndStreet" : "address1-1",
+          "townOrCity" : "address1-1",
+          "county" : "address3-1\naddress4-1\naddress5-1",
+          "postCode" : "PCODE1"
+        }
+      },
+      "traderCommodityCode" : "1000000000"
+    },
+    "attachments" : [ ],
+    "events" : [ {
+      "details" : {
+        "from" : "OPEN",
+        "comment" : "Case completed",
+        "to" : "COMPLETED",
+        "type" : "CASE_COMPLETED"
+      },
+      "operator" : {
+        "id" : "7099633",
+        "name" : "7099633"
+      },
+      "timestamp" : "2012-05-14T12:00:00Z"
+    }, {
+      "details" : {
+        "comment" : "Liability case created",
+        "type" : "NOTE"
+      },
+      "operator" : {
+        "id" : "1234567",
+        "name" : "1234567"
+      },
+      "timestamp" : "2011-01-01T12:00:00Z"
+    }, {
+      "details" : {
+        "comment" : "Band7Comments 1",
+        "type" : "NOTE"
+      },
+      "operator" : {
+        "id" : "1111",
+        "name" : "1111"
+      },
+      "timestamp" : "2009-05-11T15:30:00Z"
+    }, {
+      "details" : {
+        "comment" : "C592 received",
+        "type" : "NOTE"
+      },
+      "operator" : {
+        "id" : "1234567",
+        "name" : "1234567"
+      },
+      "timestamp" : "2001-01-01T12:00:00Z"
+    } ]
   }
 ]

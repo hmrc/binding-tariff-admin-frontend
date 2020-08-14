@@ -19,7 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import org.scalatest.BeforeAndAfterAll
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 trait WiremockTestServer extends UnitSpec with BeforeAndAfterAll {
 

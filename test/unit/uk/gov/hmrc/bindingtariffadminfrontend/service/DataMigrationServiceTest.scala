@@ -33,8 +33,8 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadMigrationDataRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
+import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.collection.JavaConverters
 import scala.concurrent.Future

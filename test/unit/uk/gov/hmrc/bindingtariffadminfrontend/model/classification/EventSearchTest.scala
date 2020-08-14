@@ -18,7 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
 import java.net.URLDecoder
 
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 class EventSearchTest extends UnitSpec {
 

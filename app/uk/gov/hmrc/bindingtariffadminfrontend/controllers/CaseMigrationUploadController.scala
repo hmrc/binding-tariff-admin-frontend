@@ -34,7 +34,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.MigratableCase
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigratableCase.REST.format
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
-import uk.gov.hmrc.play.bootstrap.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

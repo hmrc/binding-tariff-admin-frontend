@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.views.components
 
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 class PaginationUtilTest extends UnitSpec {
 

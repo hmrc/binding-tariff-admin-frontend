@@ -17,7 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 class EORIDetailsTest extends UnitSpec {
 

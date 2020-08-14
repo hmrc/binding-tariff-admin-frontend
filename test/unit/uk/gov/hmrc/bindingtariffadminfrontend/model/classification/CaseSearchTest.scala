@@ -20,7 +20,7 @@ import java.net.URLDecoder
 import java.time.Instant
 
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus._
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 class CaseSearchTest extends UnitSpec {
 

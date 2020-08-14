@@ -33,7 +33,6 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileU
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.{AdminMonitorService, DataMigrationService}
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.Future
 

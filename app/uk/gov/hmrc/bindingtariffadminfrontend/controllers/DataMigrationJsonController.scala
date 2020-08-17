@@ -86,7 +86,7 @@ class DataMigrationJsonController @Inject()(
                 file
               }
           }
-          .via(lineScanner()).log(errorLog(name.ref.file.getName))
+          .via(lineScanner(maximumLineLength = Int.MaxValue)).log(errorLog(name.ref.file.getName))
           .map(_.map(_.utf8String))
           .filter(_.mkString.trim.nonEmpty) // ignore blank lines in CSV
           .map { list =>

@@ -39,7 +39,9 @@ case class MigratableCase
   attachments: Seq[MigratedAttachment],
   events: Seq[MigratableEvent],
   keywords: Set[String],
-  sampleStatus: Option[SampleStatus] = None
+  sampleStatus: Option[SampleStatus] = None,
+  dateOfExtract: Option[Instant] = None,
+  migratedDaysElapsed: Option[Long] = None
 ) {
 
   def toSample: Sample = {
@@ -63,7 +65,9 @@ case class MigratableCase
       decision.map(_.toDecision),
       attachments = attachments.map(m => m.asAttachment),
       keywords = keywords,
-      sample = toSample
+      sample = toSample,
+      dateOfExtract,
+      migratedDaysElapsed
     )
   }
 }

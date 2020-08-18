@@ -36,7 +36,9 @@ case class Case
   decision: Option[Decision] = None,
   attachments: Seq[Attachment],
   keywords: Set[String],
-  sample: Sample = Sample()
+  sample: Sample = Sample(),
+  dateOfExtract: Option[Instant] = None,
+  migratedDaysElapsed: Option[Long] = None
 ) {
   def anonymize: Case = this.copy(application = this.application.anonymize)
 }

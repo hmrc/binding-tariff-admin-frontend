@@ -16,11 +16,13 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
+import java.time.LocalDate
+
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploadSubmission, FileUploaded}
 import uk.gov.hmrc.http.{NotFoundException, Upstream5xxResponse}
 
 class DataMigrationJsonConnectorSpec extends ConnectorTest {
@@ -28,6 +30,9 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
   private val connector = new DataMigrationJsonConnector(mockAppConfig, authenticatedHttpClient, inject[WSClient])
 
   private val file = FileUploaded("name", "published", "text/plain", None, None)
+
+  private val extractionDate = LocalDate.of(2020, 10, 10)
+
 
   "Connector sendDataForProcessing" should {
 
@@ -40,7 +45,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
               .withStatus(Status.ACCEPTED)
           )
       )
-      val response = await(connector.sendDataForProcessing(List(file)))
+      val response = await(connector.sendDataForProcessing(FileUploadSubmission(extractionDate, List(file))))
 
       response.status shouldBe Status.ACCEPTED
 
@@ -56,7 +61,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
       )
 
       intercept[Upstream5xxResponse] {
-        await(connector.sendDataForProcessing(List(file)))
+        await(connector.sendDataForProcessing(FileUploadSubmission(extractionDate, List(file))))
       }
 
       verify(

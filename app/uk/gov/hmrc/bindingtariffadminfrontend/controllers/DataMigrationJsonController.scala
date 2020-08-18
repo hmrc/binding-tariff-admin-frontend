@@ -16,21 +16,26 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
+import java.time.LocalDate
+
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
 import akka.stream.alpakka.csv.scaladsl.{ByteOrderMark, CsvFormatting, CsvQuotingStyle}
-import akka.stream.scaladsl.Flow
-import play.api.libs.ws.WSResponse
 import akka.stream.scaladsl.{FileIO, Source}
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
+import play.api.Logger
+import play.api.data.Form
+import play.api.data.Forms.{localDate, mapping}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
+import play.api.libs.ws.WSResponse
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploadSubmission
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.csv_processing_status
@@ -41,7 +46,6 @@ import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.successful
-import play.api.Logger
 
 @Singleton
 class DataMigrationJsonController @Inject()(
@@ -58,6 +62,10 @@ class DataMigrationJsonController @Inject()(
   def getAnonymiseData: Action[AnyContent] = authenticatedAction.async { implicit request =>
     successful(Ok(views.html.file_anonymisation_upload()))
   }
+
+  val extractionDateForm = Form(
+    mapping("extractionDate" -> localDate)(ExtractionDateForm.apply)(ExtractionDateForm.unapply)
+  )
 
   private def errorLog(filename:String) = s" ************ Error occurred while processing file $filename ************"
 
@@ -133,18 +141,25 @@ class DataMigrationJsonController @Inject()(
 
   def postDataAndRedirect: Action[AnyContent] = authenticatedAction.async { implicit request =>
 
-    for {
-      files <- service.getDataMigrationFilesDetails(List(
-        "tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
-        "eBTI_Addresses_csv", "tblCaseRecord_csv", "tblCaseBTI_csv", "tblImages_csv",
-        "tblCaseLMComments_csv", "tblMovement_csv"))
-      result <- connector.sendDataForProcessing(files)
-    } yield {
-      result.status match {
-        case ACCEPTED => Redirect(routes.DataMigrationJsonController.checkStatus())
-        case _ => throw new RuntimeException("data processing error")
+    extractionDateForm.bindFromRequest.fold(
+      _ => {
+        successful(BadRequest(views.html.data_migration_upload()))
+      },
+      extractionDateForm => {
+        for {
+          files <- service.getDataMigrationFilesDetails(List(
+            "tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
+            "eBTI_Addresses_csv", "tblCaseRecord_csv", "tblCaseBTI_csv", "tblImages_csv",
+            "tblCaseLMComments_csv", "tblMovement_csv"))
+          result <- connector.sendDataForProcessing(FileUploadSubmission(extractionDateForm.extractionDate, files))
+        } yield {
+          result.status match {
+            case ACCEPTED => Redirect(routes.DataMigrationJsonController.checkStatus())
+            case _ => throw new RuntimeException("data processing error")
+          }
+        }
       }
-    }
+    )
   }
 
   def checkStatus: Action[AnyContent] = authenticatedAction.async { implicit request =>
@@ -182,3 +197,5 @@ class DataMigrationJsonController @Inject()(
   }
 
 }
+
+case class ExtractionDateForm(extractionDate: LocalDate)

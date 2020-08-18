@@ -17,6 +17,7 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import java.io.{BufferedWriter, FileWriter}
+import java.time.LocalDate
 
 import akka.actor.ActorSystem
 import akka.stream.alpakka.csv.scaladsl.CsvParsing.lineScanner
@@ -31,13 +32,10 @@ import play.api.libs.Files.{SingletonTemporaryFileCreator, TemporaryFile}
 import play.api.libs.json.Json
 import play.api.libs.ws._
 import play.api.mvc.MultipartFormData.FilePart
-import play.api.mvc.{MultipartFormData, Result}
-import play.api.{Configuration, Environment}
-import play.filters.csrf.CSRF.{Token, TokenProvider}
-import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+import play.api.mvc.{AnyContentAsEmpty, AnyContentAsJson, MultipartFormData, Result}
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploadSubmission, FileUploaded}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http._
 
@@ -45,7 +43,9 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import akka.util.ByteString
-import org.mockito.Mockito
+import play.api.test.{FakeHeaders, FakeRequest}
+import play.api.test.CSRFTokenHelper._
+
 
 class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
@@ -57,6 +57,12 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
   private val controller = new DataMigrationJsonController(
     new SuccessfulAuthenticatedAction, migrationService, migrationConnector, actorSystem, mat, mcc, messageApi, realConfig
   )
+
+  private val extractionDate = LocalDate.of(2020, 10, 10)
+
+  def fakeUploadFileRequest (uploadedFiles: List[FileUploaded]): FakeRequest[AnyContentAsEmpty.type] =
+    FakeRequest("GET", "/", FakeHeaders(), AnyContentAsJson(Json.toJson(FileUploadSubmission(extractionDate, uploadedFiles)))).withCSRFToken.asInstanceOf[FakeRequest[AnyContentAsEmpty.type]]
+
 
   private val csvList = List(
     "tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
@@ -200,18 +206,18 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
 
   "postDataAndRedirect /" should {
 
-    "return 300" in {
+    "return 300 when passed valid request" in {
       given(migrationService.getDataMigrationFilesDetails(refEq(csvList))(any[HeaderCarrier]))
         .willReturn(Future.successful(List[FileUploaded](aSuccessfullyUploadedFile)))
-      given(migrationConnector.sendDataForProcessing(refEq(List(aSuccessfullyUploadedFile)))(any[HeaderCarrier]))
+      given(migrationConnector.sendDataForProcessing(refEq(FileUploadSubmission(extractionDate, List(aSuccessfullyUploadedFile))))(any[HeaderCarrier]))
         .willReturn(Future.successful(HttpResponse.apply(202)))
 
-      val result: Result = await(controller.postDataAndRedirect()(newFakeRequestWithCSRF))
+      val result: Result = await(controller.postDataAndRedirect()(fakeUploadFileRequest(List(aSuccessfullyUploadedFile))))
 
       status(result) shouldBe SEE_OTHER
 
       verify(migrationService, atLeastOnce()).getDataMigrationFilesDetails(refEq(csvList))(any[HeaderCarrier])
-      verify(migrationConnector, atLeastOnce()).sendDataForProcessing(refEq(List(aSuccessfullyUploadedFile)))(any[HeaderCarrier])
+      verify(migrationConnector, atLeastOnce()).sendDataForProcessing(refEq(FileUploadSubmission(extractionDate, List(aSuccessfullyUploadedFile))))(any[HeaderCarrier])
     }
 
     "Handle 4xx Errors from service" in {
@@ -219,42 +225,42 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
         thenReturn(Future.failed(Upstream4xxResponse("error", 409, 0)))
 
       intercept[Upstream4xxResponse] {
-        await(controller.postDataAndRedirect()(newFakeRequestWithCSRF))
+        await(controller.postDataAndRedirect()(fakeUploadFileRequest(Nil)))
       }
 
       verify(migrationService, atLeastOnce()).getDataMigrationFilesDetails(refEq(csvList))(any[HeaderCarrier])
-      verify(migrationConnector, never()).sendDataForProcessing(refEq(List(aSuccessfullyUploadedFile)))(any[HeaderCarrier])
+      verify(migrationConnector, never()).sendDataForProcessing(refEq(FileUploadSubmission(extractionDate, List(aSuccessfullyUploadedFile))))(any[HeaderCarrier])
     }
 
     "Handle 5xx Errors from connector" in {
       given(migrationService.getDataMigrationFilesDetails(refEq(csvList))(any[HeaderCarrier]))
         .willReturn(Future.successful(List[FileUploaded](aSuccessfullyUploadedFile)))
-      given(migrationConnector.sendDataForProcessing(refEq(List(aSuccessfullyUploadedFile)))(any[HeaderCarrier]))
+      given(migrationConnector.sendDataForProcessing(refEq(FileUploadSubmission(extractionDate, List(aSuccessfullyUploadedFile))))(any[HeaderCarrier]))
         .willReturn(Future.failed(Upstream5xxResponse("error", 500, 0)))
 
       intercept[Upstream5xxResponse] {
-        await(controller.postDataAndRedirect()(newFakeRequestWithCSRF))
+        await(controller.postDataAndRedirect()(fakeUploadFileRequest(Nil)))
       }
 
       verify(migrationService, atLeastOnce()).getDataMigrationFilesDetails(refEq(csvList))(any[HeaderCarrier])
-      verify(migrationConnector, atLeastOnce()).sendDataForProcessing(refEq(List(aSuccessfullyUploadedFile)))(any[HeaderCarrier])
+      verify(migrationConnector, atLeastOnce()).sendDataForProcessing(refEq(FileUploadSubmission(extractionDate, List(aSuccessfullyUploadedFile))))(any[HeaderCarrier])
     }
 
     "Handle unknown Errors from connector" in {
       given(migrationService.getDataMigrationFilesDetails(refEq(csvList))(any[HeaderCarrier]))
         .willReturn(Future.successful(List[FileUploaded](aSuccessfullyUploadedFile)))
-      given(migrationConnector.sendDataForProcessing(refEq(List(aSuccessfullyUploadedFile)))(any[HeaderCarrier]))
+      given(migrationConnector.sendDataForProcessing(refEq(FileUploadSubmission(extractionDate, List(aSuccessfullyUploadedFile))))(any[HeaderCarrier]))
         .willReturn(Future.failed(new RuntimeException("error")))
 
-      given(migrationConnector.sendDataForProcessing(refEq(List(aSuccessfullyUploadedFile)))(any[HeaderCarrier]))
+      given(migrationConnector.sendDataForProcessing(refEq(FileUploadSubmission(extractionDate, List(aSuccessfullyUploadedFile))))(any[HeaderCarrier]))
         .willReturn(Future.successful(HttpResponse.apply(BAD_REQUEST)))
 
       intercept[RuntimeException] {
-        await(controller.postDataAndRedirect()(newFakeRequestWithCSRF))
+        await(controller.postDataAndRedirect()(fakeUploadFileRequest(Nil)))
       }
 
       verify(migrationService, atLeastOnce()).getDataMigrationFilesDetails(refEq(csvList))(any[HeaderCarrier])
-      verify(migrationConnector, atLeastOnce()).sendDataForProcessing(refEq(List(aSuccessfullyUploadedFile)))(any[HeaderCarrier])
+      verify(migrationConnector, atLeastOnce()).sendDataForProcessing(refEq(FileUploadSubmission(extractionDate, List(aSuccessfullyUploadedFile))))(any[HeaderCarrier])
     }
   }
 

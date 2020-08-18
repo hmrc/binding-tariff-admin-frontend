@@ -19,7 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 import javax.inject.{Inject, Singleton}
 import play.api.libs.ws._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploadSubmission, FileUploaded}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -31,9 +31,9 @@ class DataMigrationJsonConnector @Inject()(
   http: AuthenticatedHttpClient,
   wsClient: WSClient) {
 
-  def sendDataForProcessing(files: List[FileUploaded])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def sendDataForProcessing(files: FileUploadSubmission)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
 
-    http.POST[List[FileUploaded], HttpResponse](
+    http.POST[FileUploadSubmission, HttpResponse](
       s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/send-data-for-processing", files)
   }
 

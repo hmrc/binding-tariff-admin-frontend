@@ -76,4 +76,9 @@ class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, c
     client.PUT[String, HttpResponse](url = url, body = "").map(_ => ())
   }
 
+  def runReferredDaysElapsed(implicit hc: HeaderCarrier): Future[Unit] = {
+    val url = s"${configuration.classificationBackendUrl}/scheduler/referred-days-elapsed"
+    client.PUT[String, HttpResponse](url = url, body = "").map(_ => ())
+  }
+
 }

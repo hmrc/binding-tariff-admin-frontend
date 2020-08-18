@@ -67,11 +67,9 @@
 
   <div class="mt-30 form-group">
    @form(action = routes.DataMigrationJsonController.postDataAndRedirect()) {
-   <p>
     <h3 class="heading-small"><label for="extractionDate">Date of Extraction</label></h3>
-    <div><input type="date" id="extractionDate" name="extractionDate" required></div>
-   </p>
-   <input type="submit" id="label" class="button display-none" value="Continue to build Json"/>
+    <div class="mb-30"><input type="date" id="extractionDate" name="extractionDate" required></div>
+    <input type="submit" id="label" class="button display-none" value="Continue to build Json"/>
    }
    </div>
 

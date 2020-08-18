@@ -87,6 +87,13 @@ class AdminMonitorServiceTest extends UnitSpec with MockitoSugar with BeforeAndA
     }
   }
 
+  "Run Referred Days Elapsed" should {
+    "Delegate to connector" in {
+      given(btcConnector.runReferredDaysElapsed(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      await(service.runScheduledJob(ScheduledJob.REFERRED_DAYS_ELAPSED)) shouldBe (): Unit
+    }
+  }
+
   override protected def afterEach(): Unit = {
     super.afterEach()
     reset(btcConnector, fileConnector)

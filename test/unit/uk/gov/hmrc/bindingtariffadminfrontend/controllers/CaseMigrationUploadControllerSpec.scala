@@ -20,7 +20,6 @@ import java.io.{BufferedWriter, File, FileWriter}
 import java.nio.file.{Files, Path, StandardCopyOption}
 import java.time.{Instant, LocalDate, ZoneOffset}
 
-import akka.actor.ActorSystem
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers._
 import org.mockito.BDDMockito.given
@@ -28,51 +27,35 @@ import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import play.api.http.HeaderNames.LOCATION
 import play.api.http.Status.{OK, SEE_OTHER}
-import play.api.i18n.MessagesApi
 import play.api.libs.Files.{SingletonTemporaryFileCreator, TemporaryFile}
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{MultipartFormData, Result}
 import play.api.test.FakeRequest
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
-import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.EventType.CASE_COMPLETED
-import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
-import uk.gov.hmrc.lock.LockRepository
 
 import scala.concurrent.Future
+import uk.gov.hmrc.http.HeaderCarrier
+import play.api.libs.json.Json
+import play.api.libs.json.Reads
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.Sink
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import play.api.libs.json.JsResultException
+import com.fasterxml.jackson.core.JsonParseException
 
 class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
   private val fakeRequest = FakeRequest()
   private val env = Environment.simple()
   private val configuration = Configuration.load(env)
-  private val repository = mock[MigrationRepository]
-  private val fileConnector = mock[FileStoreConnector]
-  private val rulingConnector = mock[RulingConnector]
-  private val upscanS3Connector = mock[UpscanS3Connector]
-  private val caseConnector = mock[BindingTariffClassificationConnector]
-  private val lockRepository = mock[LockRepository]
+  private val migrationService = mock[DataMigrationService]
   private val appConfig = new AppConfig(configuration)
-  private def migrationLock = new MigrationLock(lockRepository, appConfig)
-  private def actorSystem = ActorSystem.create("testActorSystem")
-  private val migrationService = new DataMigrationService(repository, migrationLock, fileConnector, upscanS3Connector, rulingConnector, caseConnector, actorSystem)
   private val controller = new CaseMigrationUploadController(new SuccessfulAuthenticatedAction, migrationService, mcc, messageApi, appConfig)
-
-  override protected def afterEach(): Unit = {
-    super.afterEach()
-    reset(repository, caseConnector, fileConnector, rulingConnector, upscanS3Connector, lockRepository)
-  }
-
-  override protected def beforeEach(): Unit = {
-    super.beforeEach()
-    when(lockRepository.lock(anyString(), anyString(), any())) thenReturn Future.successful(true)
-    when(lockRepository.releaseLock(anyString(), anyString())) thenReturn Future.successful(())
-  }
 
   "GET /" should {
     "return 200" in {
@@ -216,10 +199,8 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
       )
     )
 
-
     "Prepare Upload and Redirect To Migration State Controller with a plain JSON file" in {
-      given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
-      given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
+      given(migrationService.prepareMigration(any[Source[MigratableCase, _]], refEq(false))(any[HeaderCarrier])) willReturn Future.successful(true)
 
       val file = SingletonTemporaryFileCreator.create(withJson(fromFile("migration.json")))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
@@ -230,12 +211,11 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
       status(result) shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
 
-      theMigrations shouldBe expectedMigrations
+      Await.result(theMigrations.runWith(Sink.seq), 10.seconds) shouldBe expectedMigrations
     }
 
     "Prepare Upload and Redirect To Migration State Controller with a zipped JSON file" in {
-      given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
-      given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
+      given(migrationService.prepareMigration(any[Source[MigratableCase, _]], refEq(false))(any[HeaderCarrier])) willReturn Future.successful(true)
 
       val file = SingletonTemporaryFileCreator.create(withZip("migration.zip"))
       val filePart = FilePart[TemporaryFile](key = "file", "file.zip", contentType = Some("application/zip"), ref = file)
@@ -246,24 +226,13 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
       status(result) shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
 
-      theMigrations shouldBe expectedMigrations
+      Await.result(theMigrations.runWith(Sink.seq), 10.seconds) shouldBe expectedMigrations
     }
 
-    // TODO: Fix these tests! When we changed this suite we found that they do not test anything;
-    // they mocked the main method that this controller calls in DataMigrationService so all of
-    // the different inputs provided are totally irrelevant as none of the associated logic is
-    // ever called.
-    //
-    // When we changed the test suite so that we no longer mock the DataMigrationService we discovered
-    // that to make these tests work we would need to mock responses from a bunch of other services,
-    // such as the FileStoreConnector, CaseConnector and RulingConnector.
-    //
+    "Prepare Upload with priority flag" in {
+      given(migrationService.prepareMigration(any[Source[MigratableCase, _]], refEq(true))(any[HeaderCarrier])) willReturn Future.successful(true)
 
-    /*"Prepare Upload with priority flag" in {
-      given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
-      given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
-
-      val file = TemporaryFile(withJson(fromFile("migration.json")))
+      val file = SingletonTemporaryFileCreator.create(withJson(fromFile("migration.json")))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map("priority" -> Seq("true")), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
@@ -274,10 +243,9 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
     }
 
     "Prepare Upload with minimal data" in {
-      given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
-      given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
+      given(migrationService.prepareMigration(any[Source[MigratableCase, _]], refEq(true))(any[HeaderCarrier])) willReturn Future.successful(true)
 
-      val file = TemporaryFile(withJson(fromFile("migration-minimal.json")))
+      val file = SingletonTemporaryFileCreator.create(withJson(fromFile("migration-minimal.json")))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map("priority" -> Seq("true")), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
@@ -288,10 +256,9 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
     }
 
     "Prepare Upload with minimal data and a single appeal field" in {
-      given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
-      given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
+      given(migrationService.prepareMigration(any[Source[MigratableCase, _]], refEq(true))(any[HeaderCarrier])) willReturn Future.successful(true)
 
-      val file = TemporaryFile(withJson(fromFile("migration-minimal-single-appeal-field.json")))
+      val file = SingletonTemporaryFileCreator.create(withJson(fromFile("migration-minimal-single-appeal-field.json")))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map("priority" -> Seq("true")), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
@@ -302,10 +269,9 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
     }
 
     "Prepare Upload with minimal data and all appeal fields" in {
-      given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
-      given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
+      given(migrationService.prepareMigration(any[Source[MigratableCase, _]], refEq(true))(any[HeaderCarrier])) willReturn Future.successful(true)
 
-      val file = TemporaryFile(withJson(fromFile("migration-minimal-all-appeal-fields.json")))
+      val file = SingletonTemporaryFileCreator.create(withJson(fromFile("migration-minimal-all-appeal-fields.json")))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map("priority" -> Seq("true")), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
@@ -316,10 +282,9 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
     }
 
     "Prepare Upload with minimal data with multiple appeals" in {
-      given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
-      given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
+      given(migrationService.prepareMigration(any[Source[MigratableCase, _]], refEq(true))(any[HeaderCarrier])) willReturn Future.successful(true)
 
-      val file = TemporaryFile(withJson(fromFile("migration-minimal-all-appeal-fields-multiple.json")))
+      val file = SingletonTemporaryFileCreator.create(withJson(fromFile("migration-minimal-all-appeal-fields-multiple.json")))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map("priority" -> Seq("true")), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
@@ -327,10 +292,15 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
       val result: Result = await(controller.post(postRequest))
       status(result) shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
-    }*/
+    }
+    // End messed up tests
 
     "return 200 with Json Errors" in {
-      val file = SingletonTemporaryFileCreator.create(withJson("[{}]"))
+      val jsonString = "[{}]"
+      val jsonError = intercept[JsResultException] { Json.parse(jsonString).as[List[MigratableCase]](Reads.list[MigratableCase](MigratableCase.REST.format)) }
+      given(migrationService.prepareMigration(any[Source[MigratableCase, _]], any[Boolean])(any[HeaderCarrier])) willReturn Future.failed(jsonError)
+
+      val file = SingletonTemporaryFileCreator.create(withJson(jsonString))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
@@ -341,7 +311,11 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
     }
 
     "return 200 with Json Errors on invalid json" in {
-      val file = SingletonTemporaryFileCreator.create(withJson("xyz"))
+      val jsonString = "xyz"
+      val jsonError = intercept[JsonParseException] { Json.parse(jsonString).as[List[MigratableCase]](Reads.list[MigratableCase](MigratableCase.REST.format)) }
+      given(migrationService.prepareMigration(any[Source[MigratableCase, _]], any[Boolean])(any[HeaderCarrier])) willReturn Future.failed(jsonError)
+
+      val file = SingletonTemporaryFileCreator.create(withJson(jsonString))
       val filePart = FilePart[TemporaryFile](key = "file", "file.txt", contentType = Some("text/plain"), ref = file)
       val form = MultipartFormData[TemporaryFile](dataParts = Map(), files = Seq(filePart), badParts = Seq.empty)
       val postRequest: FakeRequest[MultipartFormData[TemporaryFile]] = fakeRequest.withBody(form)
@@ -362,10 +336,10 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
 
   }
 
-  private def theMigrations: Seq[MigratableCase] = {
-    val captor = ArgumentCaptor.forClass(classOf[Seq[Migration]])
-    verify(repository).insert(captor.capture())
-    captor.getValue.map(_.`case`)
+  private def theMigrations: Source[MigratableCase, _] = {
+    val captor = ArgumentCaptor.forClass(classOf[Source[MigratableCase, _]])
+    verify(migrationService, atLeastOnce()).prepareMigration(captor.capture(), any[Boolean])(any[HeaderCarrier])
+    captor.getValue
   }
 
   private def withJson(json: String): Path = {

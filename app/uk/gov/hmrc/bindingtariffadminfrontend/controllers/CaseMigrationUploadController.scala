@@ -40,6 +40,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.successful
 import scala.util._
+import com.fasterxml.jackson.core.JsonParseException
 
 @Singleton
 class CaseMigrationUploadController @Inject()(
@@ -67,11 +68,17 @@ class CaseMigrationUploadController @Inject()(
           .recoverWith {
             // Happens when Akka doesn't know how to split the file into JSON chunks
             case framing: FramingException =>
-              val indexZero = JsPath.apply(0)
+              val indexZero = JsPath(0)
               val validationErrors = Seq(JsonValidationError(Seq(framing.getMessage)))
               val jsonErrors = Seq(indexZero -> validationErrors)
               successful(Ok(views.html.case_migration_file_error(jsonErrors)))
-            // Happens when parsing JSON chunks with Play
+            // Happens when parsing JSON with Jackson
+            case parseException: JsonParseException =>
+              val indexZero = JsPath(0)
+              val validationErrors = Seq(JsonValidationError(Seq(parseException.getMessage)))
+              val jsonErrors = Seq(indexZero -> validationErrors)
+              successful(Ok(views.html.case_migration_file_error(jsonErrors)))
+            // Happens when converting JSON into objects with Play
             case JsResultException(errs) =>
               successful(Ok(views.html.case_migration_file_error(errs)))
           }

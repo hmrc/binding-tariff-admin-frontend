@@ -293,7 +293,6 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
       status(result) shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
     }
-    // End messed up tests
 
     "return 200 with Json Errors" in {
       val jsonString = "[{}]"

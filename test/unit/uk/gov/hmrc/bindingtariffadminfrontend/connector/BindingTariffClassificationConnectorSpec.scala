@@ -318,14 +318,7 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
           .willReturn(
             aResponse()
               .withHeader("Content-Type", "text/html")
-//              .withStatusMessage("Everything was just fine!")
               .withStatus(Status.NO_CONTENT)
-//              .withBody("holy".getBytes)
-//                          |  "href": "url",
-//                          |  "fields": {
-//                          |    "field": "value"
-//                          |  }
-//                          |}""".stripMargin)
           )
       )
 
@@ -333,6 +326,26 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
 
       verify(
         putRequestedFor(urlEqualTo("/scheduler/days-elapsed"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
+  }
+
+  "Connector Run Referred Days Elapsed" should {
+    "PUT to the Case Store" in {
+      stubFor(
+        put(urlEqualTo("/scheduler/referred-days-elapsed"))
+          .willReturn(
+            aResponse()
+              .withHeader("Content-Type", "text/html")
+              .withStatus(Status.NO_CONTENT)
+          )
+      )
+
+      await(connector.runReferredDaysElapsed)
+
+      verify(
+        putRequestedFor(urlEqualTo("/scheduler/referred-days-elapsed"))
           .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }

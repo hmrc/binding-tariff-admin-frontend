@@ -59,6 +59,8 @@ class AdminMonitorService @Inject()(bindingTariffClassificationConnector: Bindin
     job match {
       case ScheduledJob.DAYS_ELAPSED =>
         bindingTariffClassificationConnector.runDaysElapsed
+      case ScheduledJob.REFERRED_DAYS_ELAPSED =>
+        bindingTariffClassificationConnector.runReferredDaysElapsed
       case _ => Future.failed(new IllegalArgumentException(s"Invalid Job [${job.toString}]"))
     }
   }

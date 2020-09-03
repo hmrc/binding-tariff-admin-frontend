@@ -56,6 +56,7 @@ object Details {
     .and[ExtendedUseStatusChange](EventType.EXTENDED_USE_STATUS_CHANGE.toString)
     .and[AssignmentChange](EventType.ASSIGNMENT_CHANGE.toString)
     .and[Note](EventType.NOTE.toString)
+    .and[CaseCreated](EventType.CASE_CREATED.toString)
     .format
 }
 
@@ -105,6 +106,17 @@ case class CompletedCaseStatusChange
 
 object CompletedCaseStatusChange {
   implicit val format: OFormat[CompletedCaseStatusChange] = Json.format[CompletedCaseStatusChange]
+}
+
+case class CaseCreated
+(
+  comment: String
+) extends Details {
+  override val `type`: EventType = EventType.CASE_CREATED
+}
+
+object CaseCreated {
+  implicit val format: OFormat[CaseCreated] = Json.format[CaseCreated]
 }
 
 case class AppealStatusChange
@@ -180,5 +192,6 @@ object EventType extends Enumeration {
   val EXTENDED_USE_STATUS_CHANGE = Value
   val ASSIGNMENT_CHANGE = Value
   val NOTE = Value
+  val CASE_CREATED = Value
   implicit val format: Format[classification.EventType.Value] = JsonUtil.format(EventType)
 }

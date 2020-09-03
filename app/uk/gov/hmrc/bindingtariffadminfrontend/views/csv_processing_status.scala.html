@@ -27,6 +27,8 @@
 
 <div id="processing-status-container" class="mt-30">
 
+ <h3 class="heading-medium">Status</h3>
+
  <table id="success-table">
   <tr>
    <td></td>
@@ -37,21 +39,115 @@
   <tr>
    <td>BTI Processing status</td>
    <td><span class="processing" id="bti-processing-status">Initiated</span></td>
-   <td><button id="data_migration_bti_processing_status" class="button button-info" disabled="disabled">Download json</button></td>
+   <td class="align-right"><button id="data_migration_bti_processing_status" class="button button-info" disabled="disabled">Download json</button></td>
   </tr>
   <tr>
   <tr>
    <td>Liabilities Processing status</td>
    <td><span class="processing" id="liabilities-processing-status">Initiated</span></td>
-   <td><button id="data_migration_liabilities_processing_status" class="button button-info" disabled="disabled">Download json</button></td>
-  </tr>
-  <tr id="error-row" aria-hidden="true" hidden="true">
-   <td>Error count</td>
-   <td><span class="processing" id="error-count">Initiated</span></td>
+   <td class="align-right"><button id="data_migration_liabilities_processing_status" class="button button-info" disabled="disabled">Download json</button></td>
+ </tr>
+ </table>
+</div>
+
+<div id="summary-container" class="mt-30" aria-hidden="true" hidden="true">
+
+ <h3 class="heading-medium">Volumetrics</h3>
+
+ <table id="summary-table">
+  <tr>
+   <td></td>
    <td></td>
   </tr>
+  <tr id="migrated-bti-row">
+   <td>BTIs migrated</td>
+   <td class="align-right"><span class="processing" id="migrated-bti-count">0</span></td>
+  </tr>
+  <tr id="migrated-liability-row">
+   <td>Liabilities migrated</td>
+   <td class="align-right"><span class="processing" id="migrated-liability-count">0</span></td>
+  </tr>
+  <tr id="discarded-bti-row">
+   <td><span class="error-message">BTIs discarded</span></td>
+   <td class="align-right"><span class="processing error-message" id="discarded-bti-count">0</span></td>
+  </tr>
+  <tr id="discarded-liability-row">
+   <td><span class="error-message">Liabilities discarded</span></td>
+   <td class="align-right"><span class="processing error-message" id="discarded-liability-count">0</span></td>
+  </tr>
+  <tr id="error-row" aria-hidden="true" hidden="true">
+   <td><span class="error-message">Error count</span></td>
+   <td class="align-right"><span class="processing error-message" id="error-count">0</span></td>
+  </tr>
  </table>
+</div>
 
+<div id="bti-discarded-container" class="mt-30" aria-hidden="true" hidden="true">
+
+ <h3 class="heading-small">Discarded BTI Reasons</h3>
+
+ <table id="bti-discarded-reasons-table">
+  <tr>
+   <td></td>
+   <td></td>
+  </tr>
+  <tr id="discarded-bti-historic-case-row" aria-hidden="true" hidden="true">
+   <td class="font-xsmall">Historic case</td>
+   <td class="align-right"><span class="font-xsmall processing" id="discarded-bti-historic-case-count"></span></td>
+  </tr>
+  <tr id="rejected-bti-row" aria-hidden="true" hidden="true">
+   <td class="font-xsmall">Rejected case status</td>
+   <td class="align-right"><span class="font-xsmall processing" id="rejected-bti-count"></span></td>
+  </tr>
+  <tr id="suppressed-bti-row" aria-hidden="true" hidden="true">
+   <td class="font-xsmall">Suppressed case status</td>
+   <td class="align-right"><span class="font-xsmall processing" id="suppressed-bti-count"></span></td>
+  </tr>
+  <tr id="bti-no-application-record-row" aria-hidden="true" hidden="true">
+   <td class="font-xsmall">Missing eBTI_Application record</td>
+   <td class="align-right"><span class="font-xsmall processing" id="bti-no-application-record-count"></span></td>
+  </tr>
+  <tr id="bti-no-case-bti-record-row" aria-hidden="true" hidden="true">
+   <td class="font-xsmall">Missing tblCaseBTI record</td>
+   <td class="align-right"><span class="font-xsmall processing" id="bti-no-case-bti-record-count"></span></td>
+  </tr>
+  <tr id="bti-no-class-meth-record-row" aria-hidden="true" hidden="true">
+   <td class="font-xsmall">Missing tblCaseClassMeth record</td>
+   <td class="align-right"><span class="font-xsmall processing" id="bti-no-class-meth-record-count"></span></td>
+  </tr>
+  <tr id="bti-no-address-records-row" aria-hidden="true" hidden="true">
+   <td class="font-xsmall">Missing eBTI_Addresses records</td>
+   <td class="align-right"><span class="font-xsmall processing" id="bti-no-address-records-count"></span></td>
+  </tr>
+ </table>
+</div>
+
+<div id="liability-discarded-container" class="mt-30" aria-hidden="true" hidden="true">
+
+ <h3 class="heading-small">Discarded Liability Reasons</h3>
+
+ <table id="liability-discarded-reasons-table">
+  <tr>
+   <td></td>
+   <td></td>
+  </tr>
+  <tr id="discarded-liability-historic-case-row" aria-hidden="true" hidden="true">
+   <td class="font-xsmall">Historic case</td>
+   <td class="align-right"><span class="font-xsmall processing" id="discarded-liability-historic-case-count"></span></td>
+  </tr>
+  <tr id="rejected-liability-row" aria-hidden="true" hidden="true">
+   <td class="font-xsmall">Rejected case status</td>
+   <td class="align-right"><span class="font-xsmall processing" id="rejected-liability-count"></span></td>
+  </tr>
+  <tr id="suppressed-liability-row" aria-hidden="true" hidden="true">
+   <td class="font-xsmall">Suppressed case status</td>
+   <td class="align-right"><span class="font-xsmall processing" id="suppressed-liability-count"></span></td>
+  </tr>
+  <tr id="liability-no-class-meth-record-row" aria-hidden="true" hidden="true">
+   <td class="font-xsmall">Missing tblCaseClassMeth record</td>
+   <td class="align-right"><span class="font-xsmall processing" id="liability-no-class-meth-record-count"></span></td>
+  </tr>
+ </table>
 </div>
 
 <script src="@controllers.routes.Assets.at("javascripts/data-processing.js")" type="text/javascript"></script>
@@ -63,7 +159,8 @@
    }
  }
  document.addEventListener("DOMContentLoaded", function(event) {
-   setInterval(fetchData,10000)
+   fetchData();
+   setInterval(fetchData,5000);
  });
  document.getElementById("data_migration_bti_processing_status").addEventListener("click", function(event) {
     var link = document.createElement("a");

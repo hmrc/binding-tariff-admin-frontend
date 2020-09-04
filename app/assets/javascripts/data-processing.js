@@ -30,7 +30,6 @@ var dataProcessing = {
     },
 
     updateStatus: function upload(url) {
-
                 getStatus();
 
                 function getStatus() {
@@ -45,6 +44,7 @@ var dataProcessing = {
                             updateErrorCount(response.errorCount);
                             updateDiscardedBtiCount(response.discardedBtiCount);
                             updateDiscardedLiabilityCount(response.discardedLiabilityCount);
+
                             updateDiscardedBtiReasons(response.discardReasons);
                             updateDiscardedLiabilityReasons(response.discardReasons);
                         })
@@ -119,47 +119,13 @@ var dataProcessing = {
                     var btiWithNoClassMethRecord = discardReasons.filter(function (reason) { return reason.type == "BTI_WITH_NO_CLASS_METH_RECORD"; });
                     var btiWithNoAddressRecords = discardReasons.filter(function (reason) { return reason.type == "BTI_WITH_NO_ADDRESS_RECORDS"; });
 
-                    if(btiWithHistoricCase.length > 0) {
-                        document.getElementById("discarded-bti-historic-case-count").innerHTML = btiWithHistoricCase.length
-                        document.getElementById("discarded-bti-historic-case-row").removeAttribute("aria-hidden");
-                        document.getElementById("discarded-bti-historic-case-row").removeAttribute("hidden");
-                    }
-
-                    if(rejectedBti.length > 0) {
-                        document.getElementById("rejected-bti-count").innerHTML = rejectedBti.length
-                        document.getElementById("rejected-bti-row").removeAttribute("aria-hidden");
-                        document.getElementById("rejected-bti-row").removeAttribute("hidden");
-                    }
-
-                    if(suppressedBti.length > 0) {
-                        document.getElementById("suppressed-bti-count").innerHTML = suppressedBti.length
-                        document.getElementById("suppressed-bti-row").removeAttribute("aria-hidden");
-                        document.getElementById("suppressed-bti-row").removeAttribute("hidden");
-                    }
-
-                    if(btiWithNoApplicationRecord.length > 0) {
-                        document.getElementById("bti-no-application-record-count").innerHTML = btiWithNoApplicationRecord.length
-                        document.getElementById("bti-no-application-record-row").removeAttribute("aria-hidden");
-                        document.getElementById("bti-no-application-record-row").removeAttribute("hidden");
-                    }
-
-                    if(btiWithNoCaseBtiRecord.length > 0) {
-                        document.getElementById("bti-no-case-bti-record-count").innerHTML = btiWithNoCaseBtiRecord.length
-                        document.getElementById("bti-no-case-bti-record-row").removeAttribute("aria-hidden");
-                        document.getElementById("bti-no-case-bti-record-row").removeAttribute("hidden");
-                    }
-
-                    if(btiWithNoClassMethRecord.length > 0) {
-                        document.getElementById("bti-no-class-meth-record-count").innerHTML = btiWithNoClassMethRecord.length
-                        document.getElementById("bti-no-class-meth-record-row").removeAttribute("aria-hidden");
-                        document.getElementById("bti-no-class-meth-record-row").removeAttribute("hidden");
-                    }
-
-                    if(btiWithNoAddressRecords.length > 0) {
-                        document.getElementById("bti-no-address-records-count").innerHTML = btiWithNoAddressRecords.length
-                        document.getElementById("bti-no-address-records-row").removeAttribute("aria-hidden");
-                        document.getElementById("bti-no-address-records-row").removeAttribute("hidden");
-                    }
+                    updateDiscardedCase(btiWithHistoricCase, "discarded-bti-historic-case");
+                    updateDiscardedCase(rejectedBti, "rejected-bti");
+                    updateDiscardedCase(suppressedBti, "suppressed-bti");
+                    updateDiscardedCase(btiWithNoApplicationRecord, "bti-no-application-record");
+                    updateDiscardedCase(btiWithNoCaseBtiRecord, "bti-no-case-bti-record");
+                    updateDiscardedCase(btiWithNoClassMethRecord, "bti-no-class-meth-record");
+                    updateDiscardedCase(btiWithNoAddressRecords, "bti-no-address-records");
 
                     if (btiWithHistoricCase.length > 0 ||
                         rejectedBti.length > 0 ||
@@ -170,6 +136,8 @@ var dataProcessing = {
                         btiWithNoAddressRecords.length > 0) {
                         document.getElementById("bti-discarded-container").removeAttribute("aria-hidden");
                         document.getElementById("bti-discarded-container").removeAttribute("hidden");
+                        document.getElementById("detailed-bti-discarded-cases-container").removeAttribute("aria-hidden");
+                        document.getElementById("detailed-bti-discarded-cases-container").removeAttribute("hidden");
                     }
                 }
 
@@ -183,29 +151,10 @@ var dataProcessing = {
                     var suppressedLiability = discardReasons.filter(function (reason) { return reason.type == "SUPPRESSED_LIABILITY"; });
                     var liabilityWithNoClassMethRecord = discardReasons.filter(function (reason) { return reason.type == "LIABILITY_WITH_NO_CLASS_METH_RECORD"; });
 
-                    if(liabilityWithHistoricCase.length > 0) {
-                        document.getElementById("discarded-liability-historic-case-count").innerHTML = liabilityWithHistoricCase.length
-                        document.getElementById("discarded-liability-historic-case-row").removeAttribute("aria-hidden");
-                        document.getElementById("discarded-liability-historic-case-row").removeAttribute("hidden");
-                    }
-
-                    if(rejectedLiability.length > 0) {
-                        document.getElementById("rejected-liability-count").innerHTML = rejectedLiability.length
-                        document.getElementById("rejected-liability-row").removeAttribute("aria-hidden");
-                        document.getElementById("rejected-liability-row").removeAttribute("hidden");
-                    }
-
-                    if(suppressedLiability.length > 0) {
-                        document.getElementById("suppressed-liability-count").innerHTML = suppressedLiability.length
-                        document.getElementById("suppressed-liability-row").removeAttribute("aria-hidden");
-                        document.getElementById("suppressed-liability-row").removeAttribute("hidden");
-                    }
-
-                    if(liabilityWithNoClassMethRecord.length > 0) {
-                        document.getElementById("liability-no-class-meth-record-count").innerHTML = liabilityWithNoClassMethRecord.length
-                        document.getElementById("liability-no-class-meth-record-row").removeAttribute("aria-hidden");
-                        document.getElementById("liability-no-class-meth-record-row").removeAttribute("hidden");
-                    }
+                    updateDiscardedCase(liabilityWithHistoricCase, "discarded-liability-historic-case");
+                    updateDiscardedCase(rejectedLiability, "rejected-liability");
+                    updateDiscardedCase(suppressedLiability, "suppressed-liability");
+                    updateDiscardedCase(liabilityWithNoClassMethRecord, "liability-no-class-meth-record");
 
                     if (liabilityWithHistoricCase.length > 0 ||
                         rejectedLiability.length > 0 ||
@@ -213,7 +162,29 @@ var dataProcessing = {
                         liabilityWithNoClassMethRecord.length > 0) {
                         document.getElementById("liability-discarded-container").removeAttribute("aria-hidden");
                         document.getElementById("liability-discarded-container").removeAttribute("hidden");
+                        document.getElementById("detailed-liability-discarded-cases-container").removeAttribute("aria-hidden");
+                        document.getElementById("detailed-liability-discarded-cases-container").removeAttribute("hidden");
                     }
+                }
+
+                function updateDiscardedCase(discardReasons, prefix) {
+                    if (discardReasons.length == 0) {
+                        return;
+                    }
+
+                    document.getElementById(prefix + "-count").innerHTML = discardReasons.length
+                    document.getElementById(prefix + "-row").removeAttribute("aria-hidden");
+                    document.getElementById(prefix + "-row").removeAttribute("hidden");
+
+                    document.getElementById(prefix + "-details").removeAttribute("aria-hidden");
+                    document.getElementById(prefix + "-details").removeAttribute("hidden");
+
+                    var listHtml = "";
+                    discardReasons.forEach(function(reason) {
+                        listHtml += "<li class=\"font-xsmall\">" + reason.caseNo + "</li>";
+                    });
+
+                    document.getElementById(prefix + "-list").innerHTML = listHtml;
                 }
 
                 function updateError(error) {

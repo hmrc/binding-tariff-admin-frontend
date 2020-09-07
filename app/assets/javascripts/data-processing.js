@@ -17,7 +17,8 @@ var dataProcessing = {
                         errorCount: response.status.errorCount,
                         discardedBtiCount: response.status.discardedBtiCount,
                         discardedLiabilityCount: response.status.discardedLiabilityCount,
-                        discardReasons: response.status.discardReasons
+                        discardReasons: response.status.discardReasons,
+                        errors: response.status.errors
                     });
                 },
                 error: function (response) {
@@ -41,9 +42,11 @@ var dataProcessing = {
 
                             updateMigratedBtiCount(response.migratedBtiCount);
                             updateMigratedLiabilityCount(response.migratedLiabilityCount);
-                            updateErrorCount(response.errorCount);
                             updateDiscardedBtiCount(response.discardedBtiCount);
                             updateDiscardedLiabilityCount(response.discardedLiabilityCount);
+
+                            updateErrorCount(response.errorCount);
+                            updateErrors(response.errors);
 
                             updateDiscardedBtiReasons(response.discardReasons);
                             updateDiscardedLiabilityReasons(response.discardReasons);
@@ -70,6 +73,21 @@ var dataProcessing = {
                         document.getElementById("summary-container").removeAttribute("aria-hidden");
                         document.getElementById("summary-container").removeAttribute("hidden");
                     }
+                }
+
+                function updateErrors(errors) {
+                    if (errors === undefined || errors.length === 0) {
+                        return;
+                    }
+
+                    var listHtml = "";
+                    errors.forEach(function(error) {
+                        listHtml += "<li class=\"font-small\"><span class=\"error-message\">" + error + "</span></li>";
+                    });
+
+                    document.getElementById("error-list").innerHTML = listHtml;
+                    document.getElementById("error-container").removeAttribute("aria-hidden");
+                    document.getElementById("error-container").removeAttribute("hidden");
                 }
 
                 function updateMigratedBtiCount(migratedBtiCount) {
@@ -107,7 +125,7 @@ var dataProcessing = {
                 }
 
                 function updateDiscardedBtiReasons(discardReasons) {
-                    if (discardReasons === undefined) {
+                    if (discardReasons === undefined || discardReasons.length === 0) {
                         return;
                     }
 

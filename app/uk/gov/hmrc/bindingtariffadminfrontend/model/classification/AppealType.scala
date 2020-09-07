@@ -21,7 +21,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 
 object AppealType extends Enumeration {
   type AppealType = Value
-  val REVIEW, APPEAL_TIER_1, APPEAL_TIER_2, COURT_OF_APPEALS, SUPREME_COURT = Value
+  val ADR, REVIEW, APPEAL_TIER_1, APPEAL_TIER_2, COURT_OF_APPEALS, SUPREME_COURT = Value
 
   implicit val format: Format[AppealType.Value] = JsonUtil.format(AppealType)
 }

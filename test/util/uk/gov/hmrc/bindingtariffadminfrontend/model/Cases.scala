@@ -27,7 +27,7 @@ object Cases {
   val eoriDetailsExample = EORIDetails("eori", "trader-business-name", "line1", "line2", "line3", "postcode", "country")
   val eoriAgentDetailsExample = AgentDetails(EORIDetails("eori", "agent-business-name", "line1", "line2", "line3", "postcode", "country"), Some(attachmentExample))
   val contactExample = Contact("name", "email", Some("phone"))
-  val btiApplicationExample = BTIApplication(eoriDetailsExample, contactExample, Some(eoriAgentDetailsExample), false, "Laptop", "Personal Computer", None, None, None, None, None, None, false, false)
+  val btiApplicationExample = BTIApplication(eoriDetailsExample, contactExample, Some(eoriAgentDetailsExample), false, "Laptop", "Personal Computer", None, None, None, None, None, None, None, false, false)
   val decision = Decision("AD12324FR", Some(Instant.now()), Some(Instant.now().plus(2*365, ChronoUnit.DAYS)), "justification", "good description", None, None, Some("denomination"))
   val migratableDecision = MigratableDecision("AD12324FR", Some(Instant.now()), Some(Instant.now().plus(2*365, ChronoUnit.DAYS)), "justification", "good description", None, None, Some("denomination"))
 

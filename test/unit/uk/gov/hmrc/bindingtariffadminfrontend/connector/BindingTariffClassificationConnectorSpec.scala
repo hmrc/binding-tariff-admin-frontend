@@ -73,7 +73,7 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
   }
 
   "Connector 'Create Event'" should {
-    val event = Event(Note("note"), "ref",  Operator("id"), Instant.now())
+    val event = Event(Note("note"), Operator("id"), "ref", Instant.now())
     val requestJSON = Json.toJson(event).toString()
 
     "Create valid event" in {
@@ -114,7 +114,7 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
   }
 
   "Connector 'GET Events'" should {
-    val event = Event(Note("note"), "ref", Operator("id"), Instant.now())
+    val event = Event(Note("note"), Operator("id"), "ref", Instant.now())
 
     "Get valid events" in {
       val responseJSON = Json.toJson(Paged(Seq(event))).toString()
@@ -153,7 +153,7 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
   }
 
   "Connector 'Search Events'" should {
-    val event = Event(Note("note"), "ref", Operator("id"), Instant.now())
+    val event = Event(Note("note"), Operator("id"), "ref", Instant.now())
 
     "Get valid events" in {
       val responseJSON = Json.toJson(Paged(Seq(event))).toString()

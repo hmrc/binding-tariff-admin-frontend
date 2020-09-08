@@ -27,7 +27,7 @@ case class MigratableEvent
   operator: Operator,
   timestamp: Instant
 ) {
-  def toEvent(caseRef: String): Event = Event(details, caseRef, operator, timestamp)
+  def toEvent(caseRef: String): Event = Event(details, operator, caseRef, timestamp)
 }
 
 object MigratableEvent {

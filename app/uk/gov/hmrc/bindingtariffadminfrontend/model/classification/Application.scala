@@ -21,6 +21,7 @@ import java.time.Instant
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ApplicationType.ApplicationType
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ImportExport.ImportExport
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.LiabilityStatus.LiabilityStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 import uk.gov.hmrc.play.json.Union
@@ -48,6 +49,7 @@ case class BTIApplication
   goodName: String,
   goodDescription: String,
   confidentialInformation: Option[String] = None,
+  importOrExport: Option[ImportExport] = None,
   otherInformation: Option[String] = None,
   reissuedBTIReference: Option[String] = None,
   relatedBTIReference: Option[String] = None,
@@ -80,6 +82,9 @@ case class LiabilityOrder
   entryDate: Option[Instant] = None,
   entryNumber: Option[String] = None,
   traderCommodityCode: Option[String] = None,
+  officerCommodityCode: Option[String] = None,
+  btiReference: Option[String] = None,
+  repaymentClaim: Option[RepaymentClaim] = None,
   dateOfReceipt: Option[Instant] = None,
   traderContactDetails: Option[TraderContactDetails] = None
 
@@ -104,5 +109,12 @@ object LiabilityStatus extends Enumeration {
 object ApplicationType extends Enumeration {
   type ApplicationType = Value
   val BTI, LIABILITY_ORDER = Value
-  implicit val format: Format[LiabilityStatus.Value] = JsonUtil.format(LiabilityStatus)
+  implicit val format: Format[ApplicationType.Value] = JsonUtil.format(ApplicationType)
 }
+
+object ImportExport extends Enumeration {
+  type ImportExport = Value
+  val IMPORT, EXPORT = Value
+  implicit val format: Format[ImportExport.Value] = JsonUtil.format(ImportExport)
+}
+

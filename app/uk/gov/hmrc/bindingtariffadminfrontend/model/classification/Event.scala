@@ -21,20 +21,21 @@ import java.time.Instant
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.AppealStatus.AppealStatus
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.AppealType.AppealType
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CancelReason.CancelReason
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.CaseStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.EventType.EventType
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ReferralReason.ReferralReason
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ReviewStatus.ReviewStatus
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SampleReturn.SampleReturn
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SampleStatus.SampleStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 import uk.gov.hmrc.play.json.Union
-
-
 
 case class Event
 (
   details: Details,
-  caseReference: String,
   operator: Operator,
+  caseReference: String,
   timestamp: Instant
 )
 
@@ -52,7 +53,6 @@ object Details {
     .and[ReferralCaseStatusChange](EventType.CASE_REFERRAL.toString)
     .and[CompletedCaseStatusChange](EventType.CASE_COMPLETED.toString)
     .and[AppealStatusChange](EventType.APPEAL_STATUS_CHANGE.toString)
-    .and[ReviewStatusChange](EventType.REVIEW_STATUS_CHANGE.toString)
     .and[ExtendedUseStatusChange](EventType.EXTENDED_USE_STATUS_CHANGE.toString)
     .and[AssignmentChange](EventType.ASSIGNMENT_CHANGE.toString)
     .and[Note](EventType.NOTE.toString)
@@ -60,7 +60,15 @@ object Details {
     .format
 }
 
-sealed trait FieldChange[T] extends Details {
+sealed trait OptionalComment {
+  val comment: Option[String]
+}
+
+sealed trait OptionalAttachment {
+  val attachmentId: Option[String]
+}
+
+sealed trait FieldChange[T] extends Details with OptionalComment {
   val from: T
   val to: T
   val comment: Option[String]
@@ -70,8 +78,9 @@ case class CaseStatusChange
 (
   override val from: CaseStatus,
   override val to: CaseStatus,
-  override val comment: Option[String] = None
-) extends FieldChange[CaseStatus] {
+  override val comment: Option[String] = None,
+  override val attachmentId: Option[String] = None
+) extends FieldChange[CaseStatus] with OptionalAttachment {
   override val `type`: EventType.Value = EventType.CASE_STATUS_CHANGE
 }
 
@@ -79,13 +88,29 @@ object CaseStatusChange {
   implicit val format: OFormat[CaseStatusChange] = Json.format[CaseStatusChange]
 }
 
+case class CancellationCaseStatusChange
+(
+  override val from: CaseStatus,
+  override val comment: Option[String] = None,
+  override val attachmentId: Option[String] = None,
+  reason: CancelReason
+) extends FieldChange[CaseStatus] with OptionalAttachment {
+  override val to: CaseStatus = CaseStatus.CANCELLED
+  override val `type`: EventType.Value = EventType.CASE_CANCELLATION
+}
+
+object CancellationCaseStatusChange {
+  implicit val format: OFormat[CancellationCaseStatusChange] = Json.format[CancellationCaseStatusChange]
+}
+
 case class ReferralCaseStatusChange
 (
   override val from: CaseStatus,
   override val comment: Option[String] = None,
+  override val attachmentId: Option[String] = None,
   referredTo: String,
   reason: Seq[ReferralReason]
-) extends FieldChange[CaseStatus] {
+) extends FieldChange[CaseStatus] with OptionalAttachment {
   override val to: CaseStatus = CaseStatus.REFERRED
   override val `type`: EventType.Value = EventType.CASE_REFERRAL
 }
@@ -119,30 +144,31 @@ object CaseCreated {
   implicit val format: OFormat[CaseCreated] = Json.format[CaseCreated]
 }
 
+case class AppealAdded
+(
+  appealType: AppealType,
+  appealStatus: AppealStatus,
+  override val comment: Option[String] = None
+) extends Details with OptionalComment {
+  override val `type`: EventType.Value = EventType.APPEAL_ADDED
+}
+
+object AppealAdded {
+  implicit val format: OFormat[AppealAdded] = Json.format[AppealAdded]
+}
+
 case class AppealStatusChange
 (
-  override val from: Option[AppealStatus],
-  override val to: Option[AppealStatus],
+  appealType: AppealType,
+  override val from: AppealStatus,
+  override val to: AppealStatus,
   override val comment: Option[String] = None
-) extends FieldChange[Option[AppealStatus]] {
+) extends FieldChange[AppealStatus] {
   override val `type`: EventType.Value = EventType.APPEAL_STATUS_CHANGE
 }
 
 object AppealStatusChange {
   implicit val format: OFormat[AppealStatusChange] = Json.format[AppealStatusChange]
-}
-
-case class ReviewStatusChange
-(
-  override val from: Option[ReviewStatus],
-  override val to: Option[ReviewStatus],
-  override val comment: Option[String] = None
-) extends FieldChange[Option[ReviewStatus]] {
-  override val `type`: EventType.Value = EventType.REVIEW_STATUS_CHANGE
-}
-
-object ReviewStatusChange {
-  implicit val format: OFormat[ReviewStatusChange] = Json.format[ReviewStatusChange]
 }
 
 case class ExtendedUseStatusChange
@@ -171,6 +197,19 @@ object AssignmentChange {
   implicit val format: OFormat[AssignmentChange] = Json.format[AssignmentChange]
 }
 
+case class QueueChange
+(
+  override val from: Option[String],
+  override val to: Option[String],
+  override val comment: Option[String] = None
+) extends FieldChange[Option[String]] {
+  override val `type`: EventType.Value = EventType.QUEUE_CHANGE
+}
+
+object QueueChange {
+  implicit val format: OFormat[QueueChange] = Json.format[QueueChange]
+}
+
 case class Note
 (
   comment: String
@@ -182,16 +221,46 @@ object Note {
   implicit val format: OFormat[Note] = Json.format[Note]
 }
 
+case class SampleStatusChange
+(
+  override val from: Option[SampleStatus],
+  override val to: Option[SampleStatus],
+  override val comment: Option[String] = None
+) extends FieldChange[Option[SampleStatus]] {
+  override val `type`: EventType.Value = EventType.SAMPLE_STATUS_CHANGE
+}
+
+object SampleStatusChange {
+  implicit val format: OFormat[SampleStatusChange] = Json.format[SampleStatusChange]
+}
+
+case class SampleReturnChange
+(
+  override val from: Option[SampleReturn],
+  override val to: Option[SampleReturn],
+  override val comment: Option[String] = None
+) extends FieldChange[Option[SampleReturn]] {
+  override val `type`: EventType.Value = EventType.SAMPLE_RETURN_CHANGE
+}
+
+object SampleReturnChange {
+  implicit val format: OFormat[SampleReturnChange] = Json.format[SampleReturnChange]
+}
+
 object EventType extends Enumeration {
   type EventType = Value
   val CASE_STATUS_CHANGE = Value
   val CASE_REFERRAL = Value
   val CASE_COMPLETED = Value
+  val CASE_CANCELLATION = Value
   val APPEAL_STATUS_CHANGE = Value
-  val REVIEW_STATUS_CHANGE = Value
+  val APPEAL_ADDED = Value
   val EXTENDED_USE_STATUS_CHANGE = Value
   val ASSIGNMENT_CHANGE = Value
+  val QUEUE_CHANGE = Value
   val NOTE = Value
+  val SAMPLE_STATUS_CHANGE = Value
+  val SAMPLE_RETURN_CHANGE = Value
   val CASE_CREATED = Value
   implicit val format: Format[classification.EventType.Value] = JsonUtil.format(EventType)
 }

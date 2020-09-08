@@ -16,11 +16,14 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import play.api.libs.json.Format
-import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
+import java.time.Instant
 
-object ReviewStatus extends Enumeration {
-  type ReviewStatus = Value
-  val IN_PROGRESS, UPHELD, OVERTURNED = Value
-  implicit val format: Format[ReviewStatus.Value] = JsonUtil.format(ReviewStatus)
+import play.api.libs.json.{Json, OFormat}
+
+case class RepaymentClaim(
+                           dvrNumber: Option[String] = None,
+                           dateForRepayment: Option[Instant] = None)
+
+object RepaymentClaim {
+  implicit val format: OFormat[RepaymentClaim] = Json.format[RepaymentClaim]
 }

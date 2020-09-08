@@ -52,10 +52,15 @@ object Details {
     .and[CaseStatusChange](EventType.CASE_STATUS_CHANGE.toString)
     .and[ReferralCaseStatusChange](EventType.CASE_REFERRAL.toString)
     .and[CompletedCaseStatusChange](EventType.CASE_COMPLETED.toString)
+    .and[CancellationCaseStatusChange](EventType.CASE_CANCELLATION.toString)
     .and[AppealStatusChange](EventType.APPEAL_STATUS_CHANGE.toString)
+    .and[AppealAdded](EventType.APPEAL_ADDED.toString)
     .and[ExtendedUseStatusChange](EventType.EXTENDED_USE_STATUS_CHANGE.toString)
     .and[AssignmentChange](EventType.ASSIGNMENT_CHANGE.toString)
+    .and[QueueChange](EventType.QUEUE_CHANGE.toString)
     .and[Note](EventType.NOTE.toString)
+    .and[SampleStatusChange](EventType.SAMPLE_STATUS_CHANGE.toString)
+    .and[SampleReturnChange](EventType.SAMPLE_RETURN_CHANGE.toString)
     .and[CaseCreated](EventType.CASE_CREATED.toString)
     .format
 }

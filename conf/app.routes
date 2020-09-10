@@ -14,6 +14,7 @@ GET        /check-status                @uk.gov.hmrc.bindingtariffadminfrontend.
 GET        /get-status                  @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.getStatusOfJsonProcessing
 GET        /download-bti-json           @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadBTIJson
 GET        /download-liabilities-json   @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadLiabilitiesJson
+GET        /download-migration-reports  @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadMigrationReports
 
 GET        /data-migration              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.get
 POST       /data-migration              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.post

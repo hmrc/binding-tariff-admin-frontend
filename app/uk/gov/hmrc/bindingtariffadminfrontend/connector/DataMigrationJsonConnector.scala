@@ -54,4 +54,10 @@ class DataMigrationJsonConnector @Inject()(
     wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/transformed-liabilities-records")
       .withMethod("GET").stream()
   }
+
+  def downloadMigrationReports: Future[WSResponse] = {
+
+    wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/migration-reports")
+      .withMethod("GET").stream()
+  }
 }

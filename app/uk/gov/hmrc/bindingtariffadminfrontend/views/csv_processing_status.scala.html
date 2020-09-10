@@ -52,7 +52,14 @@
 
 <div id="summary-container" class="mt-30" aria-hidden="true" hidden="true">
 
- <h3 class="heading-medium">Volumetrics</h3>
+ <div class="grid-row">
+  <div class="column-one-half">
+   <h3 class="heading-medium">Volumetrics</h3>
+  </div>
+  <div class="column-one-half align-right">
+   <button id="data_migration_migration-reports" class="button button-info mt-30" disabled="disabled">Download reports</button>
+  </div>
+ </div>
 
  <table id="summary-table">
   <tr>
@@ -298,6 +305,11 @@
  document.getElementById("data_migration_liabilities_processing_status").addEventListener("click", function(event) {
     var link = document.createElement("a");
     link.href = "@routes.DataMigrationJsonController.downloadLiabilitiesJson().url";
+    link.click();
+ });
+ document.getElementById("data_migration_migration-reports").addEventListener("click", function(event) {
+    var link = document.createElement("a");
+    link.href = "@routes.DataMigrationJsonController.downloadMigrationReports().url";
     link.click();
  });
 </script>

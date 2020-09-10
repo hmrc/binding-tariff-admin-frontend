@@ -220,6 +220,7 @@ var dataProcessing = {
                     if(status.innerHTML == "done"){
                         document.getElementById("data_migration_bti_processing_status").removeAttribute("disabled");
                         document.getElementById("data_migration_liabilities_processing_status").removeAttribute("disabled");
+                        document.getElementById("data_migration_migration-reports").removeAttribute("disabled");
                     }
                 }
             }

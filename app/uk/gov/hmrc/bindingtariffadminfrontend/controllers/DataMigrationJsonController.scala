@@ -183,6 +183,20 @@ class DataMigrationJsonController @Inject()(
     downloadJson(connector.downloadLiabilitiesJson, "Liabilities")
   }
 
+  def downloadMigrationReports: Action[AnyContent] = authenticatedAction.async {
+
+    connector.downloadMigrationReports.map { res =>
+      res.status match {
+        case OK => res.bodyAsSource
+        case _ => throw new BadRequestException(s"Failed to get the archive from data migration api for the migration reports" + res.status)
+      }
+    }.map{ dataContent =>
+      Ok.chunked(dataContent).withHeaders(
+        "Content-Type" -> "application/zip",
+        "Content-Disposition" -> s"attachment; filename=Data-Migration-Reports-${DateTime.now().toString("ddMMyyyyHHmmss")}.zip")
+    }
+  }
+
   private def downloadJson(download : Future[WSResponse], jsonType : String): Future[Result] ={
     download.map { res =>
       res.status match {
@@ -192,7 +206,7 @@ class DataMigrationJsonController @Inject()(
     }.map{ dataContent =>
       Ok.chunked(dataContent).withHeaders(
         "Content-Type" -> "application/zip",
-        "Content-Disposition" -> s"attachment; filename=$jsonType-Data-Migration${DateTime.now().toString("ddMMyyyyHHmmss")}.zip")
+        "Content-Disposition" -> s"attachment; filename=$jsonType-Data-Migration-${DateTime.now().toString("ddMMyyyyHHmmss")}.zip")
     }
   }
 

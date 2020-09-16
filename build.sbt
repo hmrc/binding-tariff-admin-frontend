@@ -11,6 +11,7 @@ lazy val playSettings: Seq[Setting[_]] = Seq.empty
 
 lazy val microservice = (project in file("."))
   .enablePlugins(plugins: _*)
+  .disablePlugins(JUnitXmlReportPlugin) //Required to prevent https://github.com/scalatest/scalatest/issues/1427
   .settings(playSettings: _*)
   .settings(scalaSettings: _*)
   .settings(publishingSettings: _*)
@@ -19,15 +20,19 @@ lazy val microservice = (project in file("."))
   .settings(PlayKeys.playDefaultPort := 9584)
   .settings(
     name := appName,
-    scalaVersion := "2.12.10",
+    scalaVersion := "2.12.12",
     targetJvm := "jvm-1.8",
     libraryDependencies ++= (AppDependencies.compile ++ AppDependencies.test),//.map(_ withSources()),
     evictionWarningOptions in update := EvictionWarningOptions.default.withWarnScalaVersionEviction(false),
     parallelExecution in Test := false,
-//    testGrouping in Test := oneForkedJvmPerTest((definedTests in Test).value),
     fork in Test := true,
-    retrieveManaged := true
-//    routesGenerator := StaticRoutesGenerator
+    retrieveManaged := true,
+    // Use the silencer plugin to suppress warnings from unused imports in compiled twirl templates
+    scalacOptions += "-P:silencer:pathFilters=views;routes",
+    libraryDependencies ++= Seq(
+      compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.1" cross CrossVersion.full),
+      "com.github.ghik" % "silencer-lib" % "1.7.1" % Provided cross CrossVersion.full
+    )
   )
   .settings(inConfig(TemplateTest)(Defaults.testSettings): _*)
   .settings(
@@ -48,29 +53,14 @@ lazy val microservice = (project in file("."))
     ),
     resourceDirectory in IntegrationTest := baseDirectory.value / "test" / "resources",
     addTestReportOption(IntegrationTest, "int-test-reports"),
-//    testGrouping in IntegrationTest := oneForkedJvmPerTest((definedTests in IntegrationTest).value),
     parallelExecution in IntegrationTest := false)
   .settings(
     resolvers += Resolver.bintrayRepo("hmrc", "releases"),
     resolvers += Resolver.jcenterRepo,
     resolvers += Resolver.bintrayRepo("akka", "snapshots"))
-//  .settings(ivyScala := ivyScala.value map {
-//    _.copy(overrideScalaVersion = true)
-//  })
-
-//lazy val allPhases = "tt->test;test->test;test->compile;compile->compile"
-//lazy val allItPhases = "tit->it;it->it;it->compile;compile->compile"
 
 lazy val TemplateTest = config("tt") extend Test
 lazy val TemplateItTest = config("tit") extend IntegrationTest
-
-//def unitFilter(name: String): Boolean = name startsWith "unit"
-//
-//def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] = {
-//  tests map {
-//    test => Group(test.name, Seq(test), SubProcess(ForkOptions(runJVMOptions = Seq("-Dtest.name=" + test.name))))
-//  }
-//}
 
 // Coverage configuration
 coverageMinimum := 88

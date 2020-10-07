@@ -24,7 +24,7 @@ object CancelReason extends Enumeration {
   type CancelReason = Value
 
   val ANNULLED, INVALIDATED_CODE_CHANGE, INVALIDATED_EU_MEASURE, INVALIDATED_NATIONAL_MEASURE,
-  INVALIDATED_WRONG_CLASSIFICATION, INVALIDATED_OTHER = Value
+  INVALIDATED_WRONG_CLASSIFICATION, INVALIDATED_OTHER, OTHER = Value
 
   implicit val format: Format[classification.CancelReason.Value] = JsonUtil.format(CancelReason)
 }

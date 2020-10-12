@@ -34,6 +34,7 @@ class AnonymizeSpec extends FlatSpec with Matchers {
     Anonymize.anonymize("tblCaseLMComments", Map("CaseName" -> "")) shouldBe Map("CaseName" -> "")
     Anonymize.anonymize("tblImages", Map("CaseName" -> "")) shouldBe Map("CaseName" -> "")
     Anonymize.anonymize("tblMovement", Map("CaseName" -> "")) shouldBe Map("CaseName" -> "")
+    Anonymize.anonymize("Legal_Proceedings", Map("CaseName" -> "")) shouldBe Map("CaseName" -> "")
   }
 
   it should "ignore NULL fields" in {
@@ -45,6 +46,7 @@ class AnonymizeSpec extends FlatSpec with Matchers {
     Anonymize.anonymize("tblCaseLMComments", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
     Anonymize.anonymize("tblImages", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
     Anonymize.anonymize("tblMovement", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
+    Anonymize.anonymize("Legal_Proceedings", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
   }
 
   it should "anonymize eBTI_Application" in {
@@ -241,5 +243,18 @@ class AnonymizeSpec extends FlatSpec with Matchers {
 
   it should "not anonymize tblMovement fields that contain no PII" in {
     Anonymize.anonymize("tblMovement", Map("CaseNo" -> "123456")) should contain("CaseNo" -> "123456")
+  }
+
+  it should "anonymize Legal_Proceeding" in {
+    Anonymize.anonymize("Legal_Proceeding", Map("CourtName" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceeding", Map("StreetAndNumber" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceeding", Map("City" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceeding", Map("Postcode" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceeding", Map("Country" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceeding", Map("CourtCaseRefNo" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
+  }
+
+  it should "not anonymize Legal_Proceeding fields that contain no PII" in {
+    Anonymize.anonymize("Legal_Proceeding", Map("CaseNo" -> "123456")) should contain("CaseNo" -> "123456")
   }
 }

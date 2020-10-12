@@ -67,7 +67,7 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
   private val csvList = List(
     "tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
     "eBTI_Addresses_csv", "tblCaseRecord_csv", "tblCaseBTI_csv", "tblImages_csv",
-    "tblCaseLMComments_csv", "tblMovement_csv")
+    "tblCaseLMComments_csv", "tblMovement_csv", "Legal_Proceedings_csv")
 
   private val anonymizedCsvList = csvList.filterNot(_ == "historicCases_csv")
 

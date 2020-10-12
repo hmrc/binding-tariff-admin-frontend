@@ -246,15 +246,15 @@ class AnonymizeSpec extends FlatSpec with Matchers {
   }
 
   it should "anonymize Legal_Proceeding" in {
-    Anonymize.anonymize("Legal_Proceeding", Map("CourtName" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
-    Anonymize.anonymize("Legal_Proceeding", Map("StreetAndNumber" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
-    Anonymize.anonymize("Legal_Proceeding", Map("City" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
-    Anonymize.anonymize("Legal_Proceeding", Map("Postcode" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
-    Anonymize.anonymize("Legal_Proceeding", Map("Country" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
-    Anonymize.anonymize("Legal_Proceeding", Map("CourtCaseRefNo" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceedings", Map("CourtName" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceedings", Map("StreetAndNumber" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceedings", Map("City" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceedings", Map("Postcode" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceedings", Map("Country" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceedings", Map("CourtCaseRefNo" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
   }
 
   it should "not anonymize Legal_Proceeding fields that contain no PII" in {
-    Anonymize.anonymize("Legal_Proceeding", Map("CaseNo" -> "123456")) should contain("CaseNo" -> "123456")
+    Anonymize.anonymize("Legal_Proceedings", Map("CaseNo" -> "123456")) should contain("CaseNo" -> "123456")
   }
 }

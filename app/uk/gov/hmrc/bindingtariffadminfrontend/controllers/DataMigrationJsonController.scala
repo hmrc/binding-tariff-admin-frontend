@@ -150,7 +150,7 @@ class DataMigrationJsonController @Inject()(
           files <- service.getDataMigrationFilesDetails(List(
             "tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
             "eBTI_Addresses_csv", "tblCaseRecord_csv", "tblCaseBTI_csv", "tblImages_csv",
-            "tblCaseLMComments_csv", "tblMovement_csv"))
+            "tblCaseLMComments_csv", "tblMovement_csv", "Legal_Proceedings_csv"))
           result <- connector.sendDataForProcessing(FileUploadSubmission(extractionDateForm.extractionDate, files))
         } yield {
           result.status match {

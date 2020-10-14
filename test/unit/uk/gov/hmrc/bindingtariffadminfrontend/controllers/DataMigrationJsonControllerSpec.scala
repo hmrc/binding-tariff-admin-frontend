@@ -67,7 +67,7 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
   private val csvList = List(
     "tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
     "eBTI_Addresses_csv", "tblCaseRecord_csv", "tblCaseBTI_csv", "tblImages_csv",
-    "tblCaseLMComments_csv", "tblMovement_csv", "Legal_Proceedings_csv")
+    "tblCaseLMComments_csv", "tblMovement_csv")
 
   private val anonymizedCsvList = csvList.filterNot(_ == "historicCases_csv")
 
@@ -139,7 +139,6 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
           case _ if filename.contains("tblImages") => "CaseNo,DateAdded,TimeAdded,Description,FileName,Counter,SendWithBTI,Confidential,SavedToFile,DeleteFlag,DeletedDate,DeletedTime,DeletingUserID,AddingUserID,IsApplicationAttachment,SendWithApp"
           case _ if filename.contains("tblMovement") => "CaseNo,DateSent,TimeSent,SenderID,SenderTeam,RecipientTeam,RecipientType,DateReceived,TimeReceived,RecipientID,Reason"
           case _ if filename.contains("tblCaseLMComments") => "CaseNo,Band7DateChecked,Band7TimeChecked,Band7Name,Band7User,Band7Satisfied,Band7Comments,Band9DateChecked,Band9TimeChecked,Band9Name,Band9User,Band9Satisfied,Band9Comments,Band11DateChecked,Band11TimeChecked,Band11Name,Band11User,Band11Satisfied,Band11Comments"
-          case _ if filename.contains("Legal_Proceedings") => "CaseNo,CourtName,StreetAndNumber,City,Postcode,Country,CourtCaseRefNo"
           case _ => throw new Exception("Incomplete test")
         }).split(",").toList
         val mimeType: String = "application/csv"

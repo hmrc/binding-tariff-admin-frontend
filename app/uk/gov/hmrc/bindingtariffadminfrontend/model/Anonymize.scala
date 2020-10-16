@@ -40,6 +40,7 @@ object Anonymize {
     case _ if tblName.contains("tblImages") => anonymizeTblImages(data)
     case _ if tblName.contains("tblMovement") => anonymizeTblMovement(data)
     case _ if tblName.contains("tblCaseLMComments") => anonymizeTblCaseLMComments(data)
+    case _ if tblName.contains("Legal_Proceedings") => anonymizeLegalProceedings(data)
     case _ => throw new AnonymizationFailedException(s"The file name ${tblName} was not recognised")
   }
 
@@ -228,6 +229,18 @@ object Anonymize {
     case (k @ "Band9Comments", _) => (k, faker.lorem().paragraph())
     case (k @ "Band11Name", _) => (k, faker.superhero().name())
     case (k @ "Band11Comments", _) => (k, faker.lorem().paragraph())
+    case other => other
+  }
+
+  private def anonymizeLegalProceedings(data: Map[String, String]): Map[String, String] = data.map {
+    case (k, "") => (k, "")
+    case (k, "NULL") => (k, "NULL")
+    case (k @ "CourtName", _) => (k, faker.pokemon.name())
+    case (k @ "StreetAndNumber", _) => (k, "123 Fake St")
+    case (k @ "City", _) => (k, faker.space().planet())
+    case (k @ "Postcode", _) => (k, faker.lorem().characters(6))
+    case (k @ "Country", _) => (k, faker.space().galaxy())
+    case (k @ "CourtCaseRefNo", _) => (k, faker.lorem().characters(8))
     case other => other
   }
 }

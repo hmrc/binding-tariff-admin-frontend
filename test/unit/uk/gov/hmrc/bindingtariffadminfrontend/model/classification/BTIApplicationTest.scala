@@ -48,6 +48,7 @@ class BTIApplicationTest extends UnitSpec with MockitoSugar {
         Some("other info"),
         Some("reissue"),
         Some("related reference"),
+        Nil,
         Some("legal proceedings"),
         Some("envisaged code")
       ).anonymize shouldBe BTIApplication(
@@ -62,6 +63,7 @@ class BTIApplicationTest extends UnitSpec with MockitoSugar {
         Some("other info"),
         Some("reissue"),
         Some("related reference"),
+        Nil,
         Some("legal proceedings"),
         Some("envisaged code")
       )

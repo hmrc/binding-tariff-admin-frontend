@@ -87,6 +87,7 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
           otherInformation = Some("Other Information"),
           reissuedBTIReference = Some("Reissued Reference"),
           relatedBTIReference = Some("Related Reference"),
+          relatedBTIReferences = List("Related References"),
           knownLegalProceedings = Some("Known Legal Proceedings"),
           envisagedCommodityCode = Some("Envisaged Code")
         ),

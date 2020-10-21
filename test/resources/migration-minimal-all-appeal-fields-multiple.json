@@ -31,6 +31,7 @@
       "envisagedCommodityCode": "Envisaged Code",
       "reissuedBTIReference": "Reissued Reference",
       "relatedBTIReference": "Related Reference",
+      "relatedBTIReferences": ["Related References"],
       "knownLegalProceedings": "Known Legal Proceedings",
       "sampleToBeProvided": false,
       "sampleToBeReturned": false,

@@ -62,6 +62,7 @@ object Details {
     .and[SampleStatusChange](EventType.SAMPLE_STATUS_CHANGE.toString)
     .and[SampleReturnChange](EventType.SAMPLE_RETURN_CHANGE.toString)
     .and[CaseCreated](EventType.CASE_CREATED.toString)
+    .and[ExpertAdviceReceived](EventType.EXPERT_ADVICE_RECEIVED.toString)
     .format
 }
 
@@ -252,6 +253,17 @@ object SampleReturnChange {
   implicit val format: OFormat[SampleReturnChange] = Json.format[SampleReturnChange]
 }
 
+case class ExpertAdviceReceived
+(
+  comment: String
+) extends Details {
+  override val `type`: EventType.Value = EventType.EXPERT_ADVICE_RECEIVED
+}
+
+object ExpertAdviceReceived {
+  implicit val format: OFormat[ExpertAdviceReceived] = Json.format[ExpertAdviceReceived]
+}
+
 object EventType extends Enumeration {
   type EventType = Value
   val CASE_STATUS_CHANGE = Value
@@ -267,5 +279,6 @@ object EventType extends Enumeration {
   val SAMPLE_STATUS_CHANGE = Value
   val SAMPLE_RETURN_CHANGE = Value
   val CASE_CREATED = Value
+  val EXPERT_ADVICE_RECEIVED = Value
   implicit val format: Format[classification.EventType.Value] = JsonUtil.format(EventType)
 }

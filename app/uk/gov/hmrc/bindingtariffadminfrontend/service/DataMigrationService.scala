@@ -16,13 +16,16 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.service
 
-import java.util.UUID
+import java.util.concurrent.TimeUnit
 
+import akka.actor.ActorSystem
+import akka.pattern.after
+import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.scaladsl.{Sink, Source}
 import javax.inject.Inject
 import play.api.Logger
 import play.api.libs.Files.TemporaryFile
-import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, DataMigrationJsonConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
+import uk.gov.hmrc.bindingtariffadminfrontend.connector._
 import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
@@ -30,30 +33,13 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, Event}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
-import uk.gov.hmrc.bindingtariffadminfrontend.scheduler.MigrationJob
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.lock.LockKeeper
 
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.Future.{sequence, successful}
-import scala.concurrent.{Await, Future}
-import scala.util.Success
-import akka.actor.ActorSystem
-import akka.pattern.after
-import cats._
-import cats.implicits._
-
-import scala.util.Random
-import java.util.concurrent.TimeUnit
-
-import akka.stream.scaladsl.Source
-import akka.stream.IOResult
-import akka.stream.scaladsl.Sink
-import akka.stream.Materializer
-import akka.stream.ActorMaterializer
+import scala.concurrent.duration.{FiniteDuration, _}
+import scala.util.{Random, Success}
 
 class DataMigrationService @Inject()(repository: MigrationRepository,
                                      migrationLock: MigrationLock,
@@ -80,8 +66,8 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     Future.sequence(opts)
   }
 
-  def getAvailableFileDetails(fileNames:List[String])(implicit hc: HeaderCarrier): Future[List[FileUploaded]] = {
-    Future.sequence(fileNames.map(fileConnector.find))
+  def getAvailableFileDetails(fileIds: List[String])(implicit hc: HeaderCarrier): Future[List[FileUploaded]] = {
+    Future.sequence(fileIds.map(fileConnector.find))
       .map(_.flatten)
   }
 

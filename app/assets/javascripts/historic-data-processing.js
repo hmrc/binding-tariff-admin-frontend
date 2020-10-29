@@ -12,6 +12,8 @@ var historicDataProcessing = {
                 success: function (response) {
                     resolve({
                         status: response.status.value,
+                        prevApplCount: response.status.prevApplCount,
+                        prevBtiCount: response.status.prevBtiCount,
                         applCount: response.status.applCount,
                         btiCount: response.status.btiCount,
                         errorCount: response.status.errorCount,
@@ -37,8 +39,8 @@ var historicDataProcessing = {
                     updateState(response.status);
                     updateContinueMessage();
 
-                    updateApplCount(response.applCount);
-                    updateBtiCount(response.btiCount);
+                    updateApplCounts(response.prevApplCount, response.applCount);
+                    updateBtiCounts(response.prevBtiCount, response.btiCount);
 
                     updateErrorCount(response.errorCount);
                     updateErrors(response.errors);
@@ -62,17 +64,21 @@ var historicDataProcessing = {
             }
         }
 
-        function updateApplCount(applCount) {
-            if(applCount > 0) {
+        function updateApplCounts(prevApplCount, applCount) {
+            if(prevApplCount > 0 || applCount > 0) {
+                document.getElementById("prev-appl-count").innerHTML = prevApplCount;
                 document.getElementById("appl-count").innerHTML = applCount;
+                document.getElementById("total-appl-count").innerHTML = prevApplCount + applCount;
                 document.getElementById("summary-container").removeAttribute("aria-hidden");
                 document.getElementById("summary-container").removeAttribute("hidden");
             }
         }
 
-        function updateBtiCount(btiCount) {
-           if(btiCount > 0) {
+        function updateBtiCounts(prevBtiCount, btiCount) {
+           if(prevBtiCount > 0 || btiCount > 0) {
+               document.getElementById("prev-bti-count").innerHTML = prevBtiCount;
                document.getElementById("bti-count").innerHTML = btiCount;
+               document.getElementById("total-bti-count").innerHTML = prevBtiCount + btiCount;
                document.getElementById("summary-container").removeAttribute("aria-hidden");
                document.getElementById("summary-container").removeAttribute("hidden");
            }

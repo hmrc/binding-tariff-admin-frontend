@@ -57,7 +57,7 @@ class DataMigrationStateController @Inject()(
     mapping[Set[Store], Set[Store]](
       "store" -> set(nonEmptyText.verifying(v => Store.values.exists(v == _.toString)).transform(Store(_).get, _.toString))
     )(identity)(Some(_))
-  ).fill(Store.values)
+  ).fill(Store.defaultValues)
 
   def reset(): Action[AnyContent] = authenticatedAction.async { implicit request =>
     if (appConfig.resetPermitted) {

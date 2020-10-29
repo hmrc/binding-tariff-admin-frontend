@@ -17,11 +17,12 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.service
 
 import java.util.UUID
+
 import javax.inject.Inject
 import play.api.Logger
 import play.api.libs.Files.TemporaryFile
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, DataMigrationJsonConnector, FileStoreConnector, RulingConnector, UpscanS3Connector}
 import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
@@ -40,13 +41,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.{sequence, successful}
 import scala.concurrent.{Await, Future}
 import scala.util.Success
-
 import akka.actor.ActorSystem
 import akka.pattern.after
 import cats._
 import cats.implicits._
+
 import scala.util.Random
 import java.util.concurrent.TimeUnit
+
 import akka.stream.scaladsl.Source
 import akka.stream.IOResult
 import akka.stream.scaladsl.Sink
@@ -59,6 +61,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
                                      upscanS3Connector: UpscanS3Connector,
                                      rulingConnector: RulingConnector,
                                      caseConnector: BindingTariffClassificationConnector,
+                                     dataMigrationConnector: DataMigrationJsonConnector,
                                      actorSystem: ActorSystem) {
 
 
@@ -158,6 +161,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       _ <- resetIfPresent(Store.CASES, caseConnector.deleteCases())
       _ <- resetIfPresent(Store.EVENTS, caseConnector.deleteEvents())
       _ <- resetIfPresent(Store.RULINGS, rulingConnector.delete())
+      _ <- resetIfPresent(Store.HISTORIC_DATA, dataMigrationConnector.deleteHistoricData())
       _ <- resetIfPresent(Store.MIGRATION, clear())
     } yield ()
   }

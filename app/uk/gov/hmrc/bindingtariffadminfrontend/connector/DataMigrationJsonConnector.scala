@@ -78,4 +78,10 @@ class DataMigrationJsonConnector @Inject()(
     wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-data")
       .withMethod("GET").stream()
   }
+
+  def deleteHistoricData()(implicit hc: HeaderCarrier): Future[Unit] = {
+
+    http.DELETE[HttpResponse](s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-data")
+      .map(_ => ())
+  }
 }

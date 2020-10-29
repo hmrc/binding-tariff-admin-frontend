@@ -56,19 +56,27 @@
 
  <table id="summary-table">
   <tr>
-   <td></td>
-   <td></td>
+   <th></th>
+   <th class="align-right">Existing</th>
+   <th class="align-right">New</th>
+   <th class="align-right">Total</th>
   </tr>
   <tr id="appl-row">
    <td>Applications uploaded</td>
+   <td class="align-right"><span class="processing" id="prev-appl-count">0</span></td>
    <td class="align-right"><span class="processing" id="appl-count">0</span></td>
+   <td class="align-right"><span class="processing" id="total-appl-count">0</span></td>
   </tr>
   <tr id="bti-row">
    <td>BTIs uploaded</td>
+   <td class="align-right"><span class="processing" id="prev-bti-count">0</span></td>
    <td class="align-right"><span class="processing" id="bti-count">0</span></td>
+   <td class="align-right"><span class="processing" id="total-bti-count">0</span></td>
   </tr>
   <tr id="error-row" aria-hidden="true" hidden="true">
    <td><span class="error-message">Error count</span></td>
+   <td></td>
+   <td></td>
    <td class="align-right"><span class="processing error-message" id="error-count">0</span></td>
   </tr>
  </table>

@@ -77,6 +77,11 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     Future.sequence(opts)
   }
 
+  def getAvailableFileDetails(fileNames:List[String])(implicit hc: HeaderCarrier): Future[List[FileUploaded]] = {
+    Future.sequence(fileNames.map(fileConnector.find))
+      .map(_.flatten)
+  }
+
   def getState(status: Seq[MigrationStatus], pagination: Pagination): Future[Paged[Migration]] = {
     repository.get(status, pagination)
   }

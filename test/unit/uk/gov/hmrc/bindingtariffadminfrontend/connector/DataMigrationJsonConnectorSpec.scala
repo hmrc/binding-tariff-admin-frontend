@@ -72,7 +72,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
 
   "Connector getStatusOfJsonProcessing" should {
 
-    "return the json for the mutiple files" in {
+    "return the json for the multiple files" in {
       stubFor(
         get("/binding-tariff-data-transformation/processing-status")
           .willReturn(
@@ -131,27 +131,11 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
         getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/transformed-bti-records"))
       )
     }
-
-    "propagate errors" in {
-      stubFor(
-        get("/binding-tariff-data-transformation/transformed-bti-records")
-          .willReturn(notFound()
-            .withBody(Json.obj("status" -> "error").toString()))
-      )
-
-      intercept[NotFoundException] {
-        await(connector.getStatusOfJsonProcessing)
-      }
-
-      verify(
-        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/transformed-bti-records"))
-      )
-    }
   }
 
   "Connector downloadLiabilitiesJson" should {
 
-    "return the json for the mutiple files" in {
+    "return the json for the multiple files" in {
       val expected = fromResource("filestore-initiate_response.json")
       val expectedJson = Json.prettyPrint(Json.parse(expected))
 
@@ -173,20 +157,29 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
         getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/transformed-liabilities-records"))
       )
     }
+  }
 
-    "propagate errors" in {
+  "Connector downloadMigrationReports" should {
+    "return the json for the multiple files" in {
+      val expected = fromResource("filestore-initiate_response.json")
+      val expectedJson = Json.prettyPrint(Json.parse(expected))
+
       stubFor(
-        get("/binding-tariff-data-transformation/transformed-bti-records")
-          .willReturn(notFound()
-            .withBody(Json.obj("status" -> "error").toString()))
+        get("/binding-tariff-data-transformation/migration-reports")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+              .withBody(expected)
+          )
       )
 
-      intercept[NotFoundException] {
-        await(connector.getStatusOfJsonProcessing)
-      }
+      val response = await(connector.downloadMigrationReports)
+
+      response.status shouldBe Status.OK
+      Json.prettyPrint(Json.parse(response.body)) shouldBe expectedJson
 
       verify(
-        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/transformed-liabilities-records"))
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/migration-reports"))
       )
     }
   }

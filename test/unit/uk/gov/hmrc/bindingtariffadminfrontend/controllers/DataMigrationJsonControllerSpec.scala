@@ -384,4 +384,33 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
       )
     }
   }
+
+  "downloadMigrationReports /" should {
+    "return 200" in {
+      val data = Source.single(ByteString.fromString("~~archive~~"))
+
+      val response: WSResponse = mock[WSResponse]
+      when(response.status).thenReturn(200)
+      when(response.bodyAsSource: Source[ByteString, Any]).thenReturn(data)
+      given(migrationConnector.downloadMigrationReports).willReturn(Future.successful(response))
+
+      val result = await(controller.downloadMigrationReports()(newFakeRequestWithCSRF))
+
+      status(result) shouldBe OK
+      bodyOf(result) shouldBe "~~archive~~"
+    }
+
+    "return 400" in {
+      val json = Json.obj("error" -> "error while building json")
+      val response: WSResponse = mock[WSResponse]
+      when(response.status).thenReturn(400)
+      when(response.body).thenReturn(json.toString())
+
+      given(migrationConnector.downloadMigrationReports).willReturn(Future.successful(response))
+
+      intercept[BadRequestException](
+        await(controller.downloadMigrationReports()(newFakeRequestWithCSRF))
+      )
+    }
+  }
 }

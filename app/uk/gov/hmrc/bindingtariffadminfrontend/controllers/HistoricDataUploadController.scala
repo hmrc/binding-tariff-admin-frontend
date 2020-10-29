@@ -52,7 +52,7 @@ class HistoricDataUploadController @Inject()(
     )(UploadHistoricDataRequest.apply)(UploadHistoricDataRequest.unapply)
   )
 
-  private lazy val historicDataFilenames = List(
+  private lazy val historicDataFileIds = List(
     "ALLAPPLDATA-2004_csv",
     "ALLAPPLDATA-2005_csv",
     "ALLAPPLDATA-2006_csv",
@@ -120,7 +120,7 @@ class HistoricDataUploadController @Inject()(
 
   def postDataAndRedirect: Action[AnyContent] = authenticatedAction.async { implicit request =>
     for {
-      files <- service.getAvailableFileDetails(historicDataFilenames)
+      files <- service.getAvailableFileDetails(historicDataFileIds)
       if files.nonEmpty
       result <- connector.sendHistoricDataForProcessing(files)
     } yield {

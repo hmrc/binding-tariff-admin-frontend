@@ -190,4 +190,119 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
       )
     }
   }
+
+  "Connector sendHistoricDataForProcessing" should {
+    "return the json for the mutiple files" in {
+      stubFor(
+        post("/binding-tariff-data-transformation/send-historic-data-for-processing")
+          .withHeader("Content-Type", equalTo("application/json"))
+          .willReturn(
+            aResponse()
+              .withStatus(Status.ACCEPTED)
+          )
+      )
+      val response = await(connector.sendHistoricDataForProcessing(List(file)))
+
+      response.status shouldBe Status.ACCEPTED
+
+      verify(
+        postRequestedFor(urlEqualTo("/binding-tariff-data-transformation/send-historic-data-for-processing"))
+      )
+    }
+
+    "propagate errors" in {
+      stubFor(
+        post("/binding-tariff-data-transformation/send-historic-data-for-processing")
+          .willReturn(serverError())
+      )
+
+      intercept[Upstream5xxResponse] {
+        await(connector.sendHistoricDataForProcessing(List(file)))
+      }
+
+      verify(
+        postRequestedFor(urlEqualTo("/binding-tariff-data-transformation/send-historic-data-for-processing"))
+      )
+    }
+  }
+
+  "Connector getStatusOfHistoricDataProcessing" should {
+    "return the json for the mutiple files" in {
+      stubFor(
+        get("/binding-tariff-data-transformation/historic-processing-status")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+              .withBody(Json.obj("status" -> "processing").toString())
+          )
+      )
+      val response = await(connector.getStatusOfHistoricDataProcessing)
+
+      response.status shouldBe Status.OK
+      response.json shouldBe Json.obj("status" -> "processing")
+
+      verify(
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/historic-processing-status"))
+      )
+    }
+
+    "propagate errors" in {
+      stubFor(
+        get("/binding-tariff-data-transformation/historic-processing-status")
+          .willReturn(notFound()
+            .withBody(Json.obj("status" -> "error").toString()))
+      )
+
+      intercept[NotFoundException] {
+        await(connector.getStatusOfHistoricDataProcessing)
+      }
+
+      verify(
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/historic-processing-status"))
+      )
+    }
+  }
+
+  "Connector downloadHistoricJson" should {
+    "return the json for the multiple files" in {
+      val expected = fromResource("filestore-initiate_response.json")
+      val expectedJson = Json.prettyPrint(Json.parse(expected))
+
+      stubFor(
+        get("/binding-tariff-data-transformation/historic-data")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+              .withBody(expectedJson)
+          )
+      )
+      val response = await(connector.downloadHistoricJson)
+
+      response.status shouldBe Status.OK
+      Json.prettyPrint(Json.parse(response.body)) shouldBe expectedJson
+
+      verify(
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/historic-data"))
+      )
+    }
+  }
+
+  "Connector deleteHistoricData" should {
+    "DELETE everything the historic data" in {
+      stubFor(
+        delete("/binding-tariff-data-transformation/historic-data")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+          )
+      )
+
+      await(connector.deleteHistoricData())
+
+      verify(
+        deleteRequestedFor(urlEqualTo("/binding-tariff-data-transformation/historic-data"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
+  }
 }

@@ -16,6 +16,13 @@ GET        /download-bti-json           @uk.gov.hmrc.bindingtariffadminfrontend.
 GET        /download-liabilities-json   @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadLiabilitiesJson
 GET        /download-migration-reports  @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadMigrationReports
 
+GET        /historic-data               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.get
+POST       /historic-data               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.post
+POST       /historic-data-initiate      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.postDataAndRedirect
+GET        /check-historic-status       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.checkHistoricStatus
+GET        /get-historic-status         @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.getStatusOfHistoricDataProcessing
+GET        /download-historic-json      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.downloadHistoricJson
+
 GET        /data-migration              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.get
 POST       /data-migration              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.post
 

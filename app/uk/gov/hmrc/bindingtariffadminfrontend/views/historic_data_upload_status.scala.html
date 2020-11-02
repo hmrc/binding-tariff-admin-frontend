@@ -1,0 +1,112 @@
+@*
+ * Copyright 2020 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+@import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
+@()(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+
+@main_template(title = "Binding Tariff Admin", bodyClasses = None) {
+
+<a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
+
+<h1 id="historic-data-upload-status-heading" class="heading-xlarge">Historic Data Upload Status</h1>
+
+<div id="processing-status-container" class="mt-30">
+
+ <h3 class="heading-medium">Status</h3>
+
+ <table id="success-table">
+  <tr>
+   <td></td>
+   <td></td>
+   <td></td>
+  </tr>
+  <tr>
+  <tr>
+   <td>Processing status</td>
+   <td><span class="processing" id="processing-status">Initiated</span></td>
+   <td class="align-right"><button id="download-historic-json-button" class="button button-info" disabled="disabled">Download json</button></td>
+  </tr>
+  <tr>
+ </table>
+</div>
+
+<div id="summary-container" class="mt-30" aria-hidden="true" hidden="true">
+
+ <div class="grid-row">
+  <div class="column-one-half">
+   <h3 class="heading-medium">Summary</h3>
+  </div>
+ </div>
+
+ <table id="summary-table">
+  <tr>
+   <th></th>
+   <th class="align-right">Existing</th>
+   <th class="align-right">New</th>
+   <th class="align-right">Total</th>
+  </tr>
+  <tr id="appl-row">
+   <td>Applications uploaded</td>
+   <td class="align-right"><span class="processing" id="prev-appl-count">0</span></td>
+   <td class="align-right"><span class="processing" id="appl-count">0</span></td>
+   <td class="align-right"><span class="processing" id="total-appl-count">0</span></td>
+  </tr>
+  <tr id="bti-row">
+   <td>BTIs uploaded</td>
+   <td class="align-right"><span class="processing" id="prev-bti-count">0</span></td>
+   <td class="align-right"><span class="processing" id="bti-count">0</span></td>
+   <td class="align-right"><span class="processing" id="total-bti-count">0</span></td>
+  </tr>
+  <tr id="error-row" aria-hidden="true" hidden="true">
+   <td><span class="error-message">Error count</span></td>
+   <td></td>
+   <td></td>
+   <td class="align-right"><span class="processing error-message" id="error-count">0</span></td>
+  </tr>
+ </table>
+</div>
+
+<div id="error-container" class="mt-30" aria-hidden="true" hidden="true">
+
+ <h3 class="heading-small">Errors</h3>
+
+ <ul id="error-list">
+ </ul>
+</div>
+
+<script src="@controllers.routes.Assets.at("javascripts/historic-data-processing.js")" type="text/javascript"></script>
+<script type="text/javascript">
+ function fetchData() {
+   var status = document.getElementById("processing-status");
+   if(status.innerHTML !== "done" && status.innerHTML !== "failed"){
+     historicDataProcessing.updateStatus("@routes.HistoricDataUploadController.getStatusOfHistoricDataProcessing.url")
+   }
+ }
+ document.addEventListener("DOMContentLoaded", function(event) {
+   fetchData();
+   setInterval(fetchData,5000);
+ });
+ document.getElementById("download-historic-json-button").addEventListener("click", function(event) {
+    var link = document.createElement("a");
+    link.href = "@routes.HistoricDataUploadController.downloadHistoricJson().url";
+    link.click();
+ });
+</script>
+
+}

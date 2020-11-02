@@ -17,15 +17,18 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
 import play.api.libs.json.Format
+import uk.gov.hmrc.bindingtariffadminfrontend.model
 import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 
 object Store extends Enumeration {
   type Store = Value
-  val MIGRATION, FILES, CASES, EVENTS, RULINGS = Value
+  val MIGRATION, FILES, CASES, EVENTS, RULINGS, HISTORIC_DATA = Value
 
   def apply(string: String): Option[Store] = {
     values.find(_.toString == string)
   }
+
+  def defaultValues: model.Store.ValueSet = Store.values.filterNot(_ == HISTORIC_DATA)
 
   implicit val format: Format[Store.Value] = JsonUtil.format(Store)
 }

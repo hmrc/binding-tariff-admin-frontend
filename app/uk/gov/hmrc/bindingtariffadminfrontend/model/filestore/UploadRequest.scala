@@ -32,9 +32,15 @@ case class UploadMigrationDataRequest(
   override val mimeType: String
 ) extends UploadRequest(fileName, mimeType)
 
+case class UploadHistoricDataRequest(
+  override val fileName: String,
+  override val mimeType: String
+) extends UploadRequest(fileName, mimeType)
+
 object UploadRequest {
   val Attachment = classOf[UploadAttachmentRequest].getSimpleName()
   val MigrationData = classOf[UploadMigrationDataRequest].getSimpleName()
+  val HistoricData = classOf[UploadHistoricDataRequest].getSimpleName()
 
   val attachmentWrites: Writes[UploadAttachmentRequest] = Writes(upload => Json.obj(
     "id" -> FilenameUtil.toID(upload.fileName),
@@ -52,8 +58,17 @@ object UploadRequest {
 
   implicit val migrationDataFormat: Format[UploadMigrationDataRequest] = Format(Json.reads[UploadMigrationDataRequest], migrationDataWrites)
 
+  val historicDataWrites: Writes[UploadHistoricDataRequest] = Writes(upload => Json.obj(
+    "id" -> FilenameUtil.toCsvID(upload.fileName),
+    "fileName" -> upload.fileName,
+    "mimeType" -> upload.mimeType
+  ))
+
+  implicit val historicDataFormat: Format[UploadHistoricDataRequest] = Format(Json.reads[UploadHistoricDataRequest], historicDataWrites)
+
   implicit val format: Format[UploadRequest] = Union.from[UploadRequest]("type")
     .and[UploadAttachmentRequest](Attachment)
     .and[UploadMigrationDataRequest](MigrationData)
+    .and[UploadHistoricDataRequest](HistoricData)
     .format
 }

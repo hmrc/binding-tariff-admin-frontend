@@ -60,4 +60,28 @@ class DataMigrationJsonConnector @Inject()(
     wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/migration-reports")
       .withMethod("GET").stream()
   }
+
+  def sendHistoricDataForProcessing(files: List[FileUploaded])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+
+    http.POST[List[FileUploaded], HttpResponse](
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/send-historic-data-for-processing", files)
+  }
+
+  def getStatusOfHistoricDataProcessing(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+
+    http.GET[HttpResponse](
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-processing-status")
+  }
+
+  def downloadHistoricJson: Future[WSResponse] = {
+
+    wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-data")
+      .withMethod("GET").stream()
+  }
+
+  def deleteHistoricData()(implicit hc: HeaderCarrier): Future[Unit] = {
+
+    http.DELETE[HttpResponse](s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-data")
+      .map(_ => ())
+  }
 }

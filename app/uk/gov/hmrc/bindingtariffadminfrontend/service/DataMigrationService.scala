@@ -159,7 +159,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
   def upload(upload: UploadRequest, file: TemporaryFile)(implicit hc: HeaderCarrier): Future[Unit] = {
     for {
       template <- fileConnector.initiate(upload)
-      _ <- upscanS3Connector.upload(template, file)
+      _ <- upscanS3Connector.upload(template, file, upload)
     } yield ()
   }
 

@@ -731,7 +731,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       val file = mock[TemporaryFile]
 
       given(fileConnector.initiate(request)) willReturn Future.successful(template)
-      given(upscanS3Connector.upload(template, file)) willReturn Future.successful(())
+      given(upscanS3Connector.upload(template, file, request)) willReturn Future.successful(())
 
       await(service.initiateFileMigration(request)) shouldBe template
     }

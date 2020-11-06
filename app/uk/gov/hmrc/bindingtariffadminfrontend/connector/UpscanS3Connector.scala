@@ -26,7 +26,7 @@ import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.http.util.EntityUtils
 import play.api.Logger
 import play.api.libs.Files.TemporaryFile
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadTemplate
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{UploadRequest, UploadTemplate}
 
 import scala.concurrent.Future
 import scala.concurrent.Future.{failed, successful}
@@ -35,13 +35,22 @@ import scala.util.Try
 @Singleton
 class UpscanS3Connector @Inject()() {
 
-  def upload(template: UploadTemplate, file: TemporaryFile): Future[Unit] = {
+  def upload(template: UploadTemplate, file: TemporaryFile, upload: UploadRequest): Future[Unit] = {
     Logger.info(s"Uploading file with template [$template]")
 
     val builder: MultipartEntityBuilder = MultipartEntityBuilder.create
 
+    val mimeType = Option(ContentType.getByMimeType(upload.mimeType))
+      .getOrElse(ContentType.DEFAULT_BINARY)
+    val fileName = upload.fileName
+
     template.fields.foreach(entry => builder.addPart(entry._1, new StringBody(entry._2, ContentType.TEXT_PLAIN)))
-    builder.addPart("file", new FileBody(file.file))
+    builder.addPart("file",
+      new FileBody(
+        file.file,
+        mimeType,
+        fileName
+      ))
 
     val request: HttpPost = new HttpPost(template.href)
     request.setEntity(builder.build())

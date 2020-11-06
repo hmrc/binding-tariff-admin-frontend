@@ -25,7 +25,8 @@ case class Attachment
   id: String,
   public: Boolean,
   operator: Option[Operator] = None,
-  timestamp: Instant = Instant.now()
+  timestamp: Instant = Instant.now(),
+  description: Option[String] = None
 )
 
 object Attachment {

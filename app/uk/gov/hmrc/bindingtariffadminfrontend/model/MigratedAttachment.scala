@@ -27,12 +27,19 @@ case class MigratedAttachment
   public: Boolean = false,
   name: String,
   operator: Option[Operator] = None,
-  timestamp: Instant
+  timestamp: Instant,
+  description: Option[String] = None
 ) {
   def id: String = FilenameUtil.toID(name)
 
   def asAttachment: Attachment = {
-    Attachment(id = id, public = public, operator = operator, timestamp = timestamp)
+    Attachment(
+      id = id,
+      public = public,
+      operator = operator,
+      timestamp = timestamp,
+      description = description
+    )
   }
 }
 

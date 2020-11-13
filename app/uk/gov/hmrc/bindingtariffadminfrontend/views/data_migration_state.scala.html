@@ -52,31 +52,41 @@
  <hr/>
 
  <div class="grid-row mt-30 mb-15 align-center">
-  <div class="column-one-third">
+  <div class="column-full">
    <div class="bold-xlarge">@{counts.processed} / @{counts.total}</div>
    <span class="bold-xsmall">Processed</span>
   </div>
+ </div>
 
+ <div class="grid-row mt-15 mb-15 align-center">
   <div class="column-one-third">
-   <div class="bold-xlarge">@{counts.get(MigrationStatus.SUCCESS) + counts.get(MigrationStatus.PARTIAL_SUCCESS)} / @{counts.total}</div>
+   <div class="bold-large">@{counts.get(MigrationStatus.SUCCESS) + counts.get(MigrationStatus.PARTIAL_SUCCESS)} / @{counts.total}</div>
    <span class="bold-xsmall">Successful</span>
   </div>
 
   <div class="column-one-third">
-   <div class="bold-xlarge">@{counts.get(MigrationStatus.FAILED)} / @{counts.total}</div>
+   <div class="bold-large">@{counts.get(MigrationStatus.FAILED)} / @{counts.total}</div>
    <span class="bold-xsmall">Failed</span>
+  </div>
+
+  <div class="column-one-third">
+   <div class="bold-large">@{counts.get(MigrationStatus.SKIPPED)} / @{counts.total}</div>
+   <span class="bold-xsmall">Skipped</span>
   </div>
  </div>
 
  <hr/>
 
+ <div class="grid-row align-center mb-15">
+  <a class="bold-xsmall column-one-third" href="@routes.DataMigrationStateController.get()">All</a>
+  <a class="bold-xsmall column-one-third" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.UNPROCESSED.toString))">Unprocessed</a>
+  <a class="bold-xsmall column-one-third" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.SUCCESS.toString, MigrationStatus.PARTIAL_SUCCESS.toString, MigrationStatus.FAILED.toString, MigrationStatus.SKIPPED.toString))">Processed</a>
+ </div>
  <div class="grid-row align-center mb-30">
-  <a class="bold-xsmall column-one-sixth" href="@routes.DataMigrationStateController.get()">All</a>
-  <a class="bold-xsmall column-one-sixth" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.UNPROCESSED.toString))">Unprocessed</a>
-  <a class="bold-xsmall column-one-sixth" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.SUCCESS.toString, MigrationStatus.PARTIAL_SUCCESS.toString, MigrationStatus.FAILED.toString))">Processed</a>
-  <a class="bold-xsmall column-one-sixth" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.SUCCESS.toString))">Successful</a>
-  <a class="bold-xsmall column-one-sixth" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.PARTIAL_SUCCESS.toString))">Partially Successful</a>
-  <a class="bold-xsmall column-one-sixth" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.FAILED.toString))">Failed</a>
+  <a class="bold-xsmall column-one-quarter" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.SUCCESS.toString))">Successful</a>
+  <a class="bold-xsmall column-one-quarter" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.PARTIAL_SUCCESS.toString))">Partially Successful</a>
+  <a class="bold-xsmall column-one-quarter" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.FAILED.toString))">Failed</a>
+  <a class="bold-xsmall column-one-quarter" href="@routes.DataMigrationStateController.get(status = Seq(MigrationStatus.SKIPPED.toString))">Skipped</a>
  </div>
 
 

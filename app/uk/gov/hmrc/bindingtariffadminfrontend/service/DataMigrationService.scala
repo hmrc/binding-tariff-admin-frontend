@@ -16,12 +16,15 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.service
 
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.pattern.after
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
+import cats.syntax.all._
 import javax.inject.Inject
 import play.api.Logger
 import play.api.libs.Files.TemporaryFile
@@ -29,7 +32,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.connector._
 import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, Event}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Case
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
@@ -166,12 +169,16 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
   def process(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
     Logger.info(s"Case Migration with reference [${migration.`case`.reference}]: Starting")
 
+    checkIfExists(migration).flatMap {
+      case exists@Migration(_, MigrationStatus.SKIPPED, _) =>
+        Future.successful(exists)
+      case updated =>
+        attemptMigration(updated)
+    }
+  }
+
+  def attemptMigration(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
     for {
-      existingCase <- caseConnector.getCase(migration.`case`.reference)
-
-      // Delete any existing attachments that aren't in the migration
-      _ <- deleteExistingAttachmentsNotOnTheMigration(existingCase, migration)
-
       // Find the files for this Migration
       migratedFiles: Seq[FileUploaded] <- findMigratedFiles(migration)
 
@@ -180,9 +187,6 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
 
       // Create or Update The Case
       _ <- caseConnector.upsertCase(updated.`case`.toCase)
-
-      // Filter out any events that already exist on the case
-      updated: Migration <- filterOutExistingEvents(existingCase, updated)
 
       // Create the events
       updated: Migration <- createEvents(updated)
@@ -196,6 +200,45 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       status = if (updated.status == MigrationStatus.UNPROCESSED) MigrationStatus.SUCCESS else updated.status
 
     } yield updated.copy(status = status)
+  }
+
+  private def checkIfExists(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] =
+    caseConnector
+      .getCase(migration.`case`.reference)
+      .map {
+        case Some(existingCase) =>
+          val summaryMessage = "Skipped migration as case already exists"
+          val detailMessages = detailCaseComparison(migration.`case`, existingCase)
+
+          migration
+            .copy(status = MigrationStatus.SKIPPED)
+            .appendMessage(summaryMessage)
+            .appendMessage(detailMessages)
+        case _ =>
+          migration
+      }
+
+  private def detailCaseComparison(migrationCase: MigratableCase, existingCase: Case): Seq[String] = {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC)
+    val info = existingCase.dateOfExtract.map { existingDate =>
+      s"Previously migrated from the ${formatter.format(existingDate)} extracts"
+    }
+
+    val warning = (migrationCase.dateOfExtract, existingCase.dateOfExtract).mapN { (migrationDate, existingDate) =>
+      if (migrationDate isAfter existingDate) {
+        Some(s"Newer information from this ${formatter.format(migrationDate)} extract may be lost")
+      } else {
+        None
+      }
+    }.flatten
+
+    val statusChange = if (existingCase.status != migrationCase.status) {
+      Some(s"Status from migration ${migrationCase.status} is different to the existing case ${existingCase.status}")
+    } else {
+      None
+    }
+
+    Seq(info, warning, statusChange).flatten
   }
 
   private def notifyRulingStore(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
@@ -284,41 +327,6 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       case _ =>
         migration
     }
-  }
-
-  private def deleteExistingAttachmentsNotOnTheMigration(existingCase: Option[Case], migration: Migration)
-                                                        (implicit hc: HeaderCarrier): Future[Unit] = existingCase match {
-    case None =>
-      successful(())
-
-    case Some(c) =>
-      val existingFiles = c.attachments
-      val existingFileIds = existingFiles.map(_.id).toSet
-      val newFiles = migration.`case`.attachments
-      val newFileIds = newFiles.map(_.id).toSet
-      for {
-        // Get Files already on the case
-        existingFilesFound: Seq[FileUploaded] <-
-          if (existingFileIds.nonEmpty) {
-            fileConnector.find(FileSearch(ids = Some(existingFileIds)), Pagination.max).map(_.results)
-          } else successful(Seq.empty)
-        existingFileIdsFound: Seq[String] = existingFilesFound.map(_.id)
-
-        // Delete Files which are on the case already, but not part of the migration
-        deletedFileIds: Seq[String] = existingFileIdsFound.filterNot(f => newFileIds.contains(f))
-        _ <- sequence(deletedFileIds.map(f => fileConnector.delete(f)))
-      } yield ()
-  }
-
-  private def filterOutExistingEvents(existingCase: Option[Case], migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = existingCase match {
-    case Some(c) =>
-      caseConnector.getEvents(c.reference, Pagination.max).map(_.results) recover withResponse(Seq.empty[Event]) map { existingEvents: Seq[Event] =>
-        val updatedEvents: Seq[MigratableEvent] = migration.`case`.events
-        val newEvents = updatedEvents.filterNot(me => existingEvents.contains(me.toEvent(migration.`case`.reference)))
-        val updatedCase = migration.`case`.copy(events = newEvents)
-        migration.copy(updatedCase)
-      }
-    case None => Future.successful(migration)
   }
 
   private def withFailure[T](subject: T, mapping: Throwable => Throwable = t => t): PartialFunction[Throwable, MigrationState[T]] = {

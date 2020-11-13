@@ -18,8 +18,7 @@ object AppDependencies {
     "com.lightbend.akka"          %% "akka-stream-alpakka-csv"    % "1.1.2",
     "com.typesafe.akka"           %% "akka-http"                  % "10.0.15",
     "com.typesafe.akka"           %% "akka-stream"                % "2.5.31",
-    "org.typelevel"               %% "cats-core"                  % "2.1.1",
-    "org.typelevel"               %% "alleycats-core"             % "2.1.1",
+    "org.typelevel"               %% "cats-core"                  % "2.2.0",
     "com.github.javafaker"        %  "javafaker"                  % "1.0.2"
   )
 

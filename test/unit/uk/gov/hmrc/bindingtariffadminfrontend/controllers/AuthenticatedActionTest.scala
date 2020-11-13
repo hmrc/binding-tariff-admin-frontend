@@ -34,8 +34,8 @@ class AuthenticatedActionTest extends ControllerSpec with BeforeAndAfterEach {
 
   private val request = mock[Request[_]]
   private val headers = mock[Headers]
-  private val block= mock[AuthenticatedRequest[_] => Future[Result]]
-  private def action = new AuthenticatedAction(mockAppConfig, defaultBodyParser)
+  private val block   = mock[AuthenticatedRequest[_] => Future[Result]]
+  private def action  = new AuthenticatedAction(mockAppConfig, defaultBodyParser)
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -50,7 +50,7 @@ class AuthenticatedActionTest extends ControllerSpec with BeforeAndAfterEach {
   "Authenticated Action" should {
     val username = "username"
     val password = "password"
-    val hash = "32CFE77045219384D78381C8D137774687F8B041ABF7215AB3639A2553112C94"
+    val hash     = "32CFE77045219384D78381C8D137774687F8B041ABF7215AB3639A2553112C94"
 
     "Permit valid credentials" in {
       givenTheCurrentDateIs("2019-01-01")
@@ -68,7 +68,9 @@ class AuthenticatedActionTest extends ControllerSpec with BeforeAndAfterEach {
       givenAnOperatorIsPermittedWith(Credentials(username, hash))
       givenTheRequestHasNoAuthorization()
 
-      await(action.invokeBlock(request, block)) shouldBe Results.Unauthorized.withHeaders("WWW-Authenticate" -> "Basic realm=Unauthorized")
+      await(action.invokeBlock(request, block)) shouldBe Results.Unauthorized.withHeaders(
+        "WWW-Authenticate" -> "Basic realm=Unauthorized"
+      )
 
       verify(block, never()).apply(any[AuthenticatedRequest[_]])
     }
@@ -78,7 +80,9 @@ class AuthenticatedActionTest extends ControllerSpec with BeforeAndAfterEach {
       givenAnOperatorIsPermittedWith(Credentials(username, hash))
       givenTheRequestHasAuthorization("other", "other")
 
-      await(action.invokeBlock(request, block)) shouldBe Results.Unauthorized.withHeaders("WWW-Authenticate" -> "Basic realm=Unauthorized")
+      await(action.invokeBlock(request, block)) shouldBe Results.Unauthorized.withHeaders(
+        "WWW-Authenticate" -> "Basic realm=Unauthorized"
+      )
 
       verify(block, never()).apply(any[AuthenticatedRequest[_]])
     }
@@ -98,7 +102,9 @@ class AuthenticatedActionTest extends ControllerSpec with BeforeAndAfterEach {
       givenAnOperatorIsPermittedWith(Credentials(username, hash))
       givenTheRequestHasAuthorization("-")
 
-      await(action.invokeBlock(request, block)) shouldBe Results.Unauthorized.withHeaders("WWW-Authenticate" -> "Basic realm=Unauthorized")
+      await(action.invokeBlock(request, block)) shouldBe Results.Unauthorized.withHeaders(
+        "WWW-Authenticate" -> "Basic realm=Unauthorized"
+      )
 
       verify(block, never()).apply(any[AuthenticatedRequest[_]])
     }
@@ -115,32 +121,28 @@ class AuthenticatedActionTest extends ControllerSpec with BeforeAndAfterEach {
     }
   }
 
-  private def givenTheBlockExecutesSuccessfully(): Unit = {
+  private def givenTheBlockExecutesSuccessfully(): Unit =
     given(block.apply(any[AuthenticatedRequest[_]])) willReturn Future.successful(Results.Ok)
-  }
 
-  private def givenTheBlockFails(): Unit = {
+  private def givenTheBlockFails(): Unit =
     given(block.apply(any[AuthenticatedRequest[_]])) willReturn Future.failed(new RuntimeException("Error"))
-  }
 
-  private def givenTheRequestHasAuthorization(username: String, password: String): Unit = {
-    given(headers.get("Authorization")) willReturn Some("Basic " + BaseEncoding.base64().encode(s"$username:$password".getBytes(Charsets.UTF_8)))
-  }
+  private def givenTheRequestHasAuthorization(username: String, password: String): Unit =
+    given(headers.get("Authorization")) willReturn Some(
+      "Basic " + BaseEncoding.base64().encode(s"$username:$password".getBytes(Charsets.UTF_8))
+    )
 
-  private def givenTheRequestHasAuthorization(content: String): Unit = {
+  private def givenTheRequestHasAuthorization(content: String): Unit =
     given(headers.get("Authorization")) willReturn Some(content)
-  }
 
-  private def givenTheRequestHasNoAuthorization(): Unit = {
+  private def givenTheRequestHasNoAuthorization(): Unit =
     given(headers.get("Authorization")) willReturn None
-  }
 
-  private def givenAnOperatorIsPermittedWith(credentials: Credentials): Unit = {
+  private def givenAnOperatorIsPermittedWith(credentials: Credentials): Unit =
     given(mockAppConfig.credentials) willReturn Seq(credentials)
-  }
 
-  private def givenTheCurrentDateIs(date: String): Unit = {
-    given(mockAppConfig.clock) willReturn Clock.fixed(LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant, ZoneOffset.UTC)
-  }
+  private def givenTheCurrentDateIs(date: String): Unit =
+    given(mockAppConfig.clock) willReturn Clock
+      .fixed(LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant, ZoneOffset.UTC)
 
 }

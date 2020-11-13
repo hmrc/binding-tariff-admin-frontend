@@ -35,11 +35,10 @@ class SchedulerController @Inject() (
   mcc: MessagesControllerComponents,
   override val messagesApi: MessagesApi,
   implicit val appConfig: AppConfig
-) extends FrontendController(mcc) with I18nSupport {
+) extends FrontendController(mcc)
+    with I18nSupport {
 
-  def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
-    successful(Ok(views.html.scheduler()))
-  }
+  def get: Action[AnyContent] = authenticatedAction.async(implicit request => successful(Ok(views.html.scheduler())))
 
   def post(job: ScheduledJob): Action[AnyContent] = authenticatedAction.async { implicit request =>
     adminMonitorService

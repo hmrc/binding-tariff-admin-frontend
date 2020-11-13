@@ -23,27 +23,28 @@ import uk.gov.hmrc.bindingtariffadminfrontend.base.BaseSpec
 import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
 import play.api.test.CSRFTokenHelper._
 
-abstract class ControllerSpec
-  extends BaseSpec
-  with Matchers
-  with BeforeAndAfterEach {
+abstract class ControllerSpec extends BaseSpec with Matchers with BeforeAndAfterEach {
 
-  protected def authenticatedRequest(request: Request[AnyContentAsEmpty.type]): AuthenticatedRequest[AnyContentAsEmpty.type] = AuthenticatedRequest("operator", request)
+  protected def authenticatedRequest(
+    request: Request[AnyContentAsEmpty.type]
+  ): AuthenticatedRequest[AnyContentAsEmpty.type] = AuthenticatedRequest("operator", request)
 
   def newFakeRequestWithCSRF: FakeRequest[AnyContentAsEmpty.type] =
-    FakeRequest("GET", "/", FakeHeaders(), AnyContentAsEmpty).withCSRFToken.asInstanceOf[FakeRequest[AnyContentAsEmpty.type]]
+    FakeRequest("GET", "/", FakeHeaders(), AnyContentAsEmpty).withCSRFToken
+      .asInstanceOf[FakeRequest[AnyContentAsEmpty.type]]
 
   def newFakeGETRequestWithCSRF: FakeRequest[AnyContentAsEmpty.type] =
-    FakeRequest("GET", "/", FakeHeaders(), AnyContentAsEmpty).withCSRFToken.asInstanceOf[FakeRequest[AnyContentAsEmpty.type]]
+    FakeRequest("GET", "/", FakeHeaders(), AnyContentAsEmpty).withCSRFToken
+      .asInstanceOf[FakeRequest[AnyContentAsEmpty.type]]
 
   def newFakePOSTRequestWithCSRF: FakeRequest[AnyContentAsJson.type] =
-    FakeRequest("POST", "/", FakeHeaders(), AnyContentAsJson).withCSRFToken.asInstanceOf[FakeRequest[AnyContentAsJson.type]]
+    FakeRequest("POST", "/", FakeHeaders(), AnyContentAsJson).withCSRFToken
+      .asInstanceOf[FakeRequest[AnyContentAsJson.type]]
 
 }
 
-object  ControllerSpec {
+object ControllerSpec {
 
-  def FakeAuthRequest(verb: String): FakeRequest[AnyContentAsEmpty.type] = {
+  def FakeAuthRequest(verb: String): FakeRequest[AnyContentAsEmpty.type] =
     FakeRequest(verb, "/", FakeHeaders(), AnyContentAsEmpty)
-  }
 }

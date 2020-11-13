@@ -21,23 +21,22 @@ import java.time.Instant
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.CaseStatus
 
-case class Case
-(
+case class Case(
   reference: String,
   status: CaseStatus,
   createdDate: Instant,
   daysElapsed: Long,
   referredDaysElapsed: Long,
-  closedDate: Option[Instant] = None,
+  closedDate: Option[Instant]          = None,
   caseBoardsFileNumber: Option[String] = None,
-  assignee: Option[Operator] = None,
-  queueId: Option[String] = None,
+  assignee: Option[Operator]           = None,
+  queueId: Option[String]              = None,
   application: Application,
   decision: Option[Decision] = None,
   attachments: Seq[Attachment],
   keywords: Set[String],
-  sample: Sample = Sample(),
-  dateOfExtract: Option[Instant] = None,
+  sample: Sample                    = Sample(),
+  dateOfExtract: Option[Instant]    = None,
   migratedDaysElapsed: Option[Long] = None
 ) {
   def anonymize: Case = this.copy(application = this.application.anonymize)

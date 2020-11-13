@@ -29,12 +29,13 @@ import uk.gov.hmrc.mongo.MongoSpecSupport
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class MigrationRepositorySpec extends BaseMongoIndexSpec
-  with BeforeAndAfterAll
-  with BeforeAndAfterEach
-  with MongoSpecSupport
-  with Eventually
-  with MockitoSugar {
+class MigrationRepositorySpec
+    extends BaseMongoIndexSpec
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach
+    with MongoSpecSupport
+    with Eventually
+    with MockitoSugar {
   self =>
 
   import Migration.Mongo.format
@@ -43,7 +44,7 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
     override val mongo: () => DB = self.mongo
   }
 
-  private val config = mock[AppConfig]
+  private val config     = mock[AppConfig]
   private val repository = new MigrationMongoRepository(config, mongoDbProvider)
 
   override def beforeEach(): Unit = {
@@ -57,14 +58,13 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
     await(repository.drop)
   }
 
-  private def collectionSize: Int = {
+  private def collectionSize: Int =
     await(repository.collection.count())
-  }
 
   "getAll" should {
 
     "retrieve the expected documents from the collection" in {
-      val aCase = Cases.migratableCase
+      val aCase     = Cases.migratableCase
       val migration = Migration(aCase)
       await(repository.insert(migration))
       collectionSize shouldBe 1
@@ -74,15 +74,18 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
     }
 
     "retrieve the expected documents from the collection by status" in {
-      val case1 = Cases.migratableCase.copy(reference = "1")
-      val case2 = Cases.migratableCase.copy(reference = "2")
-      val migration1 = Migration(case1, status = MigrationStatus.SUCCESS)
-      val migration2 = Migration(case2, status = MigrationStatus.UNPROCESSED)
+      val case1      = Cases.migratableCase.copy(reference = "1")
+      val case2      = Cases.migratableCase.copy(reference = "2")
+      val migration1 = Migration(case1, status             = MigrationStatus.SUCCESS)
+      val migration2 = Migration(case2, status             = MigrationStatus.UNPROCESSED)
       await(repository.insert(migration1))
       await(repository.insert(migration2))
       collectionSize shouldBe 2
 
-      await(repository.get(Seq(MigrationStatus.SUCCESS, MigrationStatus.UNPROCESSED), Pagination(0, 1))).results contains Seq(migration1, migration2)
+      await(repository.get(Seq(MigrationStatus.SUCCESS, MigrationStatus.UNPROCESSED), Pagination(0, 1))).results contains Seq(
+        migration1,
+        migration2
+      )
       await(repository.get(Seq(MigrationStatus.SUCCESS), Pagination(0, 1))).results contains Seq(migration1)
       await(repository.get(Seq(MigrationStatus.UNPROCESSED), Pagination(0, 1))).results contains Seq(migration2)
       await(repository.get(Seq(MigrationStatus.FAILED), Pagination(0, 1))).results contains Seq.empty
@@ -95,7 +98,7 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
   }
 
   "getCase by id" should {
-    val aCase = Cases.migratableCase
+    val aCase     = Cases.migratableCase
     val migration = Migration(aCase)
 
     "retrieves the expected document" in {
@@ -114,7 +117,7 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
   }
 
   "getCase by status" should {
-    val aCase = Cases.migratableCase
+    val aCase     = Cases.migratableCase
     val migration = Migration(aCase, status = MigrationStatus.UNPROCESSED)
 
     "retrieves the expected document" in {
@@ -133,7 +136,7 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
   }
 
   "update" should {
-    val aCase = Cases.migratableCase
+    val aCase     = Cases.migratableCase
     val migration = Migration(aCase)
 
     "modify an existing document in the collection" in {
@@ -143,7 +146,7 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
       val updated: Migration = migration.copy(status = MigrationStatus.SUCCESS)
       await(repository.update(updated)) shouldBe Some(updated)
 
-      collectionSize shouldBe 1
+      collectionSize                                                                 shouldBe 1
       await(repository.collection.find(selectorByReference(updated)).one[Migration]) shouldBe Some(updated)
     }
 
@@ -157,8 +160,7 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
   }
 
   "insert" should {
-    val migrations = Seq(Migration(Cases.migratableCase),
-                         Migration(Cases.migratableCase.copy(reference = "2")))
+    val migrations = Seq(Migration(Cases.migratableCase), Migration(Cases.migratableCase.copy(reference = "2")))
 
     "insert a list of new documents into the collection" in {
       val size = collectionSize
@@ -166,14 +168,15 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
       await(repository.insert(migrations)) shouldBe true
 
       collectionSize shouldBe size + 2
-      await(repository.collection.find(selectorByReference(migrations.head)).one[Migration]) shouldBe Some(migrations.head)
+      await(repository.collection.find(selectorByReference(migrations.head)).one[Migration]) shouldBe Some(
+        migrations.head
+      )
       await(repository.collection.find(selectorByReference(migrations(1))).one[Migration]) shouldBe Some(migrations(1))
     }
   }
 
   "delete one" should {
-    val migrations = Seq(Migration(Cases.migratableCase),
-      Migration(Cases.migratableCase.copy(reference = "2")))
+    val migrations = Seq(Migration(Cases.migratableCase), Migration(Cases.migratableCase.copy(reference = "2")))
 
     "removes document from the collection" in {
       await(repository.insert(migrations)) shouldBe true
@@ -181,15 +184,14 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
 
       await(repository.delete(migrations.head))
 
-      collectionSize shouldBe size - 1
+      collectionSize                                                                         shouldBe size - 1
       await(repository.collection.find(selectorByReference(migrations.head)).one[Migration]) shouldBe None
-      await(repository.collection.find(selectorByReference(migrations(1))).one[Migration]) shouldBe Some(migrations(1))
+      await(repository.collection.find(selectorByReference(migrations(1))).one[Migration])   shouldBe Some(migrations(1))
     }
   }
 
   "delete all" should {
-    val migrations = Seq(Migration(Cases.migratableCase),
-      Migration(Cases.migratableCase.copy(reference = "2")))
+    val migrations = Seq(Migration(Cases.migratableCase), Migration(Cases.migratableCase.copy(reference = "2")))
 
     "remove documents from the collection" in {
       await(repository.insert(migrations)) shouldBe true
@@ -208,11 +210,11 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
 
     "remove documents from the collection" in {
       await(repository.insert(migrations)) shouldBe true
-      collectionSize shouldBe 2
+      collectionSize                       shouldBe 2
 
       await(repository.delete(Some(MigrationStatus.FAILED))) shouldBe true
 
-      collectionSize shouldBe 1
+      collectionSize                                                                       shouldBe 1
       await(repository.collection.find(selectorByReference(migrations(1))).one[Migration]) shouldBe Some(migrations(1))
     }
   }
@@ -224,17 +226,17 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
 
     "remove documents from the collection" in {
       await(repository.insert(Seq(m1, m2, m3))) shouldBe true
-      collectionSize shouldBe 3
+      collectionSize                            shouldBe 3
 
       await(repository.delete(Seq(m1, m2))) shouldBe true
 
-      collectionSize shouldBe 1
+      collectionSize                                                            shouldBe 1
       await(repository.collection.find(selectorByReference(m3)).one[Migration]) shouldBe Some(m3)
     }
   }
 
   "countByStatus" should {
-    val aCase = Cases.migratableCase
+    val aCase      = Cases.migratableCase
     val migration1 = Migration(aCase.copy(reference = "1"), MigrationStatus.SUCCESS)
     val migration2 = Migration(aCase.copy(reference = "2"), MigrationStatus.SUCCESS)
     val migration3 = Migration(aCase.copy(reference = "3"), MigrationStatus.FAILED)
@@ -247,8 +249,8 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
 
       val value = await(repository.countByStatus)
       value.get(MigrationStatus.SUCCESS) shouldBe 2
-      value.get(MigrationStatus.FAILED) shouldBe 1
-      value.total shouldBe 3
+      value.get(MigrationStatus.FAILED)  shouldBe 1
+      value.total                        shouldBe 3
     }
   }
 
@@ -268,8 +270,7 @@ class MigrationRepositorySpec extends BaseMongoIndexSpec
     }
   }
 
-  private def selectorByReference(caseMigration: Migration) = {
+  private def selectorByReference(caseMigration: Migration) =
     BSONDocument("case.reference" -> caseMigration.`case`.reference)
-  }
 
 }

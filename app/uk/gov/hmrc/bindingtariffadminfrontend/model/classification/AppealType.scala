@@ -25,4 +25,3 @@ object AppealType extends Enumeration {
 
   implicit val format: Format[AppealType.Value] = JsonUtil.format(AppealType)
 }
-

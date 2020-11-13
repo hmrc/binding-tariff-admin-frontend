@@ -26,30 +26,25 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class FileStoreConnector @Inject()(configuration: AppConfig, http: AuthenticatedHttpClient) {
+class FileStoreConnector @Inject() (configuration: AppConfig, http: AuthenticatedHttpClient) {
 
-  def delete()(implicit hc: HeaderCarrier): Future[Unit] = {
+  def delete()(implicit hc: HeaderCarrier): Future[Unit] =
     http.DELETE[HttpResponse](s"${configuration.filestoreUrl}/file").map(_ => ())
-  }
 
-  def delete(id: String)(implicit hc: HeaderCarrier): Future[Unit] = {
+  def delete(id: String)(implicit hc: HeaderCarrier): Future[Unit] =
     http.DELETE[HttpResponse](s"${configuration.filestoreUrl}/file/$id").map(_ => ())
-  }
 
-  def find(id: String)(implicit hc: HeaderCarrier): Future[Option[FileUploaded]] = {
+  def find(id: String)(implicit hc: HeaderCarrier): Future[Option[FileUploaded]] =
     http.GET[Option[FileUploaded]](s"${configuration.filestoreUrl}/file/$id")
-  }
 
   def find(search: FileSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[FileUploaded]] = {
     val queryParams = FileSearch.bindable.unbind("", search) + "&" + Pagination.bindable.unbind("", pagination)
     http.GET[Paged[FileUploaded]](s"${configuration.filestoreUrl}/file?$queryParams")
   }
 
-  def initiate(file: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] = {
+  def initiate(file: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] =
     http.POST[UploadRequest, UploadTemplate](s"${configuration.filestoreUrl}/file", file)
-  }
 
-  def publish(id: String)(implicit hc: HeaderCarrier): Future[FileUploaded] = {
+  def publish(id: String)(implicit hc: HeaderCarrier): Future[FileUploaded] =
     http.POSTEmpty[FileUploaded](s"${configuration.filestoreUrl}/file/$id/publish")
-  }
 }

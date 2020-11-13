@@ -35,8 +35,9 @@ import scala.concurrent.Future
 class DataMigrationStateControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
   private val migrationService = mock[DataMigrationService]
-  private val appConfig = mock[AppConfig]
-  private val controller = new DataMigrationStateController(new SuccessfulAuthenticatedAction, migrationService, mcc, messageApi, appConfig)
+  private val appConfig        = mock[AppConfig]
+  private val controller =
+    new DataMigrationStateController(new SuccessfulAuthenticatedAction, migrationService, mcc, messageApi, appConfig)
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -53,15 +54,21 @@ class DataMigrationStateControllerSpec extends ControllerSpec with BeforeAndAfte
   "GET /state" should {
     "return 200 when not in progress" in {
       given(migrationService.counts) willReturn Future.successful(new MigrationCounts(Map()))
-      given(migrationService.getState(Seq(MigrationStatus.SUCCESS), Pagination(0, 1))) willReturn Future.successful(Paged.empty[Migration])
+      given(migrationService.getState(Seq(MigrationStatus.SUCCESS), Pagination(0, 1))) willReturn Future.successful(
+        Paged.empty[Migration]
+      )
       val result: Result = await(controller.get(0, Seq(MigrationStatus.SUCCESS.toString))(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
       bodyOf(result) should include("data_migration_state-complete-heading")
     }
 
     "return 200 when in progress" in {
-      given(migrationService.counts) willReturn Future.successful(new MigrationCounts(Map(MigrationStatus.UNPROCESSED -> 1)))
-      given(migrationService.getState(Seq(MigrationStatus.SUCCESS), Pagination(0, 1))) willReturn Future.successful(Paged.empty[Migration])
+      given(migrationService.counts) willReturn Future.successful(
+        new MigrationCounts(Map(MigrationStatus.UNPROCESSED -> 1))
+      )
+      given(migrationService.getState(Seq(MigrationStatus.SUCCESS), Pagination(0, 1))) willReturn Future.successful(
+        Paged.empty[Migration]
+      )
       val result: Result = await(controller.get(0, Seq(MigrationStatus.SUCCESS.toString))(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
       bodyOf(result) should include("data_migration_state-in_progress-heading")
@@ -69,7 +76,9 @@ class DataMigrationStateControllerSpec extends ControllerSpec with BeforeAndAfte
 
     "paginates" in {
       given(migrationService.counts) willReturn Future.successful(new MigrationCounts(Map()))
-      given(migrationService.getState(Seq(MigrationStatus.SUCCESS), Pagination(0, 1))) willReturn Future.successful(Paged.empty[Migration])
+      given(migrationService.getState(Seq(MigrationStatus.SUCCESS), Pagination(0, 1))) willReturn Future.successful(
+        Paged.empty[Migration]
+      )
       val result: Result = await(controller.get(0, Seq(MigrationStatus.SUCCESS.toString))(newFakeGETRequestWithCSRF))
       status(result) shouldBe OK
     }
@@ -79,21 +88,21 @@ class DataMigrationStateControllerSpec extends ControllerSpec with BeforeAndAfte
     "return 303" in {
       given(migrationService.clear(None)) willReturn Future.successful(true)
       val result: Result = await(controller.delete(None)(newFakeGETRequestWithCSRF))
-      status(result) shouldBe SEE_OTHER
+      status(result)     shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
     }
 
     "return 303 with query params" in {
       given(migrationService.clear(Some(MigrationStatus.UNPROCESSED))) willReturn Future.successful(true)
       val result: Result = await(controller.delete(Some("UNPROCESSED"))(newFakeGETRequestWithCSRF))
-      status(result) shouldBe SEE_OTHER
+      status(result)     shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
     }
 
     "return 303 with query params with invalid status" in {
       given(migrationService.clear(None)) willReturn Future.successful(true)
       val result: Result = await(controller.delete(Some("other"))(newFakeGETRequestWithCSRF))
-      status(result) shouldBe SEE_OTHER
+      status(result)     shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
     }
   }
@@ -109,7 +118,7 @@ class DataMigrationStateControllerSpec extends ControllerSpec with BeforeAndAfte
     "return 303 when not permitted" in {
       given(appConfig.resetPermitted) willReturn false
       val result: Result = await(controller.reset()(newFakeGETRequestWithCSRF))
-      status(result) shouldBe SEE_OTHER
+      status(result)     shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
     }
   }
@@ -117,10 +126,13 @@ class DataMigrationStateControllerSpec extends ControllerSpec with BeforeAndAfte
   "POST /reset" should {
     "return 303 when permitted" in {
       given(appConfig.resetPermitted) willReturn true
-      given(migrationService.resetEnvironment(any[Set[Store]])(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(migrationService.resetEnvironment(any[Set[Store]])(any[HeaderCarrier])) willReturn Future.successful(
+        (): Unit
+      )
 
-      val result: Result = await(controller.resetConfirm()(newFakeGETRequestWithCSRF.withFormUrlEncodedBody("store[0]" -> "CASES")))
-      status(result) shouldBe SEE_OTHER
+      val result: Result =
+        await(controller.resetConfirm()(newFakeGETRequestWithCSRF.withFormUrlEncodedBody("store[0]" -> "CASES")))
+      status(result)     shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
       verify(migrationService).resetEnvironment(refEq(Set(Store.CASES)))(any[HeaderCarrier])
     }
@@ -129,14 +141,13 @@ class DataMigrationStateControllerSpec extends ControllerSpec with BeforeAndAfte
       given(appConfig.resetPermitted) willReturn false
       val result: Result = await(controller.resetConfirm()(newFakeGETRequestWithCSRF))
 
-      status(result) shouldBe SEE_OTHER
+      status(result)     shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
       verify(migrationService, never()).resetEnvironment(any[Set[Store]])(any[HeaderCarrier])
     }
   }
 
-  private def locationOf(result: Result): Option[String] = {
+  private def locationOf(result: Result): Option[String] =
     result.header.headers.get(LOCATION)
-  }
 
 }

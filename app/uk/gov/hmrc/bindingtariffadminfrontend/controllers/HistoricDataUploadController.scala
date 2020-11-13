@@ -37,14 +37,15 @@ import scala.concurrent.Future
 import scala.concurrent.Future.successful
 
 @Singleton
-class HistoricDataUploadController @Inject()(
-                                                 authenticatedAction: AuthenticatedAction,
-                                                 service: DataMigrationService,
-                                                 connector: DataMigrationJsonConnector,
-                                                 mcc: MessagesControllerComponents,
-                                                 override val messagesApi: MessagesApi,
-                                                 implicit val appConfig: AppConfig
-                                               ) extends FrontendController(mcc) with I18nSupport {
+class HistoricDataUploadController @Inject() (
+  authenticatedAction: AuthenticatedAction,
+  service: DataMigrationService,
+  connector: DataMigrationJsonConnector,
+  mcc: MessagesControllerComponents,
+  override val messagesApi: MessagesApi,
+  implicit val appConfig: AppConfig
+) extends FrontendController(mcc)
+    with I18nSupport {
   private lazy val form = Form[UploadHistoricDataRequest](
     mapping[UploadHistoricDataRequest, String, String](
       "filename" -> text,
@@ -86,7 +87,8 @@ class HistoricDataUploadController @Inject()(
     "ALLBTIDATA-2015_csv",
     "ALLBTIDATA-2016_csv",
     "ALLBTIDATA-2017_csv",
-    "ALLBTIDATA-2018_csv")
+    "ALLBTIDATA-2018_csv"
+  )
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
     successful(Ok(views.html.historic_data_upload(form)))
@@ -97,9 +99,9 @@ class HistoricDataUploadController @Inject()(
   }
 
   def getStatusOfHistoricDataProcessing: Action[AnyContent] = authenticatedAction.async { implicit request =>
-    connector.getStatusOfHistoricDataProcessing.map{
+    connector.getStatusOfHistoricDataProcessing.map {
       case response if response.status == OK => Ok(response.body).as("application/json")
-      case response => Status(response.status)(response.body).as("application/json")
+      case response                          => Status(response.status)(response.body).as("application/json")
     }
   }
 
@@ -107,19 +109,19 @@ class HistoricDataUploadController @Inject()(
     downloadJson(connector.downloadHistoricJson)
   }
 
-  def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
-    form.bindFromRequest.fold(
-      _ => successful(BadRequest),
-
-      uploadRequest  => {
-        val file = request.body.files.find(_.filename.nonEmpty)
-        if (file.isDefined) {
-          service.upload(uploadRequest, file.get.ref).map(_ => Accepted) recover handlingError
-        } else {
-          successful(BadRequest)
+  def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) {
+    implicit request =>
+      form.bindFromRequest.fold(
+        _ => successful(BadRequest),
+        uploadRequest => {
+          val file = request.body.files.find(_.filename.nonEmpty)
+          if (file.isDefined) {
+            service.upload(uploadRequest, file.get.ref).map(_ => Accepted) recover handlingError
+          } else {
+            successful(BadRequest)
+          }
         }
-      }
-    )
+      )
   }
 
   def postDataAndRedirect: Action[AnyContent] = authenticatedAction.async { implicit request =>
@@ -130,7 +132,7 @@ class HistoricDataUploadController @Inject()(
     } yield {
       result.status match {
         case ACCEPTED => Redirect(routes.HistoricDataUploadController.checkHistoricStatus())
-        case _ => throw new RuntimeException("data processing error")
+        case _        => throw new RuntimeException("data processing error")
       }
     }
   }
@@ -138,19 +140,22 @@ class HistoricDataUploadController @Inject()(
   private def handlingError: PartialFunction[Throwable, Result] = {
     case e: Upstream4xxResponse => new Status(e.upstreamResponseCode)
     case _: Upstream5xxResponse => BadGateway
-    case e: Throwable => InternalServerError(e.getMessage)
+    case e: Throwable           => InternalServerError(e.getMessage)
   }
 
-  private def downloadJson(download : Future[WSResponse]): Future[Result] ={
-    download.map { res =>
-      res.status match {
-        case OK => res.bodyAsSource
-        case _ => throw new BadRequestException(s"Failed to get historic json from data migration api " + res.status)
+  private def downloadJson(download: Future[WSResponse]): Future[Result] =
+    download
+      .map { res =>
+        res.status match {
+          case OK => res.bodyAsSource
+          case _  => throw new BadRequestException(s"Failed to get historic json from data migration api " + res.status)
+        }
       }
-    }.map{ dataContent =>
-      Ok.chunked(dataContent).withHeaders(
-        "Content-Type" -> "application/zip",
-        "Content-Disposition" -> s"attachment; filename=Historic-Data-${DateTime.now().toString("ddMMyyyyHHmmss")}.zip")
-    }
-  }
+      .map { dataContent =>
+        Ok.chunked(dataContent)
+          .withHeaders(
+            "Content-Type"        -> "application/zip",
+            "Content-Disposition" -> s"attachment; filename=Historic-Data-${DateTime.now().toString("ddMMyyyyHHmmss")}.zip"
+          )
+      }
 }

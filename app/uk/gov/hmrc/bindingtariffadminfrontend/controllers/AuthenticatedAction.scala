@@ -34,18 +34,20 @@ import scala.util.Try
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class AuthenticatedAction @Inject()(
-                                     appConfig: AppConfig,
-                                     bodyParser: BodyParsers.Default
-                                   ) extends ActionBuilder[AuthenticatedRequest, AnyContent] {
+class AuthenticatedAction @Inject() (
+  appConfig: AppConfig,
+  bodyParser: BodyParsers.Default
+) extends ActionBuilder[AuthenticatedRequest, AnyContent] {
 
-  private lazy val year: Int = LocalDate.now(appConfig.clock).getYear
+  private lazy val year: Int                     = LocalDate.now(appConfig.clock).getYear
   private lazy val credentials: Seq[Credentials] = appConfig.credentials
 
   override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] = {
-    def unauthorized: Future[Result] = Future.successful(Unauthorized.withHeaders(WWW_AUTHENTICATE -> "Basic realm=Unauthorized"))
+    def unauthorized: Future[Result] =
+      Future.successful(Unauthorized.withHeaders(WWW_AUTHENTICATE -> "Basic realm=Unauthorized"))
 
-    request.headers.get(AUTHORIZATION)
+    request.headers
+      .get(AUTHORIZATION)
       .map(decode)
       .filter(_.isSuccess)
       .map(_.get)
@@ -56,7 +58,9 @@ class AuthenticatedAction @Inject()(
 
         // Valid Auth but the password has recently expired
         case (username, password) if credentials.contains(Credentials(username, sha256(year - 1, password))) =>
-          Logger.error("The service password has expired. Please generate a new one using sha256(year:password) and override configuration key `auth.credentials`")
+          Logger.error(
+            "The service password has expired. Please generate a new one using sha256(year:password) and override configuration key `auth.credentials`"
+          )
           Future.successful(Ok(password_expired()))
 
         // Invalid Auth
@@ -67,19 +71,21 @@ class AuthenticatedAction @Inject()(
   }
 
   private def decode(authorization: String): Try[(String, String)] = Try {
-    val baStr = authorization.replaceFirst("Basic ", "")
-    val decoded = BaseEncoding.base64().decode(baStr)
+    val baStr                 = authorization.replaceFirst("Basic ", "")
+    val decoded               = BaseEncoding.base64().decode(baStr)
     val Array(user, password) = new String(decoded).split(":")
     (user, password)
   }
 
   private def sha256(year: Int, password: String): String = sha256(year + ":" + password)
 
-  private def sha256(value: String): String = {
-    MessageDigest.getInstance("SHA-256")
+  private def sha256(value: String): String =
+    MessageDigest
+      .getInstance("SHA-256")
       .digest(value.getBytes("UTF-8"))
-      .map("%02x".format(_)).mkString.toUpperCase()
-  }
+      .map("%02x".format(_))
+      .mkString
+      .toUpperCase()
 
   override def parser: BodyParser[AnyContent] = bodyParser
 

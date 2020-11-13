@@ -23,9 +23,9 @@ import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 class AgentDetailsTest extends UnitSpec with MockitoSugar {
 
   "Agent Details" should {
-    val eori = mock[EORIDetails]
+    val eori           = mock[EORIDetails]
     val anonymizedEori = mock[EORIDetails]
-    val attachment = mock[Attachment]
+    val attachment     = mock[Attachment]
 
     "Anonymize" in {
       given(eori.anonymize) willReturn anonymizedEori

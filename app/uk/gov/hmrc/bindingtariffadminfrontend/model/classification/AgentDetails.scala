@@ -18,8 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
 import play.api.libs.json.{Json, OFormat}
 
-case class AgentDetails
-(
+case class AgentDetails(
   eoriDetails: EORIDetails,
   letterOfAuthorisation: Option[Attachment] = None
 ) {

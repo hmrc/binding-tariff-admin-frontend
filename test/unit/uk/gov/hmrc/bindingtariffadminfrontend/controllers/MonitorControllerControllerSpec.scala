@@ -36,7 +36,8 @@ import scala.concurrent.Future
 class MonitorControllerControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
   private val service = mock[AdminMonitorService]
-  private val controller = new MonitorController(new SuccessfulAuthenticatedAction, service, mcc, messageApi, mockAppConfig)
+  private val controller =
+    new MonitorController(new SuccessfulAuthenticatedAction, service, mcc, messageApi, mockAppConfig)
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

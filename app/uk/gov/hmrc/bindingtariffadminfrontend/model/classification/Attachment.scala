@@ -20,12 +20,11 @@ import java.time.Instant
 
 import play.api.libs.json.{Json, OFormat}
 
-case class Attachment
-(
+case class Attachment(
   id: String,
   public: Boolean,
-  operator: Option[Operator] = None,
-  timestamp: Instant = Instant.now(),
+  operator: Option[Operator]  = None,
+  timestamp: Instant          = Instant.now(),
   description: Option[String] = None
 )
 

@@ -32,7 +32,11 @@ class DataMigrationUploadControllerSpec extends ControllerSpec {
 
   private val migrationService = mock[DataMigrationService]
   private val controller = new DataMigrationUploadController(
-    new SuccessfulAuthenticatedAction, migrationService, mcc, messageApi, realConfig
+    new SuccessfulAuthenticatedAction,
+    migrationService,
+    mcc,
+    messageApi,
+    realConfig
   )
 
   "GET /" should {
@@ -50,16 +54,18 @@ class DataMigrationUploadControllerSpec extends ControllerSpec {
     )
 
     "Upload" in {
-      given(migrationService.upload(any[UploadRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future.successful(())
+      given(migrationService.upload(any[UploadRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+        .successful(())
 
-      val f = aForm(filename = "filename", mimeType = "text/csv")
+      val f              = aForm(filename = "filename", mimeType = "text/csv")
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(f)))
 
       status(result) shouldBe 202
     }
 
     "Handle 4xx Errors" in {
-      given(migrationService.upload(any[UploadRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future.failed(Upstream4xxResponse("error", 409, 0))
+      given(migrationService.upload(any[UploadRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+        .failed(Upstream4xxResponse("error", 409, 0))
 
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(aForm())))
 
@@ -67,7 +73,8 @@ class DataMigrationUploadControllerSpec extends ControllerSpec {
     }
 
     "Handle 5xx Errors" in {
-      given(migrationService.upload(any[UploadRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future.failed(Upstream5xxResponse("error", 500, 0))
+      given(migrationService.upload(any[UploadRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+        .failed(Upstream5xxResponse("error", 500, 0))
 
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(aForm())))
 
@@ -75,7 +82,8 @@ class DataMigrationUploadControllerSpec extends ControllerSpec {
     }
 
     "Handle unknown Errors" in {
-      given(migrationService.upload(any[UploadRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("error"))
+      given(migrationService.upload(any[UploadRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+        .failed(new RuntimeException("error"))
 
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(aForm())))
 
@@ -83,12 +91,12 @@ class DataMigrationUploadControllerSpec extends ControllerSpec {
     }
 
     def aForm(filename: String = "file.txt", mimeType: String = "text/html"): MultipartFormData[TemporaryFile] = {
-      val file = SingletonTemporaryFileCreator.create(filename)
+      val file     = SingletonTemporaryFileCreator.create(filename)
       val filePart = FilePart[TemporaryFile](key = "file", filename, contentType = Some(mimeType), ref = file)
       MultipartFormData[TemporaryFile](
         dataParts = Map("id" -> Seq(filename), "filename" -> Seq(filename), "mimetype" -> Seq(mimeType)),
-        files = Seq(filePart),
-        badParts = Seq.empty
+        files     = Seq(filePart),
+        badParts  = Seq.empty
       )
     }
 

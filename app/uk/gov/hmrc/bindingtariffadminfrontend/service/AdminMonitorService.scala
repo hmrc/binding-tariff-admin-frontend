@@ -27,35 +27,32 @@ import uk.gov.hmrc.http.HeaderCarrier
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class AdminMonitorService @Inject()(bindingTariffClassificationConnector: BindingTariffClassificationConnector, fileStoreConnector: FileStoreConnector) {
+class AdminMonitorService @Inject() (
+  bindingTariffClassificationConnector: BindingTariffClassificationConnector,
+  fileStoreConnector: FileStoreConnector
+) {
 
   private val countPagination = Pagination(1, 1)
 
-  def countCases(implicit hc: HeaderCarrier): Future[Int] = {
+  def countCases(implicit hc: HeaderCarrier): Future[Int] =
     bindingTariffClassificationConnector.getCases(CaseSearch(), countPagination).map(_.resultCount)
-  }
 
-  def countUnpublishedFiles(implicit hc: HeaderCarrier): Future[Int] = {
+  def countUnpublishedFiles(implicit hc: HeaderCarrier): Future[Int] =
     fileStoreConnector.find(FileSearch(published = Some(false)), countPagination).map(_.resultCount)
-  }
 
-  def countPublishedFiles(implicit hc: HeaderCarrier): Future[Int] = {
+  def countPublishedFiles(implicit hc: HeaderCarrier): Future[Int] =
     fileStoreConnector.find(FileSearch(published = Some(true)), countPagination).map(_.resultCount)
-  }
 
-  def getCases(search: CaseSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Case]] = {
+  def getCases(search: CaseSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Case]] =
     bindingTariffClassificationConnector.getCases(search, pagination)
-  }
 
-  def getEvents(search: EventSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Event]] = {
+  def getEvents(search: EventSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Event]] =
     bindingTariffClassificationConnector.getEvents(search, pagination)
-  }
 
-  def getFiles(search: FileSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[FileUploaded]] = {
+  def getFiles(search: FileSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[FileUploaded]] =
     fileStoreConnector.find(search, pagination)
-  }
 
-  def runScheduledJob(job: ScheduledJob)(implicit hc: HeaderCarrier): Future[Unit] = {
+  def runScheduledJob(job: ScheduledJob)(implicit hc: HeaderCarrier): Future[Unit] =
     job match {
       case ScheduledJob.DAYS_ELAPSED =>
         bindingTariffClassificationConnector.runDaysElapsed
@@ -63,6 +60,5 @@ class AdminMonitorService @Inject()(bindingTariffClassificationConnector: Bindin
         bindingTariffClassificationConnector.runReferredDaysElapsed
       case _ => Future.failed(new IllegalArgumentException(s"Invalid Job [${job.toString}]"))
     }
-  }
 
 }

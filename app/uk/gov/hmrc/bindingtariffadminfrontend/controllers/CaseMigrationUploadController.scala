@@ -43,13 +43,14 @@ import scala.util._
 import com.fasterxml.jackson.core.JsonParseException
 
 @Singleton
-class CaseMigrationUploadController @Inject()(
-                                               authenticatedAction: AuthenticatedAction,
-                                              service: DataMigrationService,
-                                               mcc: MessagesControllerComponents,
-                                               override val messagesApi: MessagesApi,
-                                              implicit val appConfig: AppConfig
-                                             ) extends FrontendController(mcc) with I18nSupport {
+class CaseMigrationUploadController @Inject() (
+  authenticatedAction: AuthenticatedAction,
+  service: DataMigrationService,
+  mcc: MessagesControllerComponents,
+  override val messagesApi: MessagesApi,
+  implicit val appConfig: AppConfig
+) extends FrontendController(mcc)
+    with I18nSupport {
 
   private lazy val form = Form("file" -> Forms.text)
 
@@ -57,38 +58,40 @@ class CaseMigrationUploadController @Inject()(
     successful(Ok(views.html.case_migration_upload(form)))
   }
 
-  def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
-    val priority: Boolean = request.body.dataParts.get("priority").exists(_.head.toBoolean)
-    request.body.file("file").filter(_.filename.nonEmpty) match {
-      case None =>
-        successful(Redirect(routes.CaseMigrationUploadController.get()))
-      case Some(part: FilePart[TemporaryFile]) =>
-        service.prepareMigration(toJsonSource(part.ref.path.toFile, part.contentType), priority)
-          .map(_ => Redirect(routes.DataMigrationStateController.get()))
-          .recoverWith {
-            // Happens when Akka doesn't know how to split the file into JSON chunks
-            case framing: FramingException =>
-              val indexZero = JsPath(0)
-              val validationErrors = Seq(JsonValidationError(Seq(framing.getMessage)))
-              val jsonErrors = Seq(indexZero -> validationErrors)
-              successful(Ok(views.html.case_migration_file_error(jsonErrors)))
-            // Happens when parsing JSON with Jackson
-            case parseException: JsonParseException =>
-              val indexZero = JsPath(0)
-              val validationErrors = Seq(JsonValidationError(Seq(parseException.getMessage)))
-              val jsonErrors = Seq(indexZero -> validationErrors)
-              successful(Ok(views.html.case_migration_file_error(jsonErrors)))
-            // Happens when converting JSON into objects with Play
-            case JsResultException(errs) =>
-              successful(Ok(views.html.case_migration_file_error(errs)))
-          }
-    }
+  def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) {
+    implicit request =>
+      val priority: Boolean = request.body.dataParts.get("priority").exists(_.head.toBoolean)
+      request.body.file("file").filter(_.filename.nonEmpty) match {
+        case None =>
+          successful(Redirect(routes.CaseMigrationUploadController.get()))
+        case Some(part: FilePart[TemporaryFile]) =>
+          service
+            .prepareMigration(toJsonSource(part.ref.path.toFile, part.contentType), priority)
+            .map(_ => Redirect(routes.DataMigrationStateController.get()))
+            .recoverWith {
+              // Happens when Akka doesn't know how to split the file into JSON chunks
+              case framing: FramingException =>
+                val indexZero        = JsPath(0)
+                val validationErrors = Seq(JsonValidationError(Seq(framing.getMessage)))
+                val jsonErrors       = Seq(indexZero -> validationErrors)
+                successful(Ok(views.html.case_migration_file_error(jsonErrors)))
+              // Happens when parsing JSON with Jackson
+              case parseException: JsonParseException =>
+                val indexZero        = JsPath(0)
+                val validationErrors = Seq(JsonValidationError(Seq(parseException.getMessage)))
+                val jsonErrors       = Seq(indexZero -> validationErrors)
+                successful(Ok(views.html.case_migration_file_error(jsonErrors)))
+              // Happens when converting JSON into objects with Play
+              case JsResultException(errs) =>
+                successful(Ok(views.html.case_migration_file_error(errs)))
+            }
+      }
   }
 
   private def toJsonSource(file: File, contentType: Option[String]): Source[MigratableCase, _] = {
     val dataSource: Source[ByteString, _] =
       if (contentType.contains("application/zip")) {
-        val zipFile = new ZipFile(file)
+        val zipFile    = new ZipFile(file)
         val zipEntries = zipFile.entries()
 
         if (zipEntries.hasMoreElements) {
@@ -107,12 +110,12 @@ class CaseMigrationUploadController @Inject()(
       .mapAsync(1) { str =>
         Future.fromTry {
           for {
-            json <- Try { Json.parse(str) }
+            json <- Try(Json.parse(str))
             // TODO: Use JsResult.toTry once we upgrade to Play 2.6
             cse <- Json.fromJson[MigratableCase](json) match {
-              case JsSuccess(cse, _) => Success(cse)
-              case JsError(errors) => Failure(JsResultException(errors))
-            }
+                    case JsSuccess(cse, _) => Success(cse)
+                    case JsError(errors)   => Failure(JsResultException(errors))
+                  }
           } yield cse
         }
       }

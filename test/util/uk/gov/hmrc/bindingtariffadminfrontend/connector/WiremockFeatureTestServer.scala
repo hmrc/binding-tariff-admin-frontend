@@ -23,27 +23,24 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FeatureSpec}
 
 abstract class WiremockFeatureTestServer extends FeatureSpec with BeforeAndAfterEach with BeforeAndAfterAll {
 
-  private val wireHost = "localhost"
-  protected val wirePort = 20001
+  private val wireHost       = "localhost"
+  protected val wirePort     = 20001
   private val wireMockServer = new WireMockServer(wirePort)
 
   lazy val wireMockUrl: String = s"http://$wireHost:$wirePort"
 
-  protected def stubFor(mappingBuilder: MappingBuilder): StubMapping = {
+  protected def stubFor(mappingBuilder: MappingBuilder): StubMapping =
     wireMockServer.stubFor(mappingBuilder)
-  }
 
   override protected def beforeAll(): Unit = {
     wireMockServer.start()
     WireMock.configureFor(wireHost, wirePort)
   }
 
-  override protected def afterEach(): Unit = {
+  override protected def afterEach(): Unit =
     wireMockServer.resetAll()
-  }
 
-  override protected def afterAll(): Unit = {
+  override protected def afterAll(): Unit =
     wireMockServer.stop()
-  }
 
 }

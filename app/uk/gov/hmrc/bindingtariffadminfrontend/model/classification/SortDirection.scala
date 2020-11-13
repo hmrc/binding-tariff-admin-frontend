@@ -20,5 +20,5 @@ object SortDirection extends Enumeration {
   type SortDirection = Value
 
   val DESCENDING = Value(-1, "desc")
-  val ASCENDING = Value(1, "asc")
+  val ASCENDING  = Value(1, "asc")
 }

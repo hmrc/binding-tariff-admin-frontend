@@ -23,12 +23,12 @@ import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 class FileSearchTest extends UnitSpec {
 
   private val search = FileSearch(
-    ids = Some(Set("file-id1", "file-id2")),
+    ids       = Some(Set("file-id1", "file-id2")),
     published = Some(true)
   )
 
   private val params = Map[String, Seq[String]](
-    "id" -> Seq("file-id1", "file-id2"),
+    "id"        -> Seq("file-id1", "file-id2"),
     "published" -> Seq("true")
   )
 

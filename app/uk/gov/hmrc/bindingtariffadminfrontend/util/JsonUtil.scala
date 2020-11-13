@@ -20,9 +20,8 @@ import play.api.libs.json._
 
 object JsonUtil {
 
-  implicit def format[E <: Enumeration](enum: E): Format[E#Value] = {
+  implicit def format[E <: Enumeration](enum: E): Format[E#Value] =
     Format(Reads.enumNameReads(enum), Writes.enumNameWrites)
-  }
 
   def oFormatOf[T](f: Format[T]): OFormat[T] = OFormat[T](Reads(f.reads), OWrites((t: T) => f.writes(t).as[JsObject]))
 

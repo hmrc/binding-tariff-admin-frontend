@@ -19,29 +19,26 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 
-case class Migration
-(
+case class Migration(
   `case`: MigratableCase,
   status: MigrationStatus = MigrationStatus.UNPROCESSED,
-  message: Seq[String] = Seq.empty
+  message: Seq[String]    = Seq.empty
 ) {
-  def appendMessage(message: String): Migration = {
+  def appendMessage(message: String): Migration =
     this.copy(message = this.message :+ message)
-  }
 
-  def appendMessage(message: Seq[String]): Migration = {
+  def appendMessage(message: Seq[String]): Migration =
     this.copy(message = this.message ++ message)
-  }
 }
 
 object Migration {
   object Mongo {
-    private implicit val fmt: OFormat[MigratableCase] =  MigratableCase.Mongo.format
-    implicit val format: OFormat[Migration] = Json.format[Migration]
+    private implicit val fmt: OFormat[MigratableCase] = MigratableCase.Mongo.format
+    implicit val format: OFormat[Migration]           = Json.format[Migration]
   }
 
   object REST {
-    private implicit val fmt: OFormat[MigratableCase] =  MigratableCase.REST.format
-    implicit val format: OFormat[Migration] = Json.format[Migration]
+    private implicit val fmt: OFormat[MigratableCase] = MigratableCase.REST.format
+    implicit val format: OFormat[Migration]           = Json.format[Migration]
   }
 }

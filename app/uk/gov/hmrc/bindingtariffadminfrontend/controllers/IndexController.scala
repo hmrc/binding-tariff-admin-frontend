@@ -26,15 +26,14 @@ import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import scala.concurrent.Future.successful
 
 @Singleton
-class IndexController @Inject()(
-                                 authenticatedAction: AuthenticatedAction,
-                                 mcc: MessagesControllerComponents,
-                                 override val messagesApi: MessagesApi,
-                                implicit val appConfig: AppConfig
-                               ) extends FrontendController(mcc) with I18nSupport {
+class IndexController @Inject() (
+  authenticatedAction: AuthenticatedAction,
+  mcc: MessagesControllerComponents,
+  override val messagesApi: MessagesApi,
+  implicit val appConfig: AppConfig
+) extends FrontendController(mcc)
+    with I18nSupport {
 
-  def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
-    successful(Ok(views.html.index()))
-  }
+  def get: Action[AnyContent] = authenticatedAction.async(implicit request => successful(Ok(views.html.index())))
 
 }

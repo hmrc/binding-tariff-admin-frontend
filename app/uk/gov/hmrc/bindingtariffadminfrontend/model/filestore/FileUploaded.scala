@@ -21,21 +21,20 @@ import java.time.LocalDate
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.ScanStatus.ScanStatus
 
-case class FileUploaded
-(
+case class FileUploaded(
   id: String,
   fileName: String,
   mimeType: String,
-  url: Option[String] = None,
+  url: Option[String]            = None,
   scanStatus: Option[ScanStatus] = None,
-  published: Boolean = false
+  published: Boolean             = false
 )
 
 object FileUploaded {
   implicit val format: OFormat[FileUploaded] = Json.format[FileUploaded]
 }
 
-case class FileUploadSubmission (extractionDate: LocalDate, uploadedFiles: List[FileUploaded])
+case class FileUploadSubmission(extractionDate: LocalDate, uploadedFiles: List[FileUploaded])
 
 object FileUploadSubmission {
   implicit val format: OFormat[FileUploadSubmission] = Json.format[FileUploadSubmission]

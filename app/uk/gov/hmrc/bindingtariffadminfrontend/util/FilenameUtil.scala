@@ -18,11 +18,10 @@ package uk.gov.hmrc.bindingtariffadminfrontend.util
 
 object FilenameUtil {
   def toCsvID(filename: String): String = {
-    val segments = filename.split("[\\s\\.]")
+    val segments             = filename.split("[\\s\\.]")
     val nameWithoutExtension = segments.init
     nameWithoutExtension.mkString("", "_", "_csv")
   }
-  def toID(filename: String): String = {
+  def toID(filename: String): String =
     filename.replaceAll("[\\s\\.]", "_")
-  }
 }

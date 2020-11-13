@@ -21,8 +21,7 @@ import java.time.Instant
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Details, Event, Operator}
 
-case class MigratableEvent
-(
+case class MigratableEvent(
   details: Details,
   operator: Operator,
   timestamp: Instant

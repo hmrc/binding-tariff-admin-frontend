@@ -24,12 +24,12 @@ import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 class BTIApplicationTest extends UnitSpec with MockitoSugar {
 
   "BTI Application" should {
-    val eori = mock[EORIDetails]
-    val eoriAnonymized = mock[EORIDetails]
-    val contact = mock[Contact]
+    val eori              = mock[EORIDetails]
+    val eoriAnonymized    = mock[EORIDetails]
+    val contact           = mock[Contact]
     val contactAnonymized = mock[Contact]
-    val agent = mock[AgentDetails]
-    val agentAnonymized = mock[AgentDetails]
+    val agent             = mock[AgentDetails]
+    val agentAnonymized   = mock[AgentDetails]
 
     "Anonymize" in {
       given(eori.anonymize) willReturn eoriAnonymized

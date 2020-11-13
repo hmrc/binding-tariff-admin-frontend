@@ -25,11 +25,11 @@ import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 class CaseTest extends UnitSpec with MockitoSugar {
 
   "Case" should {
-    val application = mock[Application]
+    val application           = mock[Application]
     val applicationAnonymized = mock[Application]
-    val operator = mock[Operator]
-    val decision = mock[Decision]
-    val attachment = mock[Attachment]
+    val operator              = mock[Operator]
+    val decision              = mock[Decision]
+    val attachment            = mock[Attachment]
 
     "Anonymize" in {
       given(application.anonymize) willReturn applicationAnonymized

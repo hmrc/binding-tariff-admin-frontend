@@ -58,66 +58,65 @@ trait MigrationRepository {
 }
 
 @Singleton
-class MigrationMongoRepository @Inject()(config: AppConfig,
-                                         mongoDbProvider: MongoDbProvider)
-  extends ReactiveRepository[Migration, BSONObjectID](
-    collectionName = "CaseMigration",
-    mongo = mongoDbProvider.mongo,
-    domainFormat = Migration.Mongo.format) with MigrationRepository {
+class MigrationMongoRepository @Inject() (config: AppConfig, mongoDbProvider: MongoDbProvider)
+    extends ReactiveRepository[Migration, BSONObjectID](
+      collectionName = "CaseMigration",
+      mongo          = mongoDbProvider.mongo,
+      domainFormat   = Migration.Mongo.format
+    )
+    with MigrationRepository {
   import Migration.Mongo.format
 
   override lazy val indexes: Seq[Index] = Seq(
     createSingleFieldAscendingIndex("case.reference", isUnique = true),
-    createSingleFieldAscendingIndex("status", isUnique = false)
+    createSingleFieldAscendingIndex("status", isUnique         = false)
   )
 
-  override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
+  override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
     Future.sequence(indexes.map(collection.indexesManager(ec).ensure(_)))(implicitly, ec)
-  }
 
   override def get(status: Seq[MigrationStatus], pagination: Pagination): Future[Paged[Migration]] = {
-    val filter = if (status.isEmpty) Json.obj() else Json.obj("status" -> Json.obj("$in" -> status))
-    val actualPage = if(pagination.page > 1) pagination.page else 1
-    val query = Json.obj("status" -> -1)
+    val filter     = if (status.isEmpty) Json.obj() else Json.obj("status" -> Json.obj("$in" -> status))
+    val actualPage = if (pagination.page > 1) pagination.page else 1
+    val query      = Json.obj("status" -> -1)
     for {
       result <- collection
-        .find(filter)
-        .sort(query)
-        .options(QueryOpts(skipN = (actualPage - 1) * pagination.pageSize, batchSizeN = pagination.pageSize))
-        .cursor[Migration]()
-        .collect[Seq](pagination.pageSize, Cursor.FailOnError[Seq[Migration]]())
+                 .find(filter)
+                 .sort(query)
+                 .options(QueryOpts(skipN = (actualPage - 1) * pagination.pageSize, batchSizeN = pagination.pageSize))
+                 .cursor[Migration]()
+                 .collect[Seq](pagination.pageSize, Cursor.FailOnError[Seq[Migration]]())
       count <- collection.count(Some(filter))
     } yield Paged(result, pagination, count)
   }
 
-  override def get(reference: String): Future[Option[Migration]] = {
+  override def get(reference: String): Future[Option[Migration]] =
     collection.find(byReference(reference)).one[Migration]
-  }
 
-  override def get(status: MigrationStatus): Future[Option[Migration]] = {
+  override def get(status: MigrationStatus): Future[Option[Migration]] =
     collection.find(byStatus(status)).one[Migration]
-  }
 
-  override def update(c: Migration): Future[Option[Migration]] = {
-    collection.findAndUpdate(
-      selector = byReference(c.`case`.reference),
-      update = c,
-      fetchNewObject = true
-    ).map(_.value.map(_.as[Migration](Migration.Mongo.format)))
-  }
+  override def update(c: Migration): Future[Option[Migration]] =
+    collection
+      .findAndUpdate(
+        selector       = byReference(c.`case`.reference),
+        update         = c,
+        fetchNewObject = true
+      )
+      .map(_.value.map(_.as[Migration](Migration.Mongo.format)))
 
-  override def delete(c: Migration): Future[Boolean] = {
+  override def delete(c: Migration): Future[Boolean] =
     collection.remove(byReference(c.`case`.reference)).map(_.ok)
-  }
 
   override def insert(c: Seq[Migration]): Future[Boolean] = {
-    val producers: immutable.Seq[JsObject] = c.map(implicitly[collection.ImplicitlyDocumentProducer](_)).toStream.map(_.produce).toSeq
+    val producers: immutable.Seq[JsObject] =
+      c.map(implicitly[collection.ImplicitlyDocumentProducer](_)).toStream.map(_.produce).toSeq
     collection.insert(ordered = false).many(producers).map(_.ok)
   }
 
   def countByStatus: Future[MigrationCounts] = {
 
-    val list = MigrationStatus.values.toSeq.map(status => {
+    val list = MigrationStatus.values.toSeq.map { status =>
       val filter = Json.obj("status" -> Json.obj("$in" -> List(status)))
 
       val count = for {
@@ -125,7 +124,7 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
       } yield count
 
       status -> Await.result(count, 1.minutes)
-    })
+    }
 
     Future.successful(new MigrationCounts(list.toMap))
   }
@@ -134,7 +133,7 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
     val query = status.map(s => Json.obj("status" -> s))
     query match {
       case Some(_) => collection.remove(query.get).map(_.ok)
-      case _ => removeAll().map(_.ok)
+      case _       => removeAll().map(_.ok)
     }
   }
 
@@ -145,12 +144,10 @@ class MigrationMongoRepository @Inject()(config: AppConfig,
     collection.remove(query).map(_.ok)
   }
 
-  private def byReference(reference: String): JsObject = {
+  private def byReference(reference: String): JsObject =
     Json.obj("case.reference" -> reference)
-  }
 
-  private def byStatus(status: MigrationStatus): JsObject = {
+  private def byStatus(status: MigrationStatus): JsObject =
     Json.obj("status" -> status)
-  }
 
 }

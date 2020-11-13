@@ -19,44 +19,40 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 import play.api.mvc.QueryStringBindable
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.EventType.EventType
 
-case class EventSearch
-(
+case class EventSearch(
   caseReference: Option[Set[String]] = None,
-  `type`: Option[Set[EventType]] = None
+  `type`: Option[Set[EventType]]     = None
 )
 
 object EventSearch {
   private val caseReferenceKey = "case_reference"
-  private val typeKey = "type"
+  private val typeKey          = "type"
 
-  implicit def bindable(implicit stringBinder: QueryStringBindable[String]): QueryStringBindable[EventSearch] = new QueryStringBindable[EventSearch] {
+  implicit def bindable(implicit stringBinder: QueryStringBindable[String]): QueryStringBindable[EventSearch] =
+    new QueryStringBindable[EventSearch] {
 
-    private def bindEventType(key: String): Option[EventType] = {
-      EventType.values.find(_.toString.equalsIgnoreCase(key))
-    }
+      private def bindEventType(key: String): Option[EventType] =
+        EventType.values.find(_.toString.equalsIgnoreCase(key))
 
-    override def bind(key: String, requestParams: Map[String, Seq[String]]): Option[Either[String, EventSearch]] = {
+      override def bind(key: String, requestParams: Map[String, Seq[String]]): Option[Either[String, EventSearch]] = {
 
-      def params(name: String): Option[Set[String]] = {
-        requestParams.get(name).map(_.flatMap(_.split(",")).toSet).filter(_.exists(_.nonEmpty))
-      }
+        def params(name: String): Option[Set[String]] =
+          requestParams.get(name).map(_.flatMap(_.split(",")).toSet).filter(_.exists(_.nonEmpty))
 
-      Some(
-        Right(
-          EventSearch(
-            caseReference = params(caseReferenceKey),
-            `type` = params(typeKey).map(_.map(bindEventType).filter(_.isDefined).map(_.get))
+        Some(
+          Right(
+            EventSearch(
+              caseReference = params(caseReferenceKey),
+              `type`        = params(typeKey).map(_.map(bindEventType).filter(_.isDefined).map(_.get))
+            )
           )
         )
-      )
-    }
+      }
 
-    override def unbind(key: String, filter: EventSearch): String = {
-      Seq(
-        filter.caseReference.map(_.map(s => stringBinder.unbind(caseReferenceKey, s.toString)).mkString("&")),
-        filter.`type`.map(_.map(s => stringBinder.unbind(typeKey, s.toString)).mkString("&"))
-      ).filter(_.isDefined).map(_.get).mkString("&")
+      override def unbind(key: String, filter: EventSearch): String =
+        Seq(
+          filter.caseReference.map(_.map(s => stringBinder.unbind(caseReferenceKey, s.toString)).mkString("&")),
+          filter.`type`.map(_.map(s => stringBinder.unbind(typeKey, s.toString)).mkString("&"))
+        ).filter(_.isDefined).map(_.get).mkString("&")
     }
-  }
 }
-

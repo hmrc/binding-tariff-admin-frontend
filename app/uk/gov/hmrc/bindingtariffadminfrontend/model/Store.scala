@@ -24,9 +24,8 @@ object Store extends Enumeration {
   type Store = Value
   val MIGRATION, FILES, CASES, EVENTS, RULINGS, HISTORIC_DATA = Value
 
-  def apply(string: String): Option[Store] = {
+  def apply(string: String): Option[Store] =
     values.find(_.toString == string)
-  }
 
   def defaultValues: model.Store.ValueSet = Store.values.filterNot(_ == HISTORIC_DATA)
 

@@ -22,17 +22,19 @@ import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 class MigrationCountsTest extends UnitSpec {
 
   "MigrationCounts" should {
-    val counts = new MigrationCounts(Map(
-      SUCCESS -> 1,
-      FAILED -> 2,
-      UNPROCESSED -> 3
-    ))
+    val counts = new MigrationCounts(
+      Map(
+        SUCCESS     -> 1,
+        FAILED      -> 2,
+        UNPROCESSED -> 3
+      )
+    )
 
     "retrieve count" in {
-      counts.get(SUCCESS) shouldBe 1
-      counts.get(FAILED) shouldBe 2
+      counts.get(SUCCESS)     shouldBe 1
+      counts.get(FAILED)      shouldBe 2
       counts.get(UNPROCESSED) shouldBe 3
-      counts.get(null) shouldBe 0
+      counts.get(null)        shouldBe 0
     }
 
     "retrieve total" in {
@@ -40,7 +42,7 @@ class MigrationCountsTest extends UnitSpec {
     }
 
     "retrieve processed" in {
-      new MigrationCounts(Map(SUCCESS -> 1, FAILED -> 1)).processed shouldBe 2
+      new MigrationCounts(Map(SUCCESS     -> 1, FAILED -> 1)).processed shouldBe 2
       new MigrationCounts(Map(UNPROCESSED -> 1)).processed shouldBe 0
 
     }

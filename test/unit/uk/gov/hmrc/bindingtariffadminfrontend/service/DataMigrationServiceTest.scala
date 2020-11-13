@@ -431,9 +431,10 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   }
 
   "Service 'Process'" should {
-    val migratableAttachment = MigratedAttachment(public = true, name              = "name", timestamp         = Instant.EPOCH)
-    val migratableEvent1     = MigratableEvent(details   = Note("note"), operator  = Operator("id"), timestamp = Instant.MAX)
-    val migratableEvent2     = MigratableEvent(details   = Note("other"), operator = Operator("id"), timestamp = Instant.MAX)
+    val extractDate          = Instant.ofEpochSecond(1609416000)
+    val migratableAttachment = MigratedAttachment(public = true, name = "name", timestamp = Instant.EPOCH)
+    val migratableEvent1     = MigratableEvent(details = Note("note"), operator = Operator("id"), timestamp = Instant.MAX)
+    val migratableEvent2     = MigratableEvent(details = Note("other"), operator = Operator("id"), timestamp = Instant.MAX)
     val migratableCase = MigratableCase(
       "1",
       CaseStatus.OPEN,
@@ -449,7 +450,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       Seq.empty,
       Seq.empty,
       Set("keyword1", "keyword2"),
-      dateOfExtract = Some(Instant.EPOCH)
+      dateOfExtract = Some(extractDate)
     )
     val migratableCaseWithEvents = MigratableCase(
       "1",
@@ -466,7 +467,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       Seq.empty,
       Seq(migratableEvent1, migratableEvent2),
       Set("keyword1", "keyword2"),
-      dateOfExtract = Some(Instant.EPOCH)
+      dateOfExtract = Some(extractDate)
     )
     val migratableCaseWithAttachments = MigratableCase(
       "1",
@@ -483,7 +484,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       Seq(migratableAttachment),
       Seq.empty,
       Set("keyword1", "keyword2"),
-      dateOfExtract = Some(Instant.EPOCH)
+      dateOfExtract = Some(extractDate)
     )
 
     val attachment = Attachment(id = "name", public = true, timestamp = Instant.EPOCH)
@@ -501,7 +502,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       None,
       Seq.empty,
       Set("keyword1", "keyword2"),
-      dateOfExtract = Some(Instant.EPOCH)
+      dateOfExtract = Some(extractDate)
     )
     val aCaseWithAttachments = Case(
       "1",
@@ -517,10 +518,11 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       None,
       Seq(attachment),
       Set("keyword1", "keyword2"),
-      dateOfExtract = Some(Instant.EPOCH)
+      dateOfExtract = Some(extractDate)
     )
 
     val anUnprocessedMigration                = Migration(migratableCase)
+    val anUnprocessedHistoricMigration        = Migration(migratableCase.copy(dateOfExtract = Some(Instant.EPOCH)))
     val anUnprocessedMigrationWithAttachments = Migration(migratableCaseWithAttachments)
     val anUnprocessedMigrationWithEvents      = Migration(migratableCaseWithEvents)
 
@@ -635,14 +637,42 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       theCaseCreated shouldBe aCase
     }
 
-    "Skip existing Case" in withService { service =>
+    "Skip existing Case from newer extract - with aborted status" in withService { service =>
+      givenTheCaseExistsFromHistoricExtract()
+
+      val migrated = await(service.process(anUnprocessedMigration))
+      migrated.status shouldBe MigrationStatus.ABORTED
+      migrated.message shouldBe Seq(
+        "An earlier extract containing this case has already been uploaded",
+        "Previously migrated from the 1970-01-01 extracts",
+        "Newer information from this 2020-12-31 extract may be lost"
+      )
+
+      verifyNoCaseCreated
+      verifyNoEventsCreated
+    }
+
+    "Skip existing Case from same extract - with skipped status" in withService { service =>
       givenTheCaseExists()
 
       val migrated = await(service.process(anUnprocessedMigration))
       migrated.status shouldBe MigrationStatus.SKIPPED
       migrated.message shouldBe Seq(
-        "Skipped migration as case already exists",
-        "Previously migrated from the 1970-01-01 extracts"
+        "The extract containing this case has already been uploaded"
+      )
+
+      verifyNoCaseCreated
+      verifyNoEventsCreated
+    }
+
+    "Skip existing Case from earlier extract - with skipped status" in withService { service =>
+      givenTheCaseExists()
+
+      val migrated = await(service.process(anUnprocessedHistoricMigration))
+      migrated.status shouldBe MigrationStatus.SKIPPED
+      migrated.message shouldBe Seq(
+        "A newer extract containing this case has already been uploaded",
+        "Previously migrated from the 2020-12-31 extracts"
       )
 
       verifyNoCaseCreated
@@ -660,6 +690,11 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
     def givenTheCaseExists(): Unit =
       given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(Some(aCase))
+
+    def givenTheCaseExistsFromHistoricExtract(): Unit =
+      given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(
+        Some(aCase.copy(dateOfExtract = Some(Instant.EPOCH)))
+      )
 
     def givenCreatingAnEventFails(): Unit =
       given(caseConnector.createEvent(anyString(), any[Event])(any[HeaderCarrier])) willReturn Future.failed(

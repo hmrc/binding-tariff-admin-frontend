@@ -58,6 +58,8 @@ class DataMigrationService @Inject() (
   // TODO: Delete when we upgrade to a version of Play that uses Akka Stream 2.6+
   implicit val materializer: Materializer = ActorMaterializer.create(actorSystem)
 
+  private lazy val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC)
+
   def getDataMigrationFilesDetails(fileNames: List[String])(implicit hc: HeaderCarrier): Future[List[FileUploaded]] = {
 
     val opts = fileNames.map { file =>
@@ -172,10 +174,10 @@ class DataMigrationService @Inject() (
     Logger.info(s"Case Migration with reference [${migration.`case`.reference}]: Starting")
 
     checkIfExists(migration).flatMap {
-      case exists @ Migration(_, MigrationStatus.SKIPPED, _) =>
-        Future.successful(exists)
-      case updated =>
-        attemptMigration(updated)
+      case updatedMigration if updatedMigration.status != MigrationStatus.UNPROCESSED =>
+        Future.successful(updatedMigration)
+      case updatedMigration =>
+        attemptMigration(updatedMigration)
     }
   }
 
@@ -207,34 +209,58 @@ class DataMigrationService @Inject() (
     caseConnector
       .getCase(migration.`case`.reference)
       .map {
+        case Some(existingCase)
+            if (migration.`case`.dateOfExtract, existingCase.dateOfExtract)
+              .mapN((migrationDate, existingDate) => migrationDate isAfter existingDate)
+              .getOrElse(false) =>
+          val summaryMessage = "An earlier extract containing this case has already been uploaded"
+          val detailMessages = detailCaseComparison(migration.`case`, existingCase)
+
+          migration
+            .copy(status = MigrationStatus.ABORTED)
+            .appendMessage(summaryMessage)
+            .appendMessage(detailMessages)
+
+        case Some(existingCase)
+            if (migration.`case`.dateOfExtract, existingCase.dateOfExtract)
+              .mapN((migrationDate, existingDate) => migrationDate equals existingDate)
+              .getOrElse(false) =>
+          val summaryMessage = "The extract containing this case has already been uploaded"
+
+          migration
+            .copy(status = MigrationStatus.SKIPPED)
+            .appendMessage(summaryMessage)
+
         case Some(existingCase) =>
-          val summaryMessage = "Skipped migration as case already exists"
+          val summaryMessage = "A newer extract containing this case has already been uploaded"
           val detailMessages = detailCaseComparison(migration.`case`, existingCase)
 
           migration
             .copy(status = MigrationStatus.SKIPPED)
             .appendMessage(summaryMessage)
             .appendMessage(detailMessages)
+
         case _ =>
           migration
       }
 
   private def detailCaseComparison(migrationCase: MigratableCase, existingCase: Case): Seq[String] = {
-    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC)
     val info = existingCase.dateOfExtract.map { existingDate =>
-      s"Previously migrated from the ${formatter.format(existingDate)} extracts"
+      s"Previously migrated from the ${dateFormatter.format(existingDate)} extracts"
     }
 
     val warning = (migrationCase.dateOfExtract, existingCase.dateOfExtract).mapN { (migrationDate, existingDate) =>
       if (migrationDate isAfter existingDate) {
-        Some(s"Newer information from this ${formatter.format(migrationDate)} extract may be lost")
+        Some(s"Newer information from this ${dateFormatter.format(migrationDate)} extract may be lost")
       } else {
         None
       }
     }.flatten
 
     val statusChange = if (existingCase.status != migrationCase.status) {
-      Some(s"Status from migration ${migrationCase.status} is different to the existing case ${existingCase.status}")
+      Some(
+        s"Status from migration [${migrationCase.status}] is different to the existing case [${existingCase.status}]"
+      )
     } else {
       None
     }

@@ -21,7 +21,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 
 object MigrationStatus extends Enumeration {
   type MigrationStatus = Value
-  val UNPROCESSED, SKIPPED, SUCCESS, PARTIAL_SUCCESS, FAILED = Value
+  val UNPROCESSED, SKIPPED, SUCCESS, PARTIAL_SUCCESS, FAILED, ABORTED = Value
 
   def apply(string: String): Option[MigrationStatus] =
     values.find(_.toString == string)

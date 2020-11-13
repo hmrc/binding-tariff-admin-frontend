@@ -39,7 +39,7 @@
       }
       </td>
       <td>
-       <strong id="migration_status_table-case_@reference-state" class="phase-tag @if(migration.status == MigrationStatus.FAILED){phase-tag-red} @if(migration.status == MigrationStatus.SUCCESS){phase-tag-green} @if(migration.status == MigrationStatus.PARTIAL_SUCCESS || migration.status == MigrationStatus.SKIPPED){phase-tag-orange}">
+       <strong id="migration_status_table-case_@reference-state" class="phase-tag @if(migration.status == MigrationStatus.FAILED || migration.status == MigrationStatus.ABORTED){phase-tag-red} @if(migration.status == MigrationStatus.SUCCESS){phase-tag-green} @if(migration.status == MigrationStatus.PARTIAL_SUCCESS || migration.status == MigrationStatus.SKIPPED){phase-tag-orange}">
        @{migration.status.toString.replaceAll("_", " ")}
        </strong>
       </td>

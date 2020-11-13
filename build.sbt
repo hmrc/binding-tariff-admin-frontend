@@ -44,6 +44,7 @@ lazy val microservice = (project in file("."))
     addTestReportOption(Test, "test-reports")
   )
   .configs(IntegrationTest)
+  .settings(inConfig(IntegrationTest)(ScalafmtPlugin.scalafmtConfigSettings))
   .settings(inConfig(TemplateItTest)(Defaults.itSettings): _*)
   .settings(
     Keys.fork in IntegrationTest := true,

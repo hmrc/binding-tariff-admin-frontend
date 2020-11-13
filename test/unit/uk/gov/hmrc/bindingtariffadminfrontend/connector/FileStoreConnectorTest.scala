@@ -19,7 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.http.Status
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadAttachmentRequest, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadAttachmentRequest, UploadRequest, UploadTemplate}
 
 class FileStoreConnectorTest extends ConnectorTest {
 
@@ -78,7 +78,7 @@ class FileStoreConnectorTest extends ConnectorTest {
           )
       )
 
-      val file = UploadAttachmentRequest(fileName = "file name.jpg", mimeType = "type")
+      val file     = UploadAttachmentRequest(fileName = "file name.jpg", mimeType = "type")
       val response = await(connector.initiate(file))
 
       response shouldBe UploadTemplate("url", Map("field" -> "value"))
@@ -102,12 +102,14 @@ class FileStoreConnectorTest extends ConnectorTest {
           )
       )
 
-      await(connector.find("id")) shouldBe Some(FileUploaded(
-        id = "id",
-        fileName = "file-name.txt",
-        mimeType = "text/plain",
-        published = true
-      ))
+      await(connector.find("id")) shouldBe Some(
+        FileUploaded(
+          id        = "id",
+          fileName  = "file-name.txt",
+          mimeType  = "text/plain",
+          published = true
+        )
+      )
 
       verify(
         getRequestedFor(urlEqualTo("/file/id"))
@@ -128,12 +130,14 @@ class FileStoreConnectorTest extends ConnectorTest {
           )
       )
 
-      await(connector.find(FileSearch(ids = Some(Set("id"))), Pagination(1, 2))).results shouldBe Seq(FileUploaded(
-        id = "id",
-        fileName = "file-name.txt",
-        mimeType = "text/plain",
-        published = true
-      ))
+      await(connector.find(FileSearch(ids = Some(Set("id"))), Pagination(1, 2))).results shouldBe Seq(
+        FileUploaded(
+          id        = "id",
+          fileName  = "file-name.txt",
+          mimeType  = "text/plain",
+          published = true
+        )
+      )
 
       verify(
         getRequestedFor(urlEqualTo("/file?id=id&page=1&page_size=2"))
@@ -155,9 +159,9 @@ class FileStoreConnectorTest extends ConnectorTest {
       )
 
       await(connector.publish("id")) shouldBe FileUploaded(
-        id = "id",
-        fileName = "file-name.txt",
-        mimeType = "text/plain",
+        id        = "id",
+        fileName  = "file-name.txt",
+        mimeType  = "text/plain",
         published = true
       )
 

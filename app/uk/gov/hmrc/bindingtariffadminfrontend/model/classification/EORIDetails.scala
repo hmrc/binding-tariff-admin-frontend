@@ -19,8 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize._
 
-case class EORIDetails
-(
+case class EORIDetails(
   eori: String,
   businessName: String,
   addressLine1: String,
@@ -33,8 +32,8 @@ case class EORIDetails
     addressLine1 = anonymized,
     addressLine2 = anonymized,
     addressLine3 = anonymized,
-    postcode = anonymized,
-    country = anonymized
+    postcode     = anonymized,
+    country      = anonymized
   )
 }
 

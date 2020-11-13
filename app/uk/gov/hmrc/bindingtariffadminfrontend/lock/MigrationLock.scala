@@ -24,8 +24,8 @@ import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 
 @Singleton
 class MigrationLock @Inject() (lockRepository: LockRepository, appConfig: AppConfig) extends LockKeeper {
-  val lockName = "DataMigration"
-  val repo = lockRepository
-  val lockId = s"$lockName-scheduled-job-lock"
+  val lockName                        = "DataMigration"
+  val repo                            = lockRepository
+  val lockId                          = s"$lockName-scheduled-job-lock"
   val forceLockReleaseAfter: Duration = Duration.millis(appConfig.dataMigrationLockLifetime.toMillis)
 }

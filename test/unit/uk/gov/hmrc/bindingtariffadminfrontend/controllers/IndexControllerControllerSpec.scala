@@ -27,7 +27,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 class IndexControllerControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
   private val migrationService = mock[DataMigrationService]
-  private val controller = new IndexController(new SuccessfulAuthenticatedAction, mcc, messageApi, mockAppConfig)
+  private val controller       = new IndexController(new SuccessfulAuthenticatedAction, mcc, messageApi, mockAppConfig)
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

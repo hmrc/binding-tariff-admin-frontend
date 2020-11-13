@@ -27,38 +27,36 @@ import scala.concurrent.duration.FiniteDuration
 
 class AppConfigSpec extends BaseSpec {
 
-  private def configWith(pairs: (String, String)*): AppConfig = {
+  private def configWith(pairs: (String, String)*): AppConfig =
     new AppConfig(Configuration.from(pairs.map(e => e._1 -> e._2).toMap))
-  }
 
   "Config" should {
     "throw error on missing config key" in {
-      intercept[Exception]{
+      intercept[Exception] {
         configWith().analyticsToken
       }.getMessage shouldBe "Missing configuration key: google-analytics.token"
     }
 
     "Build Filestore URL" in {
       configWith(
-        "microservice.services.binding-tariff-filestore.port" -> "8080",
-        "microservice.services.binding-tariff-filestore.host" -> "localhost",
+        "microservice.services.binding-tariff-filestore.port"     -> "8080",
+        "microservice.services.binding-tariff-filestore.host"     -> "localhost",
         "microservice.services.binding-tariff-filestore.protocol" -> "http"
       ).filestoreUrl shouldBe "http://localhost:8080"
     }
 
     "Build Ruling URL" in {
       configWith(
-        "microservice.services.binding-tariff-ruling-frontend.port" -> "8080",
-        "microservice.services.binding-tariff-ruling-frontend.host" -> "localhost",
+        "microservice.services.binding-tariff-ruling-frontend.port"     -> "8080",
+        "microservice.services.binding-tariff-ruling-frontend.host"     -> "localhost",
         "microservice.services.binding-tariff-ruling-frontend.protocol" -> "http"
       ).rulingUrl shouldBe "http://localhost:8080"
     }
 
-
     "Build Classification Backend URL" in {
       configWith(
-        "microservice.services.binding-tariff-classification.port" -> "8080",
-        "microservice.services.binding-tariff-classification.host" -> "localhost",
+        "microservice.services.binding-tariff-classification.port"     -> "8080",
+        "microservice.services.binding-tariff-classification.host"     -> "localhost",
         "microservice.services.binding-tariff-classification.protocol" -> "http"
       ).classificationBackendUrl shouldBe "http://localhost:8080"
     }
@@ -70,11 +68,17 @@ class AppConfigSpec extends BaseSpec {
     }
 
     "Build Data Migration Lock Lifetime" in {
-      configWith("scheduler.data-migration.lock-lifetime" -> "60s").dataMigrationLockLifetime shouldBe FiniteDuration(60, TimeUnit.SECONDS)
+      configWith("scheduler.data-migration.lock-lifetime" -> "60s").dataMigrationLockLifetime shouldBe FiniteDuration(
+        60,
+        TimeUnit.SECONDS
+      )
     }
 
     "Build Data Migration Interval" in {
-      configWith("scheduler.data-migration.interval" -> "60s").dataMigrationInterval shouldBe FiniteDuration(60, TimeUnit.SECONDS)
+      configWith("scheduler.data-migration.interval" -> "60s").dataMigrationInterval shouldBe FiniteDuration(
+        60,
+        TimeUnit.SECONDS
+      )
     }
 
     "Build Page Size" in {
@@ -82,12 +86,15 @@ class AppConfigSpec extends BaseSpec {
     }
 
     "Build 'Reset Permitted" in {
-      configWith("reset-permitted" -> "true").resetPermitted shouldBe true
+      configWith("reset-permitted" -> "true").resetPermitted  shouldBe true
       configWith("reset-permitted" -> "false").resetPermitted shouldBe false
     }
 
     "Build 'Credentials" in {
-      configWith("auth.credentials" -> "x : y , a : b").credentials shouldBe Seq(Credentials("x", "y"), Credentials("a", "b"))
+      configWith("auth.credentials" -> "x : y , a : b").credentials shouldBe Seq(
+        Credentials("x", "y"),
+        Credentials("a", "b")
+      )
       configWith("auth.credentials" -> "x:y,a:b").credentials shouldBe Seq(Credentials("x", "y"), Credentials("a", "b"))
     }
 

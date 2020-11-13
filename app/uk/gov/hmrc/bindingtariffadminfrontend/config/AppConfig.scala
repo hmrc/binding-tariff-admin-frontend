@@ -26,25 +26,27 @@ import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import scala.concurrent.duration.FiniteDuration
 
 @Singleton
-class AppConfig @Inject()(val configuration: Configuration) extends ServicesConfig(configuration) {
+class AppConfig @Inject() (val configuration: Configuration) extends ServicesConfig(configuration) {
 
   private def loadConfig(key: String): String =
     configuration.getOptional[String](key).getOrElse(throw new Exception(s"Missing configuration key: $key"))
 
   lazy val analyticsToken: String = loadConfig("google-analytics.token")
-  lazy val analyticsHost: String = loadConfig("google-analytics.host")
+  lazy val analyticsHost: String  = loadConfig("google-analytics.host")
 
-  lazy val filestoreUrl: String = baseUrl("binding-tariff-filestore")
-  lazy val dataMigrationUrl: String = baseUrl("binding-tariff-data-transformation")
+  lazy val filestoreUrl: String             = baseUrl("binding-tariff-filestore")
+  lazy val dataMigrationUrl: String         = baseUrl("binding-tariff-data-transformation")
   lazy val classificationBackendUrl: String = baseUrl("binding-tariff-classification")
-  lazy val rulingUrl: String = baseUrl("binding-tariff-ruling-frontend")
-  lazy val internalServiceUrl: String = loadConfig("tariff-classification-frontend")
-  lazy val dataMigrationLockLifetime: FiniteDuration = getDuration("scheduler.data-migration.lock-lifetime").asInstanceOf[FiniteDuration]
-  lazy val dataMigrationInterval: FiniteDuration = getDuration("scheduler.data-migration.interval").asInstanceOf[FiniteDuration]
+  lazy val rulingUrl: String                = baseUrl("binding-tariff-ruling-frontend")
+  lazy val internalServiceUrl: String       = loadConfig("tariff-classification-frontend")
+  lazy val dataMigrationLockLifetime: FiniteDuration = getDuration("scheduler.data-migration.lock-lifetime")
+    .asInstanceOf[FiniteDuration]
+  lazy val dataMigrationInterval: FiniteDuration = getDuration("scheduler.data-migration.interval")
+    .asInstanceOf[FiniteDuration]
   lazy val resetPermitted: Boolean = getBoolean("reset-permitted")
-  lazy val pageSize: Int = getInt("page-size")
-  lazy val apiToken: String = loadConfig("auth.api-token")
-  lazy val clock: Clock = Clock.systemUTC()
+  lazy val pageSize: Int           = getInt("page-size")
+  lazy val apiToken: String        = loadConfig("auth.api-token")
+  lazy val clock: Clock            = Clock.systemUTC()
   lazy val credentials: Seq[Credentials] = getString("auth.credentials")
     .split(",")
     .map(_.split(":") match {

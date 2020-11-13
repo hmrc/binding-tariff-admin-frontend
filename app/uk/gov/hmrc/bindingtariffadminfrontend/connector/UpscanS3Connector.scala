@@ -33,7 +33,7 @@ import scala.concurrent.Future.{failed, successful}
 import scala.util.Try
 
 @Singleton
-class UpscanS3Connector @Inject()() {
+class UpscanS3Connector @Inject() () {
 
   def upload(template: UploadTemplate, file: TemporaryFile, upload: UploadRequest): Future[Unit] = {
     Logger.info(s"Uploading file with template [$template]")
@@ -45,12 +45,14 @@ class UpscanS3Connector @Inject()() {
     val fileName = upload.fileName
 
     template.fields.foreach(entry => builder.addPart(entry._1, new StringBody(entry._2, ContentType.TEXT_PLAIN)))
-    builder.addPart("file",
+    builder.addPart(
+      "file",
       new FileBody(
         file.file,
         mimeType,
         fileName
-      ))
+      )
+    )
 
     val request: HttpPost = new HttpPost(template.href)
     request.setEntity(builder.build())
@@ -60,7 +62,7 @@ class UpscanS3Connector @Inject()() {
     val attempt = Try(client.execute(request)).map { response: HttpResponse =>
       val code = response.getStatusLine.getStatusCode
       if (code >= 200 && code < 300) {
-        successful(() : Unit)
+        successful((): Unit)
       } else {
         failed(
           new RuntimeException(

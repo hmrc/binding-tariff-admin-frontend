@@ -31,19 +31,21 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
   private val connector = new BindingTariffClassificationConnector(mockAppConfig, authenticatedHttpClient)
 
   "Connector 'Create Case'" should {
-    val request = Cases.btiCaseExample
+    val request     = Cases.btiCaseExample
     val requestJSON = Json.toJson(request).toString()
 
     "Create valid case" in {
-      val response = Cases.btiCaseExample
+      val response     = Cases.btiCaseExample
       val responseJSON = Json.toJson(response).toString()
 
-      stubFor(put(urlEqualTo(s"/cases/${request.reference}"))
-        .withRequestBody(equalToJson(requestJSON))
-        .willReturn(aResponse()
-          .withStatus(HttpStatus.SC_OK)
-          .withBody(responseJSON)
-        )
+      stubFor(
+        put(urlEqualTo(s"/cases/${request.reference}"))
+          .withRequestBody(equalToJson(requestJSON))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_OK)
+              .withBody(responseJSON)
+          )
       )
 
       await(connector.upsertCase(request)) shouldBe response
@@ -55,10 +57,12 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
     }
 
     "propagate errors" in {
-      stubFor(put(urlEqualTo(s"/cases/${request.reference}"))
-        .willReturn(aResponse()
-          .withStatus(HttpStatus.SC_BAD_GATEWAY)
-        )
+      stubFor(
+        put(urlEqualTo(s"/cases/${request.reference}"))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_BAD_GATEWAY)
+          )
       )
 
       intercept[Upstream5xxResponse] {
@@ -73,18 +77,20 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
   }
 
   "Connector 'Create Event'" should {
-    val event = Event(Note("note"), Operator("id"), "ref", Instant.now())
+    val event       = Event(Note("note"), Operator("id"), "ref", Instant.now())
     val requestJSON = Json.toJson(event).toString()
 
     "Create valid event" in {
       val responseJSON = Json.toJson(event).toString()
 
-      stubFor(post(urlEqualTo("/cases/ref/events"))
-        .withRequestBody(equalToJson(requestJSON))
-        .willReturn(aResponse()
-          .withStatus(HttpStatus.SC_OK)
-          .withBody(responseJSON)
-        )
+      stubFor(
+        post(urlEqualTo("/cases/ref/events"))
+          .withRequestBody(equalToJson(requestJSON))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_OK)
+              .withBody(responseJSON)
+          )
       )
 
       await(connector.createEvent("ref", event)) shouldBe event
@@ -96,10 +102,12 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
     }
 
     "propagate errors" in {
-      stubFor(post(urlEqualTo("/cases/ref/events"))
-        .willReturn(aResponse()
-          .withStatus(HttpStatus.SC_BAD_GATEWAY)
-        )
+      stubFor(
+        post(urlEqualTo("/cases/ref/events"))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_BAD_GATEWAY)
+          )
       )
 
       intercept[Upstream5xxResponse] {
@@ -119,11 +127,13 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
     "Get valid events" in {
       val responseJSON = Json.toJson(Paged(Seq(event))).toString()
 
-      stubFor(get(urlEqualTo("/cases/ref/events"))
-        .willReturn(aResponse()
-          .withStatus(HttpStatus.SC_OK)
-          .withBody(responseJSON)
-        )
+      stubFor(
+        get(urlEqualTo("/cases/ref/events"))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_OK)
+              .withBody(responseJSON)
+          )
       )
 
       await(connector.getEvents("ref", Pagination())) shouldBe Paged(Seq(event))
@@ -135,10 +145,12 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
     }
 
     "Return failed for 404" in {
-      stubFor(get(urlEqualTo("/cases/ref/events"))
-        .willReturn(aResponse()
-          .withStatus(HttpStatus.SC_NOT_FOUND)
-        )
+      stubFor(
+        get(urlEqualTo("/cases/ref/events"))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_NOT_FOUND)
+          )
       )
 
       intercept[NotFoundException] {
@@ -158,11 +170,13 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
     "Get valid events" in {
       val responseJSON = Json.toJson(Paged(Seq(event))).toString()
 
-      stubFor(get(urlEqualTo("/events?page=1&page_size=2"))
-        .willReturn(aResponse()
-          .withStatus(HttpStatus.SC_OK)
-          .withBody(responseJSON)
-        )
+      stubFor(
+        get(urlEqualTo("/events?page=1&page_size=2"))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_OK)
+              .withBody(responseJSON)
+          )
       )
 
       await(connector.getEvents(EventSearch(), Pagination(1, 2))) shouldBe Paged(Seq(event))
@@ -174,10 +188,12 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
     }
 
     "Return failed for 404" in {
-      stubFor(get(urlEqualTo("/events?page=1&page_size=2"))
-        .willReturn(aResponse()
-          .withStatus(HttpStatus.SC_NOT_FOUND)
-        )
+      stubFor(
+        get(urlEqualTo("/events?page=1&page_size=2"))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_NOT_FOUND)
+          )
       )
 
       intercept[NotFoundException] {
@@ -195,14 +211,16 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
     val ref = Cases.btiCaseExample.reference
 
     "Get valid case" in {
-      val response = Cases.btiCaseExample
+      val response     = Cases.btiCaseExample
       val responseJSON = Json.toJson(response).toString()
 
-      stubFor(get(urlEqualTo(s"/cases/$ref"))
-        .willReturn(aResponse()
-          .withStatus(HttpStatus.SC_OK)
-          .withBody(responseJSON)
-        )
+      stubFor(
+        get(urlEqualTo(s"/cases/$ref"))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_OK)
+              .withBody(responseJSON)
+          )
       )
 
       await(connector.getCase(ref)) shouldBe Some(response)
@@ -214,10 +232,12 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
     }
 
     "Return None for 404" in {
-      stubFor(get(urlEqualTo(s"/cases/$ref"))
-        .willReturn(aResponse()
-          .withStatus(HttpStatus.SC_NOT_FOUND)
-        )
+      stubFor(
+        get(urlEqualTo(s"/cases/$ref"))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_NOT_FOUND)
+          )
       )
 
       await(connector.getCase(ref)) shouldBe None
@@ -232,14 +252,16 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
   "Connector 'GET Cases'" should {
 
     "Get valid case" in {
-      val response = Paged(Seq(Cases.btiCaseExample))
+      val response     = Paged(Seq(Cases.btiCaseExample))
       val responseJSON = Json.toJson(response).toString()
 
-      stubFor(get(urlEqualTo(s"/cases?page=1&page_size=2"))
-        .willReturn(aResponse()
-          .withStatus(HttpStatus.SC_OK)
-          .withBody(responseJSON)
-        )
+      stubFor(
+        get(urlEqualTo(s"/cases?page=1&page_size=2"))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_OK)
+              .withBody(responseJSON)
+          )
       )
 
       await(connector.getCases(CaseSearch(), Pagination(1, 2))) shouldBe response
@@ -254,14 +276,16 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
       val search = CaseSearch(sortDirection = Some(SortDirection.DESCENDING), sortField = Some(SortField.CREATED_DATE))
       val filter = CaseSearch.bindable.unbind("", search)
 
-      val response = Paged(Seq(Cases.btiCaseExample))
+      val response     = Paged(Seq(Cases.btiCaseExample))
       val responseJSON = Json.toJson(response).toString()
 
-      stubFor(get(urlEqualTo(s"/cases?page=1&page_size=2&$filter"))
-        .willReturn(aResponse()
-          .withStatus(HttpStatus.SC_OK)
-          .withBody(responseJSON)
-        )
+      stubFor(
+        get(urlEqualTo(s"/cases?page=1&page_size=2&$filter"))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_OK)
+              .withBody(responseJSON)
+          )
       )
 
       await(connector.getCases(search, Pagination(1, 2))) shouldBe response

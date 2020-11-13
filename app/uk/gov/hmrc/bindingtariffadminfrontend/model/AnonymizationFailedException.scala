@@ -18,6 +18,6 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model
 
 class AnonymizationFailedException(message: String) extends RuntimeException(message)
 
-object AnonymizationFailedException{
+object AnonymizationFailedException {
   def apply(message: String): AnonymizationFailedException = new AnonymizationFailedException(message)
 }

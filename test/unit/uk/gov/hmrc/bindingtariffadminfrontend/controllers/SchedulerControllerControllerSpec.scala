@@ -35,20 +35,21 @@ import scala.concurrent.Future
 
 class SchedulerControllerControllerSpec extends ControllerSpec {
 
-  override lazy val app: Application = new GuiceApplicationBuilder().overrides(
-    bind[AdminMonitorService].toInstance(mock[AdminMonitorService]),
-    bind[AuthenticatedAction].toInstance(new SuccessfulAuthenticatedAction)
-  ).build()
+  override lazy val app: Application = new GuiceApplicationBuilder()
+    .overrides(
+      bind[AdminMonitorService].toInstance(mock[AdminMonitorService]),
+      bind[AuthenticatedAction].toInstance(new SuccessfulAuthenticatedAction)
+    )
+    .build()
 
   private val controller = inject[SchedulerController]
 
-  override protected def afterEach(): Unit = {
+  override protected def afterEach(): Unit =
     super.afterEach()
-  }
 
   "GET /" should {
     "return 200" in {
-      val request = authenticatedRequest(FakeRequest("GET", "/"))
+      val request        = authenticatedRequest(FakeRequest("GET", "/"))
       val result: Result = await(controller.get()(request))
       status(result) shouldBe OK
 //      contentAsString(result) shouldBe scheduler()(authenticatedRequest(request), messages, appConfig).toString()
@@ -61,9 +62,11 @@ class SchedulerControllerControllerSpec extends ControllerSpec {
 
       val service = inject[AdminMonitorService]
 
-      given(service.runScheduledJob(refEq(ScheduledJob.DAYS_ELAPSED))(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(service.runScheduledJob(refEq(ScheduledJob.DAYS_ELAPSED))(any[HeaderCarrier])) willReturn Future.successful(
+        (): Unit
+      )
 
-      val request = authenticatedRequest(FakeRequest("POST", "/"))
+      val request        = authenticatedRequest(FakeRequest("POST", "/"))
       val result: Result = await(controller.post(ScheduledJob.DAYS_ELAPSED)(request))
 
       status(result) shouldBe OK

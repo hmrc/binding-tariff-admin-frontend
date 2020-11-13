@@ -25,33 +25,33 @@ import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 class CaseSearchTest extends UnitSpec {
 
   private val search = CaseSearch(
-    reference = Some(Set("id1", "id2")),
+    reference       = Some(Set("id1", "id2")),
     applicationType = Some(ApplicationType.BTI),
-    traderName = Some("trader-name"),
-    queueId = Some("queue-id"),
-    eori = Some("eori-number"),
-    assigneeId = Some("assignee-id"),
-    statuses = Some(Set(NEW, OPEN)),
-    minDecisionEnd = Some(Instant.EPOCH),
-    keywords = Some(Set("BIKE", "MTB")),
+    traderName      = Some("trader-name"),
+    queueId         = Some("queue-id"),
+    eori            = Some("eori-number"),
+    assigneeId      = Some("assignee-id"),
+    statuses        = Some(Set(NEW, OPEN)),
+    minDecisionEnd  = Some(Instant.EPOCH),
+    keywords        = Some(Set("BIKE", "MTB")),
     decisionDetails = Some("decision-details"),
-    sortDirection = Some(SortDirection.DESCENDING),
-    sortField = Some(SortField.CREATED_DATE)
+    sortDirection   = Some(SortDirection.DESCENDING),
+    sortField       = Some(SortField.CREATED_DATE)
   )
 
   private val params: Map[String, Seq[String]] = Map(
-    "reference" -> Seq("id1", "id2"),
+    "reference"        -> Seq("id1", "id2"),
     "application_type" -> Seq("BTI"),
-    "trader_name" -> Seq("trader-name"),
-    "queue_id" -> Seq("queue-id"),
-    "eori" -> Seq("eori-number"),
-    "assignee_id" -> Seq("assignee-id"),
-    "status" -> Seq("NEW", "OPEN"),
+    "trader_name"      -> Seq("trader-name"),
+    "queue_id"         -> Seq("queue-id"),
+    "eori"             -> Seq("eori-number"),
+    "assignee_id"      -> Seq("assignee-id"),
+    "status"           -> Seq("NEW", "OPEN"),
     "min_decision_end" -> Seq("1970-01-01T00:00:00Z"),
     "decision_details" -> Seq("decision-details"),
-    "keyword" -> Seq("BIKE", "MTB"),
-    "sort_by" -> Seq("created-date"),
-    "sort_direction" -> Seq("desc")
+    "keyword"          -> Seq("BIKE", "MTB"),
+    "sort_by"          -> Seq("created-date"),
+    "sort_direction"   -> Seq("desc")
   )
 
   "Case Search Binder" should {
@@ -86,7 +86,7 @@ class CaseSearchTest extends UnitSpec {
 
     "Bind query string with empty values" in {
       CaseSearch.bindable.bind("", params.mapValues(_ => Seq(""))) shouldBe Some(Right(CaseSearch()))
-      CaseSearch.bindable.bind("", params.mapValues(_ => Seq())) shouldBe Some(Right(CaseSearch()))
+      CaseSearch.bindable.bind("", params.mapValues(_ => Seq()))   shouldBe Some(Right(CaseSearch()))
     }
 
     "Bind populated query string" in {
@@ -104,13 +104,13 @@ class CaseSearchTest extends UnitSpec {
     "Bind from request" in {
       val form = CaseSearch.form.bind(map)
       form.hasErrors shouldBe false
-      form.get shouldBe search
+      form.get       shouldBe search
     }
 
     "Bind from empty request" in {
       val form = CaseSearch.form.bind(map.mapValues(_ => ""))
       form.hasErrors shouldBe false
-      form.get shouldBe CaseSearch()
+      form.get       shouldBe CaseSearch()
     }
   }
 

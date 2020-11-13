@@ -33,13 +33,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
 @Singleton
-class DataMigrationUploadController @Inject()(
-                                               authenticatedAction: AuthenticatedAction,
-                                              service: DataMigrationService,
-                                               mcc: MessagesControllerComponents,
-                                               override val messagesApi: MessagesApi,
-                                              implicit val appConfig: AppConfig
-                                             ) extends FrontendController(mcc) with I18nSupport {
+class DataMigrationUploadController @Inject() (
+  authenticatedAction: AuthenticatedAction,
+  service: DataMigrationService,
+  mcc: MessagesControllerComponents,
+  override val messagesApi: MessagesApi,
+  implicit val appConfig: AppConfig
+) extends FrontendController(mcc)
+    with I18nSupport {
 
   private lazy val form = Form[UploadMigrationDataRequest](
     mapping[UploadMigrationDataRequest, String, String](
@@ -52,25 +53,25 @@ class DataMigrationUploadController @Inject()(
     successful(Ok(views.html.data_migration_upload()))
   }
 
-  def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
-    form.bindFromRequest.fold(
-      _ => successful(BadRequest),
-
-      uploadRequest  => {
-        val file = request.body.files.find(_.filename.nonEmpty)
-        if (file.isDefined) {
-          service.upload(uploadRequest, file.get.ref).map(_ => Accepted) recover handlingError
-        } else {
-          successful(BadRequest)
+  def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) {
+    implicit request =>
+      form.bindFromRequest.fold(
+        _ => successful(BadRequest),
+        uploadRequest => {
+          val file = request.body.files.find(_.filename.nonEmpty)
+          if (file.isDefined) {
+            service.upload(uploadRequest, file.get.ref).map(_ => Accepted) recover handlingError
+          } else {
+            successful(BadRequest)
+          }
         }
-      }
-    )
+      )
   }
 
   private def handlingError: PartialFunction[Throwable, Result] = {
     case e: Upstream4xxResponse => new Status(e.upstreamResponseCode)
     case _: Upstream5xxResponse => BadGateway
-    case e: Throwable => InternalServerError(e.getMessage)
+    case e: Throwable           => InternalServerError(e.getMessage)
   }
 
 }

@@ -20,19 +20,18 @@ import java.time.Instant
 
 import play.api.libs.json.{Json, OFormat}
 
-case class Decision
-(
+case class Decision(
   bindingCommodityCode: String,
   effectiveStartDate: Option[Instant],
   effectiveEndDate: Option[Instant],
   justification: String,
   goodsDescription: String,
-  methodSearch: Option[String] = None,
+  methodSearch: Option[String]                 = None,
   methodCommercialDenomination: Option[String] = None,
-  methodExclusion: Option[String] = None,
-  appeal: Seq[Appeal] = Seq.empty,
-  cancellation: Option[Cancellation] = None,
-  explanation: Option[String] = None
+  methodExclusion: Option[String]              = None,
+  appeal: Seq[Appeal]                          = Seq.empty,
+  cancellation: Option[Cancellation]           = None,
+  explanation: Option[String]                  = None
 )
 
 object Decision {

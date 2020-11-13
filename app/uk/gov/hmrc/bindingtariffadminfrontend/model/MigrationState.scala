@@ -19,8 +19,8 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model
 trait MigrationState[T] {
   val subject: T
 
-  def isSuccess: Boolean = this.isInstanceOf[MigrationSuccess[T]]
-  def isFailure: Boolean = this.isInstanceOf[MigrationFailure[T]]
+  def isSuccess: Boolean             = this.isInstanceOf[MigrationSuccess[T]]
+  def isFailure: Boolean             = this.isInstanceOf[MigrationFailure[T]]
   def asSuccess: MigrationSuccess[T] = this.asInstanceOf[MigrationSuccess[T]]
   def asFailure: MigrationFailure[T] = this.asInstanceOf[MigrationFailure[T]]
 }

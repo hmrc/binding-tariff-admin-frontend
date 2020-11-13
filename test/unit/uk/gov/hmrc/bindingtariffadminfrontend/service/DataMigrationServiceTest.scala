@@ -48,32 +48,44 @@ import scala.concurrent.duration.FiniteDuration
 
 class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
-  private val repository = mock[MigrationRepository]
-  private val caseConnector = mock[BindingTariffClassificationConnector]
-  private val fileConnector = mock[FileStoreConnector]
-  private val rulingConnector = mock[RulingConnector]
-  private val upscanS3Connector = mock[UpscanS3Connector]
+  private val repository             = mock[MigrationRepository]
+  private val caseConnector          = mock[BindingTariffClassificationConnector]
+  private val fileConnector          = mock[FileStoreConnector]
+  private val rulingConnector        = mock[RulingConnector]
+  private val upscanS3Connector      = mock[UpscanS3Connector]
   private val dataMigrationConnector = mock[DataMigrationJsonConnector]
-  private val appConfig = mock[AppConfig]
-  private val lockRepository = mock[LockRepository]
-  private def migrationLock = new MigrationLock(lockRepository, appConfig)
-  private def actorSystem = ActorSystem.create("testActorSystem")
-  private def withService(test: DataMigrationService => Any) = test(new DataMigrationService(
-    repository = repository,
-    migrationLock = migrationLock,
-    fileConnector = fileConnector,
-    upscanS3Connector = upscanS3Connector,
-    rulingConnector = rulingConnector,
-    caseConnector = caseConnector,
-    dataMigrationConnector = dataMigrationConnector,
-    actorSystem = actorSystem
-  ))
+  private val appConfig              = mock[AppConfig]
+  private val lockRepository         = mock[LockRepository]
+  private def migrationLock          = new MigrationLock(lockRepository, appConfig)
+  private def actorSystem            = ActorSystem.create("testActorSystem")
+  private def withService(test: DataMigrationService => Any) =
+    test(
+      new DataMigrationService(
+        repository             = repository,
+        migrationLock          = migrationLock,
+        fileConnector          = fileConnector,
+        upscanS3Connector      = upscanS3Connector,
+        rulingConnector        = rulingConnector,
+        caseConnector          = caseConnector,
+        dataMigrationConnector = dataMigrationConnector,
+        actorSystem            = actorSystem
+      )
+    )
 
   private implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    reset(repository, caseConnector, fileConnector, rulingConnector, upscanS3Connector, dataMigrationConnector, appConfig, lockRepository)
+    reset(
+      repository,
+      caseConnector,
+      fileConnector,
+      rulingConnector,
+      upscanS3Connector,
+      dataMigrationConnector,
+      appConfig,
+      lockRepository
+    )
   }
 
   override protected def beforeEach(): Unit = {
@@ -87,8 +99,8 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val aSuccessfullyUploadedFile = FileUploaded("name", "published", "text/plain", None, None)
 
     "if connector is returning the file metadata" in withService { service =>
-
-      given(fileConnector.find(refEq("name"))(any[HeaderCarrier])).willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
+      given(fileConnector.find(refEq("name"))(any[HeaderCarrier]))
+        .willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
 
       val result = await(service.getDataMigrationFilesDetails(List("name")))
 
@@ -97,9 +109,10 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     }
 
     "if connector is returning the file metadata for mutiple callers" in withService { service =>
-
-      given(fileConnector.find(refEq("name1"))(any[HeaderCarrier])).willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
-      given(fileConnector.find(refEq("name2"))(any[HeaderCarrier])).willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
+      given(fileConnector.find(refEq("name1"))(any[HeaderCarrier]))
+        .willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
+      given(fileConnector.find(refEq("name2"))(any[HeaderCarrier]))
+        .willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
 
       val result = await(service.getDataMigrationFilesDetails(List("name1", "name2")))
 
@@ -109,10 +122,9 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     }
 
     "if connector is not returning the file metadata" in withService { service =>
-
       given(fileConnector.find(any[String])(any[HeaderCarrier])).willReturn(Future.successful(None))
 
-      intercept[RuntimeException]{
+      intercept[RuntimeException] {
         await(service.getDataMigrationFilesDetails(List("name")))
       }
       verify(fileConnector, atLeastOnce()).find(refEq("name"))(any[HeaderCarrier])
@@ -148,7 +160,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   }
 
   "Service 'Get State'" should {
-    val migration = mock[Migration]
+    val migration  = mock[Migration]
     val migrations = Paged(Seq(migration))
 
     "Delegate to Repository" in withService { service =>
@@ -198,7 +210,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   }
 
   "Service 'Update'" should {
-    val migration = mock[Migration]
+    val migration        = mock[Migration]
     val migrationUpdated = mock[Migration]
 
     "Delegate to Repository" in withService { service =>
@@ -402,7 +414,9 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
+      given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.failed(
+        new RuntimeException("Error")
+      )
       given(repository.delete(None)) willReturn Future.successful(true)
 
       await(service.resetEnvironment(stores))
@@ -417,20 +431,98 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   }
 
   "Service 'Process'" should {
-    val migratableAttachment = MigratedAttachment(public = true, name = "name", timestamp = Instant.EPOCH)
-    val migratableEvent1 = MigratableEvent(details = Note("note"), operator = Operator("id"), timestamp = Instant.MAX)
-    val migratableEvent2 = MigratableEvent(details = Note("other"), operator = Operator("id"), timestamp = Instant.MAX)
-    val migratableCase = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, Some(0), None, None, None, None, btiApplicationExample, None, Seq.empty, Seq.empty, Set("keyword1", "keyword2"), dateOfExtract = Some(Instant.EPOCH))
-    val migratableCaseWithEvents = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, Some(0), None, None, None, None, btiApplicationExample, None, Seq.empty, Seq(migratableEvent1, migratableEvent2), Set("keyword1", "keyword2"), dateOfExtract = Some(Instant.EPOCH))
-    val migratableCaseWithAttachments = MigratableCase("1", CaseStatus.OPEN, Instant.EPOCH, 0, Some(0), None, None, None, None, btiApplicationExample, None, Seq(migratableAttachment), Seq.empty, Set("keyword1", "keyword2"), dateOfExtract = Some(Instant.EPOCH))
+    val migratableAttachment = MigratedAttachment(public = true, name              = "name", timestamp         = Instant.EPOCH)
+    val migratableEvent1     = MigratableEvent(details   = Note("note"), operator  = Operator("id"), timestamp = Instant.MAX)
+    val migratableEvent2     = MigratableEvent(details   = Note("other"), operator = Operator("id"), timestamp = Instant.MAX)
+    val migratableCase = MigratableCase(
+      "1",
+      CaseStatus.OPEN,
+      Instant.EPOCH,
+      0,
+      Some(0),
+      None,
+      None,
+      None,
+      None,
+      btiApplicationExample,
+      None,
+      Seq.empty,
+      Seq.empty,
+      Set("keyword1", "keyword2"),
+      dateOfExtract = Some(Instant.EPOCH)
+    )
+    val migratableCaseWithEvents = MigratableCase(
+      "1",
+      CaseStatus.OPEN,
+      Instant.EPOCH,
+      0,
+      Some(0),
+      None,
+      None,
+      None,
+      None,
+      btiApplicationExample,
+      None,
+      Seq.empty,
+      Seq(migratableEvent1, migratableEvent2),
+      Set("keyword1", "keyword2"),
+      dateOfExtract = Some(Instant.EPOCH)
+    )
+    val migratableCaseWithAttachments = MigratableCase(
+      "1",
+      CaseStatus.OPEN,
+      Instant.EPOCH,
+      0,
+      Some(0),
+      None,
+      None,
+      None,
+      None,
+      btiApplicationExample,
+      None,
+      Seq(migratableAttachment),
+      Seq.empty,
+      Set("keyword1", "keyword2"),
+      dateOfExtract = Some(Instant.EPOCH)
+    )
 
     val attachment = Attachment(id = "name", public = true, timestamp = Instant.EPOCH)
-    val aCase = Case("1", CaseStatus.OPEN, Instant.EPOCH, 0, 0, None, None, None, None, btiApplicationExample, None, Seq.empty, Set("keyword1", "keyword2"), dateOfExtract = Some(Instant.EPOCH))
-    val aCaseWithAttachments = Case("1", CaseStatus.OPEN, Instant.EPOCH, 0, 0, None, None, None, None, btiApplicationExample, None, Seq(attachment), Set("keyword1", "keyword2"), dateOfExtract = Some(Instant.EPOCH))
+    val aCase = Case(
+      "1",
+      CaseStatus.OPEN,
+      Instant.EPOCH,
+      0,
+      0,
+      None,
+      None,
+      None,
+      None,
+      btiApplicationExample,
+      None,
+      Seq.empty,
+      Set("keyword1", "keyword2"),
+      dateOfExtract = Some(Instant.EPOCH)
+    )
+    val aCaseWithAttachments = Case(
+      "1",
+      CaseStatus.OPEN,
+      Instant.EPOCH,
+      0,
+      0,
+      None,
+      None,
+      None,
+      None,
+      btiApplicationExample,
+      None,
+      Seq(attachment),
+      Set("keyword1", "keyword2"),
+      dateOfExtract = Some(Instant.EPOCH)
+    )
 
-    val anUnprocessedMigration = Migration(migratableCase)
+    val anUnprocessedMigration                = Migration(migratableCase)
     val anUnprocessedMigrationWithAttachments = Migration(migratableCaseWithAttachments)
-    val anUnprocessedMigrationWithEvents = Migration(migratableCaseWithEvents)
+    val anUnprocessedMigrationWithEvents      = Migration(migratableCaseWithEvents)
 
     "Migrate new Case" in withService { service =>
       givenTheCaseDoesNotAlreadyExist()
@@ -438,7 +530,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       givenNotifyingTheRulingStoreSucceeds()
 
       val migrated = await(service.process(anUnprocessedMigration))
-      migrated.status shouldBe MigrationStatus.SUCCESS
+      migrated.status  shouldBe MigrationStatus.SUCCESS
       migrated.message shouldBe Seq.empty
 
       theCaseCreated shouldBe aCase
@@ -450,7 +542,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       givenNotifyingTheRulingStoreFails()
 
       val migrated = await(service.process(anUnprocessedMigration))
-      migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
+      migrated.status  shouldBe MigrationStatus.PARTIAL_SUCCESS
       migrated.message shouldBe Seq("Failed to notify the ruling store [Notify Error]")
 
       theCaseCreated shouldBe aCase
@@ -500,7 +592,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       givenNotifyingTheRulingStoreSucceeds()
 
       val migrated = await(service.process(anUnprocessedMigrationWithAttachments))
-      migrated.status shouldBe MigrationStatus.SUCCESS
+      migrated.status  shouldBe MigrationStatus.SUCCESS
       migrated.message shouldBe Seq.empty
 
       theCaseCreated shouldBe aCaseWithAttachments
@@ -566,55 +658,62 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       }.getMessage shouldBe "Upsert Error"
     }
 
-    def givenTheCaseExists(): Unit = {
+    def givenTheCaseExists(): Unit =
       given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(Some(aCase))
-    }
 
-    def givenCreatingAnEventFails(): Unit = {
-      given(caseConnector.createEvent(anyString(), any[Event])(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Create Event Failure"))
-    }
+    def givenCreatingAnEventFails(): Unit =
+      given(caseConnector.createEvent(anyString(), any[Event])(any[HeaderCarrier])) willReturn Future.failed(
+        new RuntimeException("Create Event Failure")
+      )
 
-    def givenPublishingTheFileReturns(aSuccessfullyUploadedFile: FileUploaded): Unit = {
-      given(fileConnector.publish(anyString())(any[HeaderCarrier])) willReturn Future.successful(aSuccessfullyUploadedFile)
-    }
+    def givenPublishingTheFileReturns(aSuccessfullyUploadedFile: FileUploaded): Unit =
+      given(fileConnector.publish(anyString())(any[HeaderCarrier])) willReturn Future.successful(
+        aSuccessfullyUploadedFile
+      )
 
-    def givenRetrievingTheUploadedFilesFails(): Unit = {
-      given(fileConnector.find(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Find Error"))
-    }
+    def givenRetrievingTheUploadedFilesFails(): Unit =
+      given(fileConnector.find(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.failed(
+        new RuntimeException("Find Error")
+      )
 
-    def givenRetrievingTheUploadedFilesReturnsNone(): Unit = {
-      given(fileConnector.find(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[FileUploaded])
-    }
+    def givenRetrievingTheUploadedFilesReturnsNone(): Unit =
+      given(fileConnector.find(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(
+        Paged.empty[FileUploaded]
+      )
 
-    def givenRetrievingTheUploadedFilesReturns(files: FileUploaded*): Unit = {
-      given(fileConnector.find(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(Paged(files.toSeq))
-    }
+    def givenRetrievingTheUploadedFilesReturns(files: FileUploaded*): Unit =
+      given(fileConnector.find(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(
+        Paged(files.toSeq)
+      )
 
-    def givenPublishingTheFileFails(): Unit = {
-      given(fileConnector.publish(anyString())(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Publish Error"))
-    }
+    def givenPublishingTheFileFails(): Unit =
+      given(fileConnector.publish(anyString())(any[HeaderCarrier])) willReturn Future.failed(
+        new RuntimeException("Publish Error")
+      )
 
-    def givenNotifyingTheRulingStoreFails() = {
-      given(rulingConnector.notify(anyString())(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Notify Error"))
-    }
+    def givenNotifyingTheRulingStoreFails() =
+      given(rulingConnector.notify(anyString())(any[HeaderCarrier])) willReturn Future.failed(
+        new RuntimeException("Notify Error")
+      )
 
-    def givenNotifyingTheRulingStoreSucceeds() = {
+    def givenNotifyingTheRulingStoreSucceeds() =
       given(rulingConnector.notify(anyString())(any[HeaderCarrier])) willReturn Future.successful(())
-    }
 
-    def givenUpsertingTheCaseReturnsItself(): Unit = {
+    def givenUpsertingTheCaseReturnsItself(): Unit =
       given(caseConnector.upsertCase(any[Case])(any[HeaderCarrier])) willAnswer new Answer[Future[Case]] {
         override def answer(invocation: InvocationOnMock): Future[Case] = Future.successful(invocation.getArgument(0))
       }
-    }
 
-    def givenUpsertingTheCaseFails() = {
-      given(caseConnector.upsertCase(any[Case])(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Upsert Error"))
-    }
+    def givenUpsertingTheCaseFails() =
+      given(caseConnector.upsertCase(any[Case])(any[HeaderCarrier])) willReturn Future.failed(
+        new RuntimeException("Upsert Error")
+      )
 
     def givenTheCaseDoesNotAlreadyExist() = {
       given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(None)
-      given(caseConnector.getEvents(any[String], any[Pagination])(any[HeaderCarrier])) willReturn Future.failed(new NotFoundException("events not found"))
+      given(caseConnector.getEvents(any[String], any[Pagination])(any[HeaderCarrier])) willReturn Future.failed(
+        new NotFoundException("events not found")
+      )
     }
 
     def theCaseCreated: Case = {
@@ -623,13 +722,11 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       captor.getValue
     }
 
-    def verifyNoCaseCreated = {
+    def verifyNoCaseCreated =
       verify(caseConnector, never()).upsertCase(any[Case])(any[HeaderCarrier])
-    }
 
-    def verifyNoEventsCreated = {
+    def verifyNoEventsCreated =
       verify(caseConnector, never()).createEvent(anyString(), any[Event])(any[HeaderCarrier])
-    }
 
     implicit def list2seq[T]: java.util.List[T] => Seq[T] = JavaConverters.asScalaBufferConverter(_).asScala.toSeq
 
@@ -649,7 +746,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
   "Service initiate" should {
     "Delegate to connector" in withService { service =>
-      val request = UploadMigrationDataRequest("name", "type")
+      val request  = UploadMigrationDataRequest("name", "type")
       val template = UploadTemplate("href", Map())
 
       given(fileConnector.initiate(request)) willReturn Future.successful(template)
@@ -660,9 +757,9 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
   "Service upload" should {
     "Delegate to connector" in withService { service =>
-      val request = UploadMigrationDataRequest("name", "type")
+      val request  = UploadMigrationDataRequest("name", "type")
       val template = UploadTemplate("href", Map())
-      val file = mock[TemporaryFile]
+      val file     = mock[TemporaryFile]
 
       given(fileConnector.initiate(request)) willReturn Future.successful(template)
       given(upscanS3Connector.upload(template, file, request)) willReturn Future.successful(())

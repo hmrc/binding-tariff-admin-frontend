@@ -19,15 +19,13 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize._
 
-case class Contact
-(
+case class Contact(
   name: String,
   email: String,
   phone: Option[String]
 ) {
-  def anonymize: Contact = {
+  def anonymize: Contact =
     this.copy(name = anonymized, email = anonymized, phone = this.phone.map(anonymizing))
-  }
 }
 
 object Contact {

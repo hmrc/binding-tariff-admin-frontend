@@ -20,9 +20,7 @@ import java.time.Instant
 
 import play.api.libs.json.{Json, OFormat}
 
-case class RepaymentClaim(
-                           dvrNumber: Option[String] = None,
-                           dateForRepayment: Option[Instant] = None)
+case class RepaymentClaim(dvrNumber: Option[String] = None, dateForRepayment: Option[Instant] = None)
 
 object RepaymentClaim {
   implicit val format: OFormat[RepaymentClaim] = Json.format[RepaymentClaim]

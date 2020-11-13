@@ -24,12 +24,12 @@ class EventSearchTest extends UnitSpec {
 
   private val search = EventSearch(
     caseReference = Some(Set("ref1", "ref2")),
-    `type` = Some(Set(EventType.NOTE, EventType.CASE_STATUS_CHANGE))
+    `type`        = Some(Set(EventType.NOTE, EventType.CASE_STATUS_CHANGE))
   )
 
   private val params: Map[String, Seq[String]] = Map(
     "case_reference" -> Seq("ref1", "ref2"),
-    "type" -> Seq("NOTE", "CASE_STATUS_CHANGE")
+    "type"           -> Seq("NOTE", "CASE_STATUS_CHANGE")
   )
 
   private val emptyParams: Map[String, Seq[String]] = params.mapValues(_.map(_ => ""))

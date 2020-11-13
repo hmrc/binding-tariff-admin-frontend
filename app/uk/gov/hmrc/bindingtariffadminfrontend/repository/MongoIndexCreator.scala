@@ -21,23 +21,18 @@ import reactivemongo.api.indexes.IndexType.Ascending
 
 object MongoIndexCreator {
 
-  def createSingleFieldAscendingIndex(indexFieldKey: String, isUnique: Boolean): Index = {
+  def createSingleFieldAscendingIndex(indexFieldKey: String, isUnique: Boolean): Index =
     createCompoundIndex(
       fieldNames = Seq(indexFieldKey),
-      isUnique = isUnique
+      isUnique   = isUnique
     )
-  }
 
-  def createCompoundIndex(fieldNames: Seq[String],
-                          isUnique: Boolean,
-                          isBackground: Boolean = false): Index = {
-
+  def createCompoundIndex(fieldNames: Seq[String], isUnique: Boolean, isBackground: Boolean = false): Index =
     Index(
-      key = fieldNames.map(_ -> Ascending),
-      name = Some(s"${fieldNames.mkString("-")}_Index"),
-      unique = isUnique,
+      key        = fieldNames.map(_ -> Ascending),
+      name       = Some(s"${fieldNames.mkString("-")}_Index"),
+      unique     = isUnique,
       background = isBackground
     )
-  }
 
 }

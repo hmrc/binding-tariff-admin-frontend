@@ -32,18 +32,19 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future.successful
 
 @Singleton
-class DataMigrationStateController @Inject()(
-                                              authenticatedAction: AuthenticatedAction,
-                                             service: DataMigrationService,
-                                              mcc: MessagesControllerComponents,
-                                              override val messagesApi: MessagesApi,
-                                             implicit val appConfig: AppConfig
-                                            ) extends FrontendController(mcc) with I18nSupport {
+class DataMigrationStateController @Inject() (
+  authenticatedAction: AuthenticatedAction,
+  service: DataMigrationService,
+  mcc: MessagesControllerComponents,
+  override val messagesApi: MessagesApi,
+  implicit val appConfig: AppConfig
+) extends FrontendController(mcc)
+    with I18nSupport {
 
   def get(page: Int, status: Seq[String]): Action[AnyContent] = authenticatedAction.async { implicit request =>
     for {
       counts <- service.counts
-      state <- service.getState(status.flatMap(MigrationStatus(_)), Pagination(page, appConfig.pageSize))
+      state  <- service.getState(status.flatMap(MigrationStatus(_)), Pagination(page, appConfig.pageSize))
       view = data_migration_state(state, counts, routes.DataMigrationStateController.get(_, status))
     } yield Ok(view)
   }
@@ -55,7 +56,9 @@ class DataMigrationStateController @Inject()(
 
   private val form: Form[Set[Store]] = Form(
     mapping[Set[Store], Set[Store]](
-      "store" -> set(nonEmptyText.verifying(v => Store.values.exists(v == _.toString)).transform(Store(_).get, _.toString))
+      "store" -> set(
+        nonEmptyText.verifying(v => Store.values.exists(v == _.toString)).transform(Store(_).get, _.toString)
+      )
     )(identity)(Some(_))
   ).fill(Store.defaultValues)
 

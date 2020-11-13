@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.filters
 
-
 import javax.inject.{Inject, Singleton}
 import com.kenshoo.play.metrics.MetricsFilter
 import play.api.Configuration
@@ -30,7 +29,7 @@ import uk.gov.hmrc.play.bootstrap.frontend.filters._
 import uk.gov.hmrc.play.bootstrap.frontend.filters.deviceid.DeviceIdFilter
 
 @Singleton
-class CustomFrontendFilters @Inject()(
+class CustomFrontendFilters @Inject() (
   configuration: Configuration,
   loggingFilter: LoggingFilter,
   headersFilter: HeadersFilter,

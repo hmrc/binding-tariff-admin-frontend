@@ -27,7 +27,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, client: AuthenticatedHttpClient) {
+class BindingTariffClassificationConnector @Inject() (configuration: AppConfig, client: AuthenticatedHttpClient) {
 
   def upsertCase(c: Case)(implicit hc: HeaderCarrier): Future[Case] = {
     val url = s"${configuration.classificationBackendUrl}/cases/${c.reference}"
@@ -45,7 +45,9 @@ class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, c
   }
 
   def getEvents(search: EventSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Event]] = {
-    val queryParam = Seq(Pagination.bindable.unbind("", pagination), EventSearch.bindable.unbind("", search)).filter(_.nonEmpty).mkString("&")
+    val queryParam = Seq(Pagination.bindable.unbind("", pagination), EventSearch.bindable.unbind("", search))
+      .filter(_.nonEmpty)
+      .mkString("&")
     val url = s"${configuration.classificationBackendUrl}/events?$queryParam"
     client.GET[Paged[Event]](url = url)
   }
@@ -56,7 +58,9 @@ class BindingTariffClassificationConnector @Inject()(configuration: AppConfig, c
   }
 
   def getCases(search: CaseSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Case]] = {
-    val queryParam = Seq(Pagination.bindable.unbind("", pagination), CaseSearch.bindable.unbind("", search)).filter(_.nonEmpty).mkString("&")
+    val queryParam = Seq(Pagination.bindable.unbind("", pagination), CaseSearch.bindable.unbind("", search))
+      .filter(_.nonEmpty)
+      .mkString("&")
     val url = s"${configuration.classificationBackendUrl}/cases?$queryParam"
     client.GET[Paged[Case]](url = url)
   }

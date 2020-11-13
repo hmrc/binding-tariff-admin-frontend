@@ -33,49 +33,54 @@ import scala.concurrent.Future
 class AdminMonitorServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
   private implicit val hc: HeaderCarrier = HeaderCarrier()
-  private val btcConnector = mock[BindingTariffClassificationConnector]
-  private val fileConnector = mock[FileStoreConnector]
-  private val service = new AdminMonitorService(btcConnector, fileConnector)
-
+  private val btcConnector               = mock[BindingTariffClassificationConnector]
+  private val fileConnector              = mock[FileStoreConnector]
+  private val service                    = new AdminMonitorService(btcConnector, fileConnector)
 
   "Count Cases" should {
     "Delegate to connector" in {
-      given(btcConnector.getCases(refEq(CaseSearch()), refEq(Pagination(1, 1)))(any[HeaderCarrier])) willReturn Future.successful(Paged(Seq.empty[Case], 0, 0, 1))
+      given(btcConnector.getCases(refEq(CaseSearch()), refEq(Pagination(1, 1)))(any[HeaderCarrier])) willReturn Future
+        .successful(Paged(Seq.empty[Case], 0, 0, 1))
       await(service.countCases) shouldBe 1
     }
   }
 
   "Count Published Files" should {
     "Delegate to connector" in {
-      given(fileConnector.find(refEq(FileSearch(published = Some(true))), refEq(Pagination(1, 1)))(any[HeaderCarrier])) willReturn Future.successful(Paged(Seq.empty[FileUploaded], 0, 0, 1))
+      given(fileConnector.find(refEq(FileSearch(published = Some(true))), refEq(Pagination(1, 1)))(any[HeaderCarrier])) willReturn Future
+        .successful(Paged(Seq.empty[FileUploaded], 0, 0, 1))
       await(service.countPublishedFiles) shouldBe 1
     }
   }
 
   "Count Unpublished Files" should {
     "Delegate to connector" in {
-      given(fileConnector.find(refEq(FileSearch(published = Some(false))), refEq(Pagination(1, 1)))(any[HeaderCarrier])) willReturn Future.successful(Paged(Seq.empty[FileUploaded], 0, 0, 1))
+      given(fileConnector.find(refEq(FileSearch(published = Some(false))), refEq(Pagination(1, 1)))(any[HeaderCarrier])) willReturn Future
+        .successful(Paged(Seq.empty[FileUploaded], 0, 0, 1))
       await(service.countUnpublishedFiles) shouldBe 1
     }
   }
 
   "Get Cases" should {
     "Delegate to connector" in {
-      given(btcConnector.getCases(refEq(CaseSearch()), refEq(Pagination()))(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[Case])
+      given(btcConnector.getCases(refEq(CaseSearch()), refEq(Pagination()))(any[HeaderCarrier])) willReturn Future
+        .successful(Paged.empty[Case])
       await(service.getCases(CaseSearch(), Pagination())) shouldBe Paged.empty[Case]
     }
   }
 
   "Get Files" should {
     "Delegate to connector" in {
-      given(fileConnector.find(refEq(FileSearch()), refEq(Pagination()))(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[FileUploaded])
+      given(fileConnector.find(refEq(FileSearch()), refEq(Pagination()))(any[HeaderCarrier])) willReturn Future
+        .successful(Paged.empty[FileUploaded])
       await(service.getFiles(FileSearch(), Pagination())) shouldBe Paged.empty[FileUploaded]
     }
   }
 
   "Get Events" should {
     "Delegate to connector" in {
-      given(btcConnector.getEvents(refEq(EventSearch()), refEq(Pagination()))(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[Event])
+      given(btcConnector.getEvents(refEq(EventSearch()), refEq(Pagination()))(any[HeaderCarrier])) willReturn Future
+        .successful(Paged.empty[Event])
       await(service.getEvents(EventSearch(), Pagination())) shouldBe Paged.empty[Event]
     }
   }

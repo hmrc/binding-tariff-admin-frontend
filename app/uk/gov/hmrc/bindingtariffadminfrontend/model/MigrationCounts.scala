@@ -20,23 +20,18 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationSta
 
 class MigrationCounts(counts: Map[MigrationStatus, Int]) {
 
-  def get(status: MigrationStatus): Int = {
+  def get(status: MigrationStatus): Int =
     counts.getOrElse(status, 0)
-  }
 
-  def total: Int = {
+  def total: Int =
     counts.foldLeft(0)(_ + _._2)
-  }
 
-  def hasUnprocessed: Boolean = {
+  def hasUnprocessed: Boolean =
     get(MigrationStatus.UNPROCESSED) > 0
-  }
 
-  def processed: Int = {
+  def processed: Int =
     counts.filter(_._1 != MigrationStatus.UNPROCESSED).foldLeft(0)(_ + _._2)
-  }
 
-  def isEmpty: Boolean = {
+  def isEmpty: Boolean =
     counts.isEmpty
-  }
 }

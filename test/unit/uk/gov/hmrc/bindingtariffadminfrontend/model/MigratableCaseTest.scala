@@ -27,12 +27,12 @@ import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 class MigratableCaseTest extends UnitSpec with MockitoSugar {
 
-  private val application = mock[Application]
-  private val decision = mock[Decision]
+  private val application        = mock[Application]
+  private val decision           = mock[Decision]
   private val migratableDecision = mock[MigratableDecision]
-  private val attachment = mock[Attachment]
+  private val attachment         = mock[Attachment]
   private val migratedAttachment = mock[MigratedAttachment]
-  private val event = mock[MigratableEvent]
+  private val event              = mock[MigratableEvent]
 
   "Migratable Case" should {
 
@@ -41,64 +41,64 @@ class MigratableCaseTest extends UnitSpec with MockitoSugar {
 
     "Convert To Case" in {
       MigratableCase(
-        reference = "ref",
-        status = SUPPRESSED,
-        createdDate = Instant.EPOCH,
-        daysElapsed = 10,
-        referredDaysElapsed = Some(20),
-        closedDate = Some(Instant.EPOCH),
+        reference            = "ref",
+        status               = SUPPRESSED,
+        createdDate          = Instant.EPOCH,
+        daysElapsed          = 10,
+        referredDaysElapsed  = Some(20),
+        closedDate           = Some(Instant.EPOCH),
         caseBoardsFileNumber = Some("case-boards-number"),
-        assignee = Some(Operator("operator")),
-        queueId = Some("queue"),
-        application = application,
-        decision = Some(migratableDecision),
-        attachments = Seq(migratedAttachment),
-        events = Seq(event),
-        keywords = Set("keyword1", "keyword2"),
-        sampleStatus = Some(DESTROYED)
+        assignee             = Some(Operator("operator")),
+        queueId              = Some("queue"),
+        application          = application,
+        decision             = Some(migratableDecision),
+        attachments          = Seq(migratedAttachment),
+        events               = Seq(event),
+        keywords             = Set("keyword1", "keyword2"),
+        sampleStatus         = Some(DESTROYED)
       ).toCase shouldBe Case(
         "ref",
-        status = SUPPRESSED,
-        createdDate = Instant.EPOCH,
-        daysElapsed = 10,
-        referredDaysElapsed = 20,
-        closedDate = Some(Instant.EPOCH),
+        status               = SUPPRESSED,
+        createdDate          = Instant.EPOCH,
+        daysElapsed          = 10,
+        referredDaysElapsed  = 20,
+        closedDate           = Some(Instant.EPOCH),
         caseBoardsFileNumber = Some("case-boards-number"),
-        assignee = Some(Operator("operator")),
-        queueId = Some("queue"),
-        application = application,
-        decision = Some(decision),
-        attachments = Seq(attachment),
-        keywords = Set("keyword1", "keyword2"),
-        sample = Sample(status = Some(DESTROYED))
+        assignee             = Some(Operator("operator")),
+        queueId              = Some("queue"),
+        application          = application,
+        decision             = Some(decision),
+        attachments          = Seq(attachment),
+        keywords             = Set("keyword1", "keyword2"),
+        sample               = Sample(status = Some(DESTROYED))
       )
     }
 
     "Convert To Case with defaults" in {
       MigratableCase(
-        reference = "ref",
-        status = SUPPRESSED,
+        reference   = "ref",
+        status      = SUPPRESSED,
         createdDate = Instant.EPOCH,
         daysElapsed = 10,
         application = application,
         attachments = Seq(migratedAttachment),
-        events = Seq(event),
-        keywords = Set("keyword1", "keyword2")
+        events      = Seq(event),
+        keywords    = Set("keyword1", "keyword2")
       ).toCase shouldBe Case(
         "ref",
-        status = SUPPRESSED,
-        createdDate = Instant.EPOCH,
-        daysElapsed = 10,
-        referredDaysElapsed = 0,  // Note: type conversion
-        closedDate = None,
+        status               = SUPPRESSED,
+        createdDate          = Instant.EPOCH,
+        daysElapsed          = 10,
+        referredDaysElapsed  = 0, // Note: type conversion
+        closedDate           = None,
         caseBoardsFileNumber = None,
-        assignee = None,
-        queueId = None,
-        application = application,
-        decision = None,
-        attachments = Seq(attachment),
-        keywords = Set("keyword1", "keyword2"),
-        sample = Sample()
+        assignee             = None,
+        queueId              = None,
+        application          = application,
+        decision             = None,
+        attachments          = Seq(attachment),
+        keywords             = Set("keyword1", "keyword2"),
+        sample               = Sample()
       )
     }
   }

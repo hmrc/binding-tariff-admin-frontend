@@ -24,17 +24,16 @@ import uk.gov.hmrc.play.scheduling.ScheduledJob
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class Scheduler @Inject()(actorSystem: ActorSystem, job: ScheduledJob) {
+class Scheduler @Inject() (actorSystem: ActorSystem, job: ScheduledJob) {
 
   Logger.info("Starting Scheduler")
 
   actorSystem.scheduler.schedule(
     initialDelay = job.initialDelay,
-    interval = job.interval,
+    interval     = job.interval,
     new Runnable {
-      override def run(): Unit = {
+      override def run(): Unit =
         job.execute.map(r => Logger.info(r.message))
-      }
     }
   )
 

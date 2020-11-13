@@ -39,8 +39,9 @@ import scala.concurrent.Future
 class SearchControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
   private val migrationService = mock[DataMigrationService]
-  private val service = mock[AdminMonitorService]
-  private val controller = new SearchController(new SuccessfulAuthenticatedAction, service, mcc, messageApi, mockAppConfig)
+  private val service          = mock[AdminMonitorService]
+  private val controller =
+    new SearchController(new SuccessfulAuthenticatedAction, service, mcc, messageApi, mockAppConfig)
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -56,9 +57,15 @@ class SearchControllerSpec extends ControllerSpec with BeforeAndAfterEach {
   "GET /" should {
 
     "return 200" in {
-      given(service.getCases(any[CaseSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[Case])
-      given(service.getFiles(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[FileUploaded])
-      given(service.getEvents(any[EventSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(Paged.empty[Event])
+      given(service.getCases(any[CaseSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(
+        Paged.empty[Case]
+      )
+      given(service.getFiles(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(
+        Paged.empty[FileUploaded]
+      )
+      given(service.getEvents(any[EventSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(
+        Paged.empty[Event]
+      )
 
       val result: Result = await(controller.get(CaseSearch(), Pagination())(FakeRequest()))
       status(result) shouldBe OK
@@ -66,7 +73,8 @@ class SearchControllerSpec extends ControllerSpec with BeforeAndAfterEach {
     }
 
     "return 200 with form errors" in {
-      val result: Result = await(controller.get(CaseSearch(), Pagination())(FakeRequest().withFormUrlEncodedBody("status" -> "x")))
+      val result: Result =
+        await(controller.get(CaseSearch(), Pagination())(FakeRequest().withFormUrlEncodedBody("status" -> "x")))
       status(result) shouldBe OK
       bodyOf(result) should include("search-heading")
     }

@@ -33,7 +33,6 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
 
   private val extractionDate = LocalDate.of(2020, 10, 10)
 
-
   "Connector sendDataForProcessing" should {
 
     "return the json for the mutiple files" in {
@@ -57,7 +56,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
     "propagate errors" in {
       stubFor(
         post("/binding-tariff-data-transformation/send-data-for-processing")
-        .willReturn(serverError())
+          .willReturn(serverError())
       )
 
       intercept[Upstream5xxResponse] {
@@ -84,7 +83,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
       val response = await(connector.getStatusOfJsonProcessing)
 
       response.status shouldBe Status.OK
-      response.json shouldBe Json.obj("status" -> "inserting")
+      response.json   shouldBe Json.obj("status" -> "inserting")
 
       verify(
         getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/processing-status"))
@@ -94,8 +93,10 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
     "propagate errors" in {
       stubFor(
         get("/binding-tariff-data-transformation/processing-status")
-          .willReturn(notFound()
-          .withBody(Json.obj("status" -> "error").toString()))
+          .willReturn(
+            notFound()
+              .withBody(Json.obj("status" -> "error").toString())
+          )
       )
 
       intercept[NotFoundException] {
@@ -111,7 +112,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
   "Connector downloadBTIJson" should {
 
     "return the json for the multiple files" in {
-      val expected = fromResource("filestore-initiate_response.json")
+      val expected     = fromResource("filestore-initiate_response.json")
       val expectedJson = Json.prettyPrint(Json.parse(expected))
 
       stubFor(
@@ -124,7 +125,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
       )
       val response = await(connector.downloadBTIJson)
 
-      response.status shouldBe Status.OK
+      response.status                             shouldBe Status.OK
       Json.prettyPrint(Json.parse(response.body)) shouldBe expectedJson
 
       verify(
@@ -136,7 +137,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
   "Connector downloadLiabilitiesJson" should {
 
     "return the json for the multiple files" in {
-      val expected = fromResource("filestore-initiate_response.json")
+      val expected     = fromResource("filestore-initiate_response.json")
       val expectedJson = Json.prettyPrint(Json.parse(expected))
 
       stubFor(
@@ -150,7 +151,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
 
       val response = await(connector.downloadLiabilitiesJson)
 
-      response.status shouldBe Status.OK
+      response.status                             shouldBe Status.OK
       Json.prettyPrint(Json.parse(response.body)) shouldBe expectedJson
 
       verify(
@@ -161,7 +162,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
 
   "Connector downloadMigrationReports" should {
     "return the json for the multiple files" in {
-      val expected = fromResource("filestore-initiate_response.json")
+      val expected     = fromResource("filestore-initiate_response.json")
       val expectedJson = Json.prettyPrint(Json.parse(expected))
 
       stubFor(
@@ -175,7 +176,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
 
       val response = await(connector.downloadMigrationReports)
 
-      response.status shouldBe Status.OK
+      response.status                             shouldBe Status.OK
       Json.prettyPrint(Json.parse(response.body)) shouldBe expectedJson
 
       verify(
@@ -232,7 +233,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
       val response = await(connector.getStatusOfHistoricDataProcessing)
 
       response.status shouldBe Status.OK
-      response.json shouldBe Json.obj("status" -> "processing")
+      response.json   shouldBe Json.obj("status" -> "processing")
 
       verify(
         getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/historic-processing-status"))
@@ -242,8 +243,10 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
     "propagate errors" in {
       stubFor(
         get("/binding-tariff-data-transformation/historic-processing-status")
-          .willReturn(notFound()
-            .withBody(Json.obj("status" -> "error").toString()))
+          .willReturn(
+            notFound()
+              .withBody(Json.obj("status" -> "error").toString())
+          )
       )
 
       intercept[NotFoundException] {
@@ -258,7 +261,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
 
   "Connector downloadHistoricJson" should {
     "return the json for the multiple files" in {
-      val expected = fromResource("filestore-initiate_response.json")
+      val expected     = fromResource("filestore-initiate_response.json")
       val expectedJson = Json.prettyPrint(Json.parse(expected))
 
       stubFor(
@@ -271,7 +274,7 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
       )
       val response = await(connector.downloadHistoricJson)
 
-      response.status shouldBe Status.OK
+      response.status                             shouldBe Status.OK
       Json.prettyPrint(Json.parse(response.body)) shouldBe expectedJson
 
       verify(

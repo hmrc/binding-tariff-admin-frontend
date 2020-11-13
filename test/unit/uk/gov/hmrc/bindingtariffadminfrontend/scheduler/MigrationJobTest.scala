@@ -41,13 +41,14 @@ import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 
 class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
-  private val config = mock[AppConfig]
-  private val service = mock[DataMigrationService]
+  private val config         = mock[AppConfig]
+  private val service        = mock[DataMigrationService]
   private val lockRepository = mock[LockRepository]
-  private val appConfig = mock[AppConfig]
-  private def migrationLock = new MigrationLock(lockRepository, appConfig)
+  private val appConfig      = mock[AppConfig]
+  private def migrationLock  = new MigrationLock(lockRepository, appConfig)
 
-  private def withJob(test: MigrationJob => Any) = test(new MigrationJob(config, service, migrationLock, lockRepository))
+  private def withJob(test: MigrationJob => Any) =
+    test(new MigrationJob(config, service, migrationLock, lockRepository))
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -68,21 +69,13 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
     val `case` = mock[MigratableCase]
     given(`case`.reference) willReturn "reference"
 
-    "Configure 'lock Interval" in withJob { job =>
-      job.releaseLockAfter shouldBe Duration.standardSeconds(60)
-    }
+    "Configure 'lock Interval" in withJob(job => job.releaseLockAfter shouldBe Duration.standardSeconds(60))
 
-    "Configure 'interval'" in withJob { job =>
-      job.interval shouldBe FiniteDuration(60, TimeUnit.SECONDS)
-    }
+    "Configure 'interval'" in withJob(job => job.interval shouldBe FiniteDuration(60, TimeUnit.SECONDS))
 
-    "Configure 'initial delay'" in withJob { job =>
-      job.initialDelay shouldBe FiniteDuration(0, TimeUnit.SECONDS)
-    }
+    "Configure 'initial delay'" in withJob(job => job.initialDelay shouldBe FiniteDuration(0, TimeUnit.SECONDS))
 
-    "Configure 'name'" in withJob { job =>
-      job.name shouldBe "DataMigration"
-    }
+    "Configure 'name'" in withJob(job => job.name shouldBe "DataMigration")
   }
 
   "Execute" should {
@@ -165,7 +158,8 @@ class MigrationJobTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
     }
 
     def returnWhatWasUpdated: Answer[Future[Option[Migration]]] = new Answer[Future[Option[Migration]]] {
-      override def answer(invocation: InvocationOnMock): Future[Option[Migration]] = Future.successful(Some(invocation.getArgument(0)))
+      override def answer(invocation: InvocationOnMock): Future[Option[Migration]] =
+        Future.successful(Some(invocation.getArgument(0)))
     }
   }
 }

@@ -22,8 +22,7 @@ import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Operator}
 import uk.gov.hmrc.bindingtariffadminfrontend.util.FilenameUtil
 
-case class MigratedAttachment
-(
+case class MigratedAttachment(
   public: Boolean = false,
   name: String,
   operator: Option[Operator] = None,
@@ -32,15 +31,14 @@ case class MigratedAttachment
 ) {
   def id: String = FilenameUtil.toID(name)
 
-  def asAttachment: Attachment = {
+  def asAttachment: Attachment =
     Attachment(
-      id = id,
-      public = public,
-      operator = operator,
-      timestamp = timestamp,
+      id          = id,
+      public      = public,
+      operator    = operator,
+      timestamp   = timestamp,
       description = description
     )
-  }
 }
 
 object MigratedAttachment {

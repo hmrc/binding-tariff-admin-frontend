@@ -33,14 +33,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class SchedulerTest extends UnitSpec with MockitoSugar {
 
-  private val actorSystem = mock[ActorSystem]
+  private val actorSystem       = mock[ActorSystem]
   private val internalScheduler = mock[akka.actor.Scheduler]
-  private val job = mock[ScheduledJob]
-
+  private val job               = mock[ScheduledJob]
 
   "Scheduler" should {
     val initialDelay = FiniteDuration(1, TimeUnit.SECONDS)
-    val interval = FiniteDuration(2, TimeUnit.SECONDS)
+    val interval     = FiniteDuration(2, TimeUnit.SECONDS)
 
     "Schedule Job" in {
       given(actorSystem.scheduler) willReturn internalScheduler

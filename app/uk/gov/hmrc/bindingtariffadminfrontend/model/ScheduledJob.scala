@@ -24,12 +24,11 @@ import scala.util.Try
 
 object ScheduledJob extends Enumeration {
   type ScheduledJob = Value
-  val DAYS_ELAPSED = Value
+  val DAYS_ELAPSED          = Value
   val REFERRED_DAYS_ELAPSED = Value
 
-  def apply(string: String): Option[ScheduledJob] = {
+  def apply(string: String): Option[ScheduledJob] =
     values.find(_.toString == string)
-  }
 
   implicit val format: Format[ScheduledJob.Value] = JsonUtil.format(ScheduledJob)
 

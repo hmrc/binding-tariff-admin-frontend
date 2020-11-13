@@ -23,20 +23,19 @@ import play.api.libs.json.Reads._
 import play.api.libs.json._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Appeal, Cancellation, Decision}
 
-case class MigratableDecision
-(
+case class MigratableDecision(
   bindingCommodityCode: String,
   effectiveStartDate: Option[Instant],
   effectiveEndDate: Option[Instant],
   justification: String,
   goodsDescription: String,
-  methodSearch: Option[String] = None,
+  methodSearch: Option[String]                 = None,
   methodCommercialDenomination: Option[String] = None,
-  methodExclusion: Option[String] = None,
-  appeal: Option[Seq[Appeal]] = None,
-  cancellation: Option[Cancellation] = None
+  methodExclusion: Option[String]              = None,
+  appeal: Option[Seq[Appeal]]                  = None,
+  cancellation: Option[Cancellation]           = None
 ) {
-  def toDecision: Decision = {
+  def toDecision: Decision =
     Decision(
       bindingCommodityCode,
       effectiveStartDate,
@@ -49,7 +48,6 @@ case class MigratableDecision
       appeal.getOrElse(Seq.empty),
       cancellation
     )
-  }
 }
 
 object MigratableDecision {
@@ -64,7 +62,7 @@ object MigratableDecision {
       (JsPath \ "methodCommercialDenomination").readNullable[String] and
       (JsPath \ "methodExclusion").readNullable[String] and
       ((JsPath \ "appeal").readNullable[Seq[Appeal]] or (JsPath \ "appeal").readNullable[Appeal].map(_.map(Seq(_)))) and
-      (JsPath \ "cancellation").readNullable[Cancellation]) (MigratableDecision.apply _)
+      (JsPath \ "cancellation").readNullable[Cancellation])(MigratableDecision.apply _)
   }
 
   implicit val writes: Writes[MigratableDecision] = Json.writes[MigratableDecision]

@@ -39,10 +39,15 @@ import uk.gov.hmrc.http._
 import scala.concurrent.Future
 
 class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfterEach {
-  private val migrationService = mock[DataMigrationService]
+  private val migrationService   = mock[DataMigrationService]
   private val migrationConnector = mock[DataMigrationJsonConnector]
   private val controller = new HistoricDataUploadController(
-    new SuccessfulAuthenticatedAction, migrationService, migrationConnector, mcc, messageApi, realConfig
+    new SuccessfulAuthenticatedAction,
+    migrationService,
+    migrationConnector,
+    mcc,
+    messageApi,
+    realConfig
   )
 
   override def beforeEach(): Unit = {
@@ -72,24 +77,26 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
 
       val result: Result = await(controller.getStatusOfHistoricDataProcessing()(newFakeRequestWithCSRF))
 
-      status(result) shouldBe OK
+      status(result)     shouldBe OK
       jsonBodyOf(result) shouldBe Json.obj("status" -> "processing")
     }
 
     "return 400" in {
       given(migrationConnector.getStatusOfHistoricDataProcessing(any[HeaderCarrier]))
-        .willReturn(Future.successful(HttpResponse.apply(400, responseJson = Some(Json.obj("error" -> "error while inserting")))))
+        .willReturn(
+          Future.successful(HttpResponse.apply(400, responseJson = Some(Json.obj("error" -> "error while inserting"))))
+        )
 
       val result: Result = await(controller.getStatusOfHistoricDataProcessing()(newFakeRequestWithCSRF))
 
-      status(result) shouldBe BAD_REQUEST
+      status(result)     shouldBe BAD_REQUEST
       jsonBodyOf(result) shouldBe Json.obj("error" -> "error while inserting")
     }
   }
 
   "downloadHistoricJson /" should {
     "return 200" in {
-      val source = Source.single(ByteString.fromString("~~archive~~"))
+      val source               = Source.single(ByteString.fromString("~~archive~~"))
       val response: WSResponse = mock[WSResponse]
       when(response.status).thenReturn(200)
       when(response.bodyAsSource: Source[ByteString, Any]).thenReturn(source)
@@ -116,16 +123,18 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
 
   "POST /" should {
     "Upload" in {
-      given(migrationService.upload(any[UploadHistoricDataRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future.successful(())
+      given(migrationService.upload(any[UploadHistoricDataRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+        .successful(())
 
-      val f = aForm(filename = "filename", mimeType = "text/plain")
+      val f              = aForm(filename = "filename", mimeType = "text/plain")
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(f)))
 
       status(result) shouldBe 202
     }
 
     "Handle 4xx Errors" in {
-      given(migrationService.upload(any[UploadHistoricDataRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future.failed(Upstream4xxResponse("error", 409, 0))
+      given(migrationService.upload(any[UploadHistoricDataRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+        .failed(Upstream4xxResponse("error", 409, 0))
 
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(aForm())))
 
@@ -133,7 +142,8 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
     }
 
     "Handle 5xx Errors" in {
-      given(migrationService.upload(any[UploadHistoricDataRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future.failed(Upstream5xxResponse("error", 500, 0))
+      given(migrationService.upload(any[UploadHistoricDataRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+        .failed(Upstream5xxResponse("error", 500, 0))
 
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(aForm())))
 
@@ -141,7 +151,8 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
     }
 
     "Handle unknown Errors" in {
-      given(migrationService.upload(any[UploadHistoricDataRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("error"))
+      given(migrationService.upload(any[UploadHistoricDataRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+        .failed(new RuntimeException("error"))
 
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(aForm())))
 
@@ -184,7 +195,8 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
       "ALLBTIDATA-2015_csv",
       "ALLBTIDATA-2016_csv",
       "ALLBTIDATA-2017_csv",
-      "ALLBTIDATA-2018_csv")
+      "ALLBTIDATA-2018_csv"
+    )
 
     val successfullyUploadedFiles: List[FileUploaded] = List(
       FileUploaded("ALLAPPLDATA-2010_csv", "ALLAPPLDATA-2010.txt", "text/plain", None, None),
@@ -202,19 +214,21 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
       status(result) shouldBe SEE_OTHER
 
       verify(migrationService, atLeastOnce()).getAvailableFileDetails(refEq(historicDataFileIds))(any[HeaderCarrier])
-      verify(migrationConnector, atLeastOnce()).sendHistoricDataForProcessing(refEq(successfullyUploadedFiles))(any[HeaderCarrier])
+      verify(migrationConnector, atLeastOnce())
+        .sendHistoricDataForProcessing(refEq(successfullyUploadedFiles))(any[HeaderCarrier])
     }
 
     "Handle 4xx Errors from service" in {
-      when(migrationService.getAvailableFileDetails(refEq(historicDataFileIds))(any[HeaderCarrier])).
-        thenReturn(Future.failed(Upstream4xxResponse("error", 409, 0)))
+      when(migrationService.getAvailableFileDetails(refEq(historicDataFileIds))(any[HeaderCarrier]))
+        .thenReturn(Future.failed(Upstream4xxResponse("error", 409, 0)))
 
       intercept[Upstream4xxResponse] {
         await(controller.postDataAndRedirect()(fakeUploadFileRequest(Nil)))
       }
 
       verify(migrationService, atLeastOnce()).getAvailableFileDetails(refEq(historicDataFileIds))(any[HeaderCarrier])
-      verify(migrationConnector, never()).sendHistoricDataForProcessing(refEq(successfullyUploadedFiles))(any[HeaderCarrier])
+      verify(migrationConnector, never())
+        .sendHistoricDataForProcessing(refEq(successfullyUploadedFiles))(any[HeaderCarrier])
     }
 
     "Handle 5xx Errors from connector" in {
@@ -228,7 +242,8 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
       }
 
       verify(migrationService, atLeastOnce()).getAvailableFileDetails(refEq(historicDataFileIds))(any[HeaderCarrier])
-      verify(migrationConnector, atLeastOnce()).sendHistoricDataForProcessing(refEq(successfullyUploadedFiles))(any[HeaderCarrier])
+      verify(migrationConnector, atLeastOnce())
+        .sendHistoricDataForProcessing(refEq(successfullyUploadedFiles))(any[HeaderCarrier])
     }
 
     "Handle unknown Errors from connector" in {
@@ -245,7 +260,8 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
       }
 
       verify(migrationService, atLeastOnce()).getAvailableFileDetails(refEq(historicDataFileIds))(any[HeaderCarrier])
-      verify(migrationConnector, atLeastOnce()).sendHistoricDataForProcessing(refEq(successfullyUploadedFiles))(any[HeaderCarrier])
+      verify(migrationConnector, atLeastOnce())
+        .sendHistoricDataForProcessing(refEq(successfullyUploadedFiles))(any[HeaderCarrier])
     }
 
     "Handle the case where no files are found" in {
@@ -262,15 +278,16 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
   }
 
   private def aForm(filename: String = "file.txt", mimeType: String = "text/html"): MultipartFormData[TemporaryFile] = {
-    val file = SingletonTemporaryFileCreator.create(filename)
+    val file     = SingletonTemporaryFileCreator.create(filename)
     val filePart = FilePart[TemporaryFile](key = "file", filename, contentType = Some(mimeType), ref = file)
     MultipartFormData[TemporaryFile](
       dataParts = Map("id" -> Seq(filename), "filename" -> Seq(filename), "mimetype" -> Seq(mimeType)),
-      files = Seq(filePart),
-      badParts = Seq.empty
+      files     = Seq(filePart),
+      badParts  = Seq.empty
     )
   }
 
-  private def fakeUploadFileRequest (uploadedFiles: List[FileUploaded]): FakeRequest[AnyContentAsEmpty.type] =
-    FakeRequest("GET", "/", FakeHeaders(), AnyContentAsJson(Json.toJson(uploadedFiles))).withCSRFToken.asInstanceOf[FakeRequest[AnyContentAsEmpty.type]]
+  private def fakeUploadFileRequest(uploadedFiles: List[FileUploaded]): FakeRequest[AnyContentAsEmpty.type] =
+    FakeRequest("GET", "/", FakeHeaders(), AnyContentAsJson(Json.toJson(uploadedFiles))).withCSRFToken
+      .asInstanceOf[FakeRequest[AnyContentAsEmpty.type]]
 }

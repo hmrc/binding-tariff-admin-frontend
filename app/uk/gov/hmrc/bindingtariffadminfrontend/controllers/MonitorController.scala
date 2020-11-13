@@ -27,19 +27,20 @@ import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
-class MonitorController @Inject()(
-                                   authenticatedAction: AuthenticatedAction,
-                                monitorService: AdminMonitorService,
-                                   mcc: MessagesControllerComponents,
-                                   override val messagesApi: MessagesApi,
-                                implicit val appConfig: AppConfig
-                                 ) extends FrontendController(mcc) with I18nSupport {
+class MonitorController @Inject() (
+  authenticatedAction: AuthenticatedAction,
+  monitorService: AdminMonitorService,
+  mcc: MessagesControllerComponents,
+  override val messagesApi: MessagesApi,
+  implicit val appConfig: AppConfig
+) extends FrontendController(mcc)
+    with I18nSupport {
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
     for {
-      cases <- monitorService.countCases
-      publishedFiles <-  monitorService.countPublishedFiles
-      unpublishedFiles <-  monitorService.countUnpublishedFiles
+      cases            <- monitorService.countCases
+      publishedFiles   <- monitorService.countPublishedFiles
+      unpublishedFiles <- monitorService.countUnpublishedFiles
     } yield Ok(monitor(cases, publishedFiles, unpublishedFiles))
   }
 

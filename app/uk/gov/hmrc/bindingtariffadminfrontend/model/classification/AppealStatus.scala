@@ -21,7 +21,6 @@ import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 
 object AppealStatus extends Enumeration {
   type AppealStatus = Value
-  val IN_PROGRESS, ALLOWED, DISMISSED, MEDIATION = Value
+  val IN_PROGRESS, ALLOWED, DISMISSED, MEDIATION  = Value
   implicit val format: Format[AppealStatus.Value] = JsonUtil.format(AppealStatus)
 }
-

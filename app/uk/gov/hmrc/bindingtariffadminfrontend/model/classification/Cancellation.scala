@@ -19,8 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 import play.api.libs.json.Json
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CancelReason.CancelReason
 
-case class Cancellation
-(
+case class Cancellation(
   reason: CancelReason,
   applicationForExtendedUse: Boolean = false
 )

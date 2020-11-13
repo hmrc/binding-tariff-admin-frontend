@@ -32,10 +32,12 @@ import uk.gov.hmrc.play.scheduling.LockedScheduledJob
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
-class MigrationJob @Inject()(appConfig: AppConfig,
-                             service: DataMigrationService,
-                             migrationLock: MigrationLock,
-                             override val lockRepository: LockRepository) extends LockedScheduledJob {
+class MigrationJob @Inject() (
+  appConfig: AppConfig,
+  service: DataMigrationService,
+  migrationLock: MigrationLock,
+  override val lockRepository: LockRepository
+) extends LockedScheduledJob {
 
   private implicit val headers: HeaderCarrier = HeaderCarrier()
 
@@ -54,7 +56,7 @@ class MigrationJob @Inject()(appConfig: AppConfig,
     process().map(count => Result(s"Processed $count migrations"))
   }
 
-  private def process(count: Int = 0)(implicit ctx: ExecutionContext): Future[Int] = {
+  private def process(count: Int = 0)(implicit ctx: ExecutionContext): Future[Int] =
     // TODO: Request migrations in batches rather than one at a time to improve performance
     service.getNextMigration flatMap {
       case Some(migration) if count < 100 =>
@@ -64,9 +66,8 @@ class MigrationJob @Inject()(appConfig: AppConfig,
         }
       case _ => Future.successful(count)
     }
-  }
 
-  private def process(migration: Migration)(implicit ctx: ExecutionContext): Future[Result] = {
+  private def process(migration: Migration)(implicit ctx: ExecutionContext): Future[Result] =
     service.process(migration) recover {
       case t: Throwable =>
         Logger.error(s"Migration with reference [${migration.`case`.reference}] failed", t)
@@ -76,8 +77,10 @@ class MigrationJob @Inject()(appConfig: AppConfig,
     } flatMap {
       service.update
     } map {
-      case Some(processed) => Result(s"[Migration with reference [${processed.`case`.reference}] completed with status [${processed.status}]]")
+      case Some(processed) =>
+        Result(
+          s"[Migration with reference [${processed.`case`.reference}] completed with status [${processed.status}]]"
+        )
       case None => Result(s"[Migration with reference [${migration.`case`.reference}] was cleared before it completed]")
     }
-  }
 }

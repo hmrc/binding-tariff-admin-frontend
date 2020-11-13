@@ -26,62 +26,58 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class DataMigrationJsonConnector @Inject()(
+class DataMigrationJsonConnector @Inject() (
   configuration: AppConfig,
   http: AuthenticatedHttpClient,
-  wsClient: WSClient) {
+  wsClient: WSClient
+) {
 
-  def sendDataForProcessing(files: FileUploadSubmission)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-
+  def sendDataForProcessing(files: FileUploadSubmission)(implicit hc: HeaderCarrier): Future[HttpResponse] =
     http.POST[FileUploadSubmission, HttpResponse](
-      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/send-data-for-processing", files)
-  }
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/send-data-for-processing",
+      files
+    )
 
-  def getStatusOfJsonProcessing(implicit hc: HeaderCarrier): Future[HttpResponse] = {
+  def getStatusOfJsonProcessing(implicit hc: HeaderCarrier): Future[HttpResponse] =
+    http.GET[HttpResponse](s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/processing-status")
 
-    http.GET[HttpResponse](
-      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/processing-status")
-  }
+  def downloadBTIJson: Future[WSResponse] =
+    wsClient
+      .url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/transformed-bti-records")
+      .withMethod("GET")
+      .stream()
 
-  def downloadBTIJson: Future[WSResponse] = {
+  def downloadLiabilitiesJson: Future[WSResponse] =
+    wsClient
+      .url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/transformed-liabilities-records")
+      .withMethod("GET")
+      .stream()
 
-    wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/transformed-bti-records")
-      .withMethod("GET").stream()
-  }
+  def downloadMigrationReports: Future[WSResponse] =
+    wsClient
+      .url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/migration-reports")
+      .withMethod("GET")
+      .stream()
 
-  def downloadLiabilitiesJson: Future[WSResponse] = {
-
-    wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/transformed-liabilities-records")
-      .withMethod("GET").stream()
-  }
-
-  def downloadMigrationReports: Future[WSResponse] = {
-
-    wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/migration-reports")
-      .withMethod("GET").stream()
-  }
-
-  def sendHistoricDataForProcessing(files: List[FileUploaded])(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-
+  def sendHistoricDataForProcessing(files: List[FileUploaded])(implicit hc: HeaderCarrier): Future[HttpResponse] =
     http.POST[List[FileUploaded], HttpResponse](
-      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/send-historic-data-for-processing", files)
-  }
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/send-historic-data-for-processing",
+      files
+    )
 
-  def getStatusOfHistoricDataProcessing(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-
+  def getStatusOfHistoricDataProcessing(implicit hc: HeaderCarrier): Future[HttpResponse] =
     http.GET[HttpResponse](
-      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-processing-status")
-  }
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-processing-status"
+    )
 
-  def downloadHistoricJson: Future[WSResponse] = {
+  def downloadHistoricJson: Future[WSResponse] =
+    wsClient
+      .url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-data")
+      .withMethod("GET")
+      .stream()
 
-    wsClient.url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-data")
-      .withMethod("GET").stream()
-  }
-
-  def deleteHistoricData()(implicit hc: HeaderCarrier): Future[Unit] = {
-
-    http.DELETE[HttpResponse](s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-data")
+  def deleteHistoricData()(implicit hc: HeaderCarrier): Future[Unit] =
+    http
+      .DELETE[HttpResponse](s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-data")
       .map(_ => ())
-  }
 }

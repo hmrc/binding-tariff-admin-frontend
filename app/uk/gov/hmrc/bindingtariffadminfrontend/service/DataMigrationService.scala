@@ -44,59 +44,61 @@ import scala.concurrent.Future.{sequence, successful}
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.util.{Random, Success}
 
-class DataMigrationService @Inject()(repository: MigrationRepository,
-                                     migrationLock: MigrationLock,
-                                     fileConnector: FileStoreConnector,
-                                     upscanS3Connector: UpscanS3Connector,
-                                     rulingConnector: RulingConnector,
-                                     caseConnector: BindingTariffClassificationConnector,
-                                     dataMigrationConnector: DataMigrationJsonConnector,
-                                     actorSystem: ActorSystem) {
-
+class DataMigrationService @Inject() (
+  repository: MigrationRepository,
+  migrationLock: MigrationLock,
+  fileConnector: FileStoreConnector,
+  upscanS3Connector: UpscanS3Connector,
+  rulingConnector: RulingConnector,
+  caseConnector: BindingTariffClassificationConnector,
+  dataMigrationConnector: DataMigrationJsonConnector,
+  actorSystem: ActorSystem
+) {
 
   // TODO: Delete when we upgrade to a version of Play that uses Akka Stream 2.6+
   implicit val materializer: Materializer = ActorMaterializer.create(actorSystem)
 
-  def getDataMigrationFilesDetails(fileNames:List[String])(implicit hc: HeaderCarrier): Future[List[FileUploaded]] ={
+  def getDataMigrationFilesDetails(fileNames: List[String])(implicit hc: HeaderCarrier): Future[List[FileUploaded]] = {
 
-    val opts =  fileNames.map{ file =>
-      fileConnector.find(file).map{
-        case Some(data) =>  data
-        case None =>  throw new RuntimeException("No data found")
+    val opts = fileNames.map { file =>
+      fileConnector.find(file).map {
+        case Some(data) => data
+        case None       => throw new RuntimeException("No data found")
       }
     }
 
     Future.sequence(opts)
   }
 
-  def getAvailableFileDetails(fileIds: List[String])(implicit hc: HeaderCarrier): Future[List[FileUploaded]] = {
-    Future.sequence(fileIds.map(fileConnector.find))
+  def getAvailableFileDetails(fileIds: List[String])(implicit hc: HeaderCarrier): Future[List[FileUploaded]] =
+    Future
+      .sequence(fileIds.map(fileConnector.find))
       .map(_.flatten)
-  }
 
-  def getState(status: Seq[MigrationStatus], pagination: Pagination): Future[Paged[Migration]] = {
+  def getState(status: Seq[MigrationStatus], pagination: Pagination): Future[Paged[Migration]] =
     repository.get(status, pagination)
-  }
 
-  def counts: Future[MigrationCounts] = {
+  def counts: Future[MigrationCounts] =
     repository.countByStatus
-  }
 
-  def prepareMigrationGroup(migrations: Seq[Migration], priority: Boolean)(implicit hc: HeaderCarrier): Future[Boolean] = {
+  def prepareMigrationGroup(migrations: Seq[Migration], priority: Boolean)(
+    implicit hc: HeaderCarrier
+  ): Future[Boolean] =
     for {
-      _ <- repository.delete(migrations)
+      _      <- repository.delete(migrations)
       result <- repository.insert(migrations)
       _ <- if (priority) {
-        Future.sequence(migrations.map(process(_).flatMap(update)))
-      } else Future.successful(())
+            Future.sequence(migrations.map(process(_).flatMap(update)))
+          } else Future.successful(())
     } yield result
-  }
 
-  def withMigrationLock(attemptNumber: Int, baseDelay: FiniteDuration, delayCap: FiniteDuration, maxRetries: Int)(block: => Future[Boolean]): Future[Boolean] = {
+  def withMigrationLock(attemptNumber: Int, baseDelay: FiniteDuration, delayCap: FiniteDuration, maxRetries: Int)(
+    block: => Future[Boolean]
+  ): Future[Boolean] = {
     val exponentialBackoff = baseDelay.toMillis * math.pow(2, attemptNumber).longValue
-    val backoffWithCap = math.min(delayCap.toMillis, exponentialBackoff)
-    val backoffWithJitter = (backoffWithCap * Random.nextDouble()).longValue
-    val retryDelay = FiniteDuration(backoffWithJitter, TimeUnit.MILLISECONDS)
+    val backoffWithCap     = math.min(delayCap.toMillis, exponentialBackoff)
+    val backoffWithJitter  = (backoffWithCap * Random.nextDouble()).longValue
+    val retryDelay         = FiniteDuration(backoffWithJitter, TimeUnit.MILLISECONDS)
 
     if (attemptNumber > maxRetries) {
       Future.successful(false)
@@ -105,12 +107,16 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
         case Some(result) =>
           Future.successful(result)
         case None =>
-          after(retryDelay, actorSystem.scheduler)(withMigrationLock(attemptNumber + 1, baseDelay, delayCap, maxRetries)(block))
+          after(retryDelay, actorSystem.scheduler)(
+            withMigrationLock(attemptNumber + 1, baseDelay, delayCap, maxRetries)(block)
+          )
       }
     }
   }
 
-  def prepareMigration(cases: Source[MigratableCase, _], priority: Boolean = false)(implicit hc: HeaderCarrier): Future[Boolean] = {
+  def prepareMigration(cases: Source[MigratableCase, _], priority: Boolean = false)(
+    implicit hc: HeaderCarrier
+  ): Future[Boolean] = {
     val groupSize = 5000
 
     withMigrationLock(attemptNumber = 0, baseDelay = 1.second, delayCap = 60.seconds, maxRetries = 10) {
@@ -123,23 +129,21 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     }
   }
 
-  def getNextMigration: Future[Option[Migration]] = {
+  def getNextMigration: Future[Option[Migration]] =
     repository.get(MigrationStatus.UNPROCESSED)
-  }
 
-  def update(migration: Migration): Future[Option[Migration]] = {
+  def update(migration: Migration): Future[Option[Migration]] =
     repository.update(migration)
-  }
 
-  def clear(status: Option[MigrationStatus] = None): Future[Boolean] = {
+  def clear(status: Option[MigrationStatus] = None): Future[Boolean] =
     repository.delete(status)
-  }
 
   def resetEnvironment(stores: Set[Store])(implicit hc: HeaderCarrier): Future[Unit] = {
 
-    def resetIfPresent(store: Store, expression: => Future[Any]): Future[Unit] = if (stores.contains(store)) {
-      expression.map(_ => ()) recover loggingAWarning
-    } else Future.successful(())
+    def resetIfPresent(store: Store, expression: => Future[Any]): Future[Unit] =
+      if (stores.contains(store)) {
+        expression.map(_ => ()) recover loggingAWarning
+      } else Future.successful(())
 
     def loggingAWarning: PartialFunction[Throwable, Unit] = {
       case t: Throwable => Logger.warn("Failed to clear Service", t)
@@ -155,29 +159,27 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     } yield ()
   }
 
-  def initiateFileMigration(upload: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] = {
+  def initiateFileMigration(upload: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] =
     fileConnector.initiate(upload)
-  }
 
-  def upload(upload: UploadRequest, file: TemporaryFile)(implicit hc: HeaderCarrier): Future[Unit] = {
+  def upload(upload: UploadRequest, file: TemporaryFile)(implicit hc: HeaderCarrier): Future[Unit] =
     for {
       template <- fileConnector.initiate(upload)
-      _ <- upscanS3Connector.upload(template, file, upload)
+      _        <- upscanS3Connector.upload(template, file, upload)
     } yield ()
-  }
 
   def process(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
     Logger.info(s"Case Migration with reference [${migration.`case`.reference}]: Starting")
 
     checkIfExists(migration).flatMap {
-      case exists@Migration(_, MigrationStatus.SKIPPED, _) =>
+      case exists @ Migration(_, MigrationStatus.SKIPPED, _) =>
         Future.successful(exists)
       case updated =>
         attemptMigration(updated)
     }
   }
 
-  def attemptMigration(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
+  def attemptMigration(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] =
     for {
       // Find the files for this Migration
       migratedFiles: Seq[FileUploaded] <- findMigratedFiles(migration)
@@ -200,7 +202,6 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       status = if (updated.status == MigrationStatus.UNPROCESSED) MigrationStatus.SUCCESS else updated.status
 
     } yield updated.copy(status = status)
-  }
 
   private def checkIfExists(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] =
     caseConnector
@@ -241,7 +242,7 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     Seq(info, warning, statusChange).flatten
   }
 
-  private def notifyRulingStore(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
+  private def notifyRulingStore(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] =
     rulingConnector
       .notify(migration.`case`.reference)
       .map(Success(_))
@@ -254,18 +255,21 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
         case _ =>
           migration
       }
-  }
 
-  private def createEvents(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
+  private def createEvents(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] =
     sequence(
       migration.`case`.events map { event =>
-        caseConnector.createEvent(migration.`case`.reference, event.toEvent(migration.`case`.reference)).map(_ => MigrationSuccess(event)) recover withFailure(event)
+        caseConnector
+          .createEvent(migration.`case`.reference, event.toEvent(migration.`case`.reference))
+          .map(_ => MigrationSuccess(event)) recover withFailure(event)
       }
     ) map {
       case migrations: Seq[MigrationState[MigratableEvent]] if migrations.exists(_.isFailure) =>
         val failedMigrations = migrations.filter(_.isFailure).map(_.asFailure)
-        val summaryMessage = s"Failed to migrate ${failedMigrations.size}/${migrations.size} events"
-        val failureMessages = failedMigrations.map(f => s"Failed to migrate event [${f.subject.details.`type`}] because [${f.cause.getMessage}]")
+        val summaryMessage   = s"Failed to migrate ${failedMigrations.size}/${migrations.size} events"
+        val failureMessages = failedMigrations.map(f =>
+          s"Failed to migrate event [${f.subject.details.`type`}] because [${f.cause.getMessage}]"
+        )
 
         migration
           .copy(status = MigrationStatus.PARTIAL_SUCCESS)
@@ -274,24 +278,26 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
       case _ =>
         migration
     }
-  }
 
-  private def publishUploads(migratedFiles: Seq[FileUploaded], migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
+  private def publishUploads(migratedFiles: Seq[FileUploaded], migration: Migration)(
+    implicit hc: HeaderCarrier
+  ): Future[Migration] = {
     val filesById: Map[String, FileUploaded] = migratedFiles.map(f => f.id -> f).toMap
 
     sequence(
       migration.`case`.attachments.map { a =>
         filesById.get(a.id) match {
           case Some(file) if file.published => Future.successful(MigrationSuccess(a))
-          case Some(_) => fileConnector.publish(a.id).map(_ => MigrationSuccess(a)) recover withFailure(a)
-          case None => Future.successful(MigrationFailure(a, MigrationFailedException("Not found")))
+          case Some(_)                      => fileConnector.publish(a.id).map(_ => MigrationSuccess(a)) recover withFailure(a)
+          case None                         => Future.successful(MigrationFailure(a, MigrationFailedException("Not found")))
         }
       }
     ) map {
       case migrations: Seq[MigrationState[MigratedAttachment]] if migrations.exists(_.isFailure) =>
         val failedMigrations = migrations.filter(_.isFailure).map(_.asFailure)
-        val summaryMessage = s"Failed to migrate ${failedMigrations.size}/${migrations.size} attachments"
-        val failureMessages = failedMigrations.map(f => s"Failed to migrate file [${f.subject.name}] because [${f.cause.getMessage}]")
+        val summaryMessage   = s"Failed to migrate ${failedMigrations.size}/${migrations.size} attachments"
+        val failureMessages =
+          failedMigrations.map(f => s"Failed to migrate file [${f.subject.name}] because [${f.cause.getMessage}]")
 
         migration
           .copy(status = MigrationStatus.PARTIAL_SUCCESS)
@@ -303,23 +309,28 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
   }
 
   def findMigratedFiles(migration: Migration)(implicit hc: HeaderCarrier): Future[Seq[FileUploaded]] = {
-    val newFiles = migration.`case`.attachments
+    val newFiles   = migration.`case`.attachments
     val newFileIds = newFiles.map(_.id).toSet
     if (newFileIds.nonEmpty) {
-      fileConnector.find(FileSearch(ids = Some(newFileIds)), Pagination.max).map(_.results) recover withResponse(Seq.empty)
+      fileConnector.find(FileSearch(ids = Some(newFileIds)), Pagination.max).map(_.results) recover withResponse(
+        Seq.empty
+      )
     } else successful(Seq.empty)
   }
 
-  private def filterUnMigratedAttachmentsFromTheMigration(filesMigrated: Seq[FileUploaded], migration: Migration): Migration = {
-    val newFiles = migration.`case`.attachments
-    val newFileIds = newFiles.map(_.id).toSet
-    val newFileIdsFound: Seq[String] = filesMigrated.map(_.id)
+  private def filterUnMigratedAttachmentsFromTheMigration(
+    filesMigrated: Seq[FileUploaded],
+    migration: Migration
+  ): Migration = {
+    val newFiles                                        = migration.`case`.attachments
+    val newFileIds                                      = newFiles.map(_.id).toSet
+    val newFileIdsFound: Seq[String]                    = filesMigrated.map(_.id)
     val missingMigratableFiles: Seq[MigratedAttachment] = newFiles.filterNot(att => newFileIdsFound.contains(att.id))
     missingMigratableFiles match {
       case missing if missing.nonEmpty =>
-        val summaryMessage = s"Failed to migrate ${missing.size}/${newFileIds.size} attachments"
+        val summaryMessage  = s"Failed to migrate ${missing.size}/${newFileIds.size} attachments"
         val failureMessages = missing.map(f => s"Failed to migrate file [${f.name}] because [Not Found]")
-        val `case` = migration.`case`.copy(attachments = newFiles.filter(f => newFileIdsFound.contains(f.id)))
+        val `case`          = migration.`case`.copy(attachments = newFiles.filter(f => newFileIdsFound.contains(f.id)))
         migration
           .copy(status = MigrationStatus.PARTIAL_SUCCESS, `case` = `case`)
           .appendMessage(summaryMessage)
@@ -329,7 +340,10 @@ class DataMigrationService @Inject()(repository: MigrationRepository,
     }
   }
 
-  private def withFailure[T](subject: T, mapping: Throwable => Throwable = t => t): PartialFunction[Throwable, MigrationState[T]] = {
+  private def withFailure[T](
+    subject: T,
+    mapping: Throwable => Throwable = t => t
+  ): PartialFunction[Throwable, MigrationState[T]] = {
     case t: Throwable => MigrationFailure(subject, mapping(t))
   }
 

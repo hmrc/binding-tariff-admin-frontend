@@ -38,35 +38,45 @@ case class UploadHistoricDataRequest(
 ) extends UploadRequest(fileName, mimeType)
 
 object UploadRequest {
-  val Attachment = classOf[UploadAttachmentRequest].getSimpleName()
+  val Attachment    = classOf[UploadAttachmentRequest].getSimpleName()
   val MigrationData = classOf[UploadMigrationDataRequest].getSimpleName()
-  val HistoricData = classOf[UploadHistoricDataRequest].getSimpleName()
+  val HistoricData  = classOf[UploadHistoricDataRequest].getSimpleName()
 
-  val attachmentWrites: Writes[UploadAttachmentRequest] = Writes(upload => Json.obj(
-    "id" -> FilenameUtil.toID(upload.fileName),
-    "fileName" -> upload.fileName,
-    "mimeType" -> upload.mimeType
-  ))
+  val attachmentWrites: Writes[UploadAttachmentRequest] = Writes(upload =>
+    Json.obj(
+      "id"       -> FilenameUtil.toID(upload.fileName),
+      "fileName" -> upload.fileName,
+      "mimeType" -> upload.mimeType
+    )
+  )
 
-  implicit val attachmentFormat: Format[UploadAttachmentRequest] = Format(Json.reads[UploadAttachmentRequest], attachmentWrites)
+  implicit val attachmentFormat: Format[UploadAttachmentRequest] =
+    Format(Json.reads[UploadAttachmentRequest], attachmentWrites)
 
-  val migrationDataWrites: Writes[UploadMigrationDataRequest] = Writes(upload => Json.obj(
-    "id" -> FilenameUtil.toCsvID(upload.fileName),
-    "fileName" -> upload.fileName,
-    "mimeType" -> upload.mimeType
-  ))
+  val migrationDataWrites: Writes[UploadMigrationDataRequest] = Writes(upload =>
+    Json.obj(
+      "id"       -> FilenameUtil.toCsvID(upload.fileName),
+      "fileName" -> upload.fileName,
+      "mimeType" -> upload.mimeType
+    )
+  )
 
-  implicit val migrationDataFormat: Format[UploadMigrationDataRequest] = Format(Json.reads[UploadMigrationDataRequest], migrationDataWrites)
+  implicit val migrationDataFormat: Format[UploadMigrationDataRequest] =
+    Format(Json.reads[UploadMigrationDataRequest], migrationDataWrites)
 
-  val historicDataWrites: Writes[UploadHistoricDataRequest] = Writes(upload => Json.obj(
-    "id" -> FilenameUtil.toCsvID(upload.fileName),
-    "fileName" -> upload.fileName,
-    "mimeType" -> upload.mimeType
-  ))
+  val historicDataWrites: Writes[UploadHistoricDataRequest] = Writes(upload =>
+    Json.obj(
+      "id"       -> FilenameUtil.toCsvID(upload.fileName),
+      "fileName" -> upload.fileName,
+      "mimeType" -> upload.mimeType
+    )
+  )
 
-  implicit val historicDataFormat: Format[UploadHistoricDataRequest] = Format(Json.reads[UploadHistoricDataRequest], historicDataWrites)
+  implicit val historicDataFormat: Format[UploadHistoricDataRequest] =
+    Format(Json.reads[UploadHistoricDataRequest], historicDataWrites)
 
-  implicit val format: Format[UploadRequest] = Union.from[UploadRequest]("type")
+  implicit val format: Format[UploadRequest] = Union
+    .from[UploadRequest]("type")
     .and[UploadAttachmentRequest](Attachment)
     .and[UploadMigrationDataRequest](MigrationData)
     .and[UploadHistoricDataRequest](HistoricData)

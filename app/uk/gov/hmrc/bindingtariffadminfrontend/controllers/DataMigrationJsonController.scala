@@ -48,16 +48,17 @@ import scala.concurrent.Future
 import scala.concurrent.Future.successful
 
 @Singleton
-class DataMigrationJsonController @Inject()(
-                                             authenticatedAction: AuthenticatedAction,
-                                            service: DataMigrationService,
-                                            connector: DataMigrationJsonConnector,
-                                            implicit val system: ActorSystem,
-                                            implicit val materializer: Materializer,
-                                             mcc: MessagesControllerComponents,
-                                             override val messagesApi: MessagesApi,
-                                            implicit val appConfig: AppConfig
-                                           ) extends FrontendController(mcc) with I18nSupport {
+class DataMigrationJsonController @Inject() (
+  authenticatedAction: AuthenticatedAction,
+  service: DataMigrationService,
+  connector: DataMigrationJsonConnector,
+  implicit val system: ActorSystem,
+  implicit val materializer: Materializer,
+  mcc: MessagesControllerComponents,
+  override val messagesApi: MessagesApi,
+  implicit val appConfig: AppConfig
+) extends FrontendController(mcc)
+    with I18nSupport {
 
   def getAnonymiseData: Action[AnyContent] = authenticatedAction.async { implicit request =>
     successful(Ok(views.html.file_anonymisation_upload()))
@@ -67,98 +68,110 @@ class DataMigrationJsonController @Inject()(
     mapping("extractionDate" -> localDate)(ExtractionDateForm.apply)(ExtractionDateForm.unapply)
   )
 
-  private def errorLog(filename:String) = s" ************ Error occurred while processing file $filename ************"
+  private def errorLog(filename: String) = s" ************ Error occurred while processing file $filename ************"
 
   // scalastyle:off method.length
   // scalastyle:off cyclomatic.complexity
-  def anonymiseData: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) { implicit request =>
+  def anonymiseData: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) {
+    implicit request =>
+      var headers: Option[List[String]] = None
 
-    var headers: Option[List[String]] = None
-
-    val file = request.body.files.find(_.filename.nonEmpty)
-    file match {
-      case Some(name) =>
-        val csvData = FileIO
-          .fromPath(name.ref.file.toPath())
-          .zipWithIndex
-          .map {
-            case (file, chunkIndex) =>
-              //This is done because the byte order mark (BOM) causes problems with first column header
-              if (chunkIndex == 0L) {
-                if (file.startsWith(ByteOrderMark.UTF_8)) {
-                  file.drop(ByteOrderMark.UTF_8.length).dropWhile(b => b.toChar.isWhitespace)
+      val file = request.body.files.find(_.filename.nonEmpty)
+      file match {
+        case Some(name) =>
+          val csvData = FileIO
+            .fromPath(name.ref.file.toPath())
+            .zipWithIndex
+            .map {
+              case (file, chunkIndex) =>
+                //This is done because the byte order mark (BOM) causes problems with first column header
+                if (chunkIndex == 0L) {
+                  if (file.startsWith(ByteOrderMark.UTF_8)) {
+                    file.drop(ByteOrderMark.UTF_8.length).dropWhile(b => b.toChar.isWhitespace)
+                  } else {
+                    file.dropWhile(b => b.toChar.isWhitespace)
+                  }
                 } else {
-                  file.dropWhile(b => b.toChar.isWhitespace)
+                  file
                 }
-              } else {
-                file
-              }
-          }
-          .via(lineScanner(maximumLineLength = Int.MaxValue)).log(errorLog(name.ref.file.getName))
-          .map(_.map(_.utf8String))
-          .filter(_.mkString.trim.nonEmpty) // ignore blank lines in CSV
-          .map { list =>
-            headers match {
-              case None =>
-                headers = Some(list)
-                (list, None)
-              case Some(headers) =>
-                (headers, Some(list))
             }
-          }
-          .zipWithIndex
-          .map {
-            case ((headers, None), _) =>
-              (headers, None)
-
-            case ((headers, Some(data)), rowIndex) =>
-              val dataByColumn: Map[String, String] = ListMap(headers.zip(data): _*)
-
-              val anonymized: Map[String, String] = Anonymize.anonymize(name.filename, dataByColumn)
-
-              if (data.length != headers.length) {
-                Logger.error(s"Row ${rowIndex + 1} did not have the expected number of columns: (${data.length}) instead of (${headers.length})")
+            .via(lineScanner(maximumLineLength = Int.MaxValue))
+            .log(errorLog(name.ref.file.getName))
+            .map(_.map(_.utf8String))
+            .filter(_.mkString.trim.nonEmpty) // ignore blank lines in CSV
+            .map { list =>
+              headers match {
+                case None =>
+                  headers = Some(list)
+                  (list, None)
+                case Some(headers) =>
+                  (headers, Some(list))
               }
+            }
+            .zipWithIndex
+            .map {
+              case ((headers, None), _) =>
+                (headers, None)
 
-              (headers, Some(headers.map(col => anonymized(col))))
-          }
-          .flatMapConcat {
-            case (headers, None) =>
-              Source.single(headers).via(CsvFormatting.format(quotingStyle = CsvQuotingStyle.Always))
-            case (_, Some(data)) =>
-              Source.single(data).via(CsvFormatting.format(quotingStyle = CsvQuotingStyle.Always))
-          }
+              case ((headers, Some(data)), rowIndex) =>
+                val dataByColumn: Map[String, String] = ListMap(headers.zip(data): _*)
 
-        successful(
-          Ok.chunked(csvData).withHeaders(
-          "Content-Type" -> "application/json",
-          "Content-Disposition" -> s"attachment; filename=${name.filename}"))
+                val anonymized: Map[String, String] = Anonymize.anonymize(name.filename, dataByColumn)
 
-      case None =>
-        successful(BadRequest)
-    }
+                if (data.length != headers.length) {
+                  Logger.error(
+                    s"Row ${rowIndex + 1} did not have the expected number of columns: (${data.length}) instead of (${headers.length})"
+                  )
+                }
+
+                (headers, Some(headers.map(col => anonymized(col))))
+            }
+            .flatMapConcat {
+              case (headers, None) =>
+                Source.single(headers).via(CsvFormatting.format(quotingStyle = CsvQuotingStyle.Always))
+              case (_, Some(data)) =>
+                Source.single(data).via(CsvFormatting.format(quotingStyle = CsvQuotingStyle.Always))
+            }
+
+          successful(
+            Ok.chunked(csvData)
+              .withHeaders(
+                "Content-Type"        -> "application/json",
+                "Content-Disposition" -> s"attachment; filename=${name.filename}"
+              )
+          )
+
+        case None =>
+          successful(BadRequest)
+      }
   }
 
   def postDataAndRedirect: Action[AnyContent] = authenticatedAction.async { implicit request =>
-
     extractionDateForm.bindFromRequest.fold(
-      _ => {
-        successful(BadRequest(views.html.data_migration_upload()))
-      },
-      extractionDateForm => {
+      _ => successful(BadRequest(views.html.data_migration_upload())),
+      extractionDateForm =>
         for {
-          files <- service.getDataMigrationFilesDetails(List(
-            "tblCaseClassMeth_csv", "historicCases_csv", "eBTI_Application_csv",
-            "eBTI_Addresses_csv", "tblCaseRecord_csv", "tblCaseBTI_csv", "tblImages_csv",
-            "tblCaseLMComments_csv", "tblMovement_csv", "Legal_Proceedings_csv"))
+          files <- service.getDataMigrationFilesDetails(
+                    List(
+                      "tblCaseClassMeth_csv",
+                      "historicCases_csv",
+                      "eBTI_Application_csv",
+                      "eBTI_Addresses_csv",
+                      "tblCaseRecord_csv",
+                      "tblCaseBTI_csv",
+                      "tblImages_csv",
+                      "tblCaseLMComments_csv",
+                      "tblMovement_csv",
+                      "Legal_Proceedings_csv"
+                    )
+                  )
           result <- connector.sendDataForProcessing(FileUploadSubmission(extractionDateForm.extractionDate, files))
         } yield {
           result.status match {
             case ACCEPTED => Redirect(routes.DataMigrationJsonController.checkStatus())
-            case _ => throw new RuntimeException("data processing error")
+            case _        => throw new RuntimeException("data processing error")
           }
         }
-      }
     )
   }
 
@@ -167,9 +180,9 @@ class DataMigrationJsonController @Inject()(
   }
 
   def getStatusOfJsonProcessing: Action[AnyContent] = authenticatedAction.async { implicit request =>
-    connector.getStatusOfJsonProcessing.map{
+    connector.getStatusOfJsonProcessing.map {
       case response if response.status == OK => Ok(response.body).as("application/json")
-      case response => Status(response.status)(response.body).as("application/json")
+      case response                          => Status(response.status)(response.body).as("application/json")
     }
   }
 
@@ -185,30 +198,43 @@ class DataMigrationJsonController @Inject()(
 
   def downloadMigrationReports: Action[AnyContent] = authenticatedAction.async {
 
-    connector.downloadMigrationReports.map { res =>
-      res.status match {
-        case OK => res.bodyAsSource
-        case _ => throw new BadRequestException(s"Failed to get the archive from data migration api for the migration reports" + res.status)
+    connector.downloadMigrationReports
+      .map { res =>
+        res.status match {
+          case OK => res.bodyAsSource
+          case _ =>
+            throw new BadRequestException(
+              s"Failed to get the archive from data migration api for the migration reports" + res.status
+            )
+        }
       }
-    }.map{ dataContent =>
-      Ok.chunked(dataContent).withHeaders(
-        "Content-Type" -> "application/zip",
-        "Content-Disposition" -> s"attachment; filename=Data-Migration-Reports-${DateTime.now().toString("ddMMyyyyHHmmss")}.zip")
-    }
+      .map { dataContent =>
+        Ok.chunked(dataContent)
+          .withHeaders(
+            "Content-Type"        -> "application/zip",
+            "Content-Disposition" -> s"attachment; filename=Data-Migration-Reports-${DateTime.now().toString("ddMMyyyyHHmmss")}.zip"
+          )
+      }
   }
 
-  private def downloadJson(download : Future[WSResponse], jsonType : String): Future[Result] ={
-    download.map { res =>
-      res.status match {
-        case OK => res.bodyAsSource
-        case _ => throw new BadRequestException(s"Failed to get mapped json from data migration api for $jsonType" + res.status)
+  private def downloadJson(download: Future[WSResponse], jsonType: String): Future[Result] =
+    download
+      .map { res =>
+        res.status match {
+          case OK => res.bodyAsSource
+          case _ =>
+            throw new BadRequestException(
+              s"Failed to get mapped json from data migration api for $jsonType" + res.status
+            )
+        }
       }
-    }.map{ dataContent =>
-      Ok.chunked(dataContent).withHeaders(
-        "Content-Type" -> "application/zip",
-        "Content-Disposition" -> s"attachment; filename=$jsonType-Data-Migration-${DateTime.now().toString("ddMMyyyyHHmmss")}.zip")
-    }
-  }
+      .map { dataContent =>
+        Ok.chunked(dataContent)
+          .withHeaders(
+            "Content-Type"        -> "application/zip",
+            "Content-Disposition" -> s"attachment; filename=$jsonType-Data-Migration-${DateTime.now().toString("ddMMyyyyHHmmss")}.zip"
+          )
+      }
 
 }
 

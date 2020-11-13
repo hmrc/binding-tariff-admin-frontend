@@ -24,18 +24,15 @@ import uk.gov.hmrc.bindingtariffadminfrontend.base.BaseSpec
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.bootstrap.http.DefaultHttpClient
 
-trait ConnectorTest
-  extends BaseSpec
-  with WiremockTestServer
-  with BeforeAndAfterEach {
+trait ConnectorTest extends BaseSpec with WiremockTestServer with BeforeAndAfterEach {
 
   private val actorSystem = ActorSystem.create("testActorSystem")
 
   protected val wsClient: WSClient = app.injector.instanceOf[WSClient]
 
   protected val httpAuditing: HttpAuditing = app.injector.instanceOf[HttpAuditing]
-  protected val authenticatedHttpClient = new AuthenticatedHttpClient(httpAuditing, wsClient, actorSystem, realConfig)
-  protected val standardHttpClient = new DefaultHttpClient(app.configuration, httpAuditing, wsClient, actorSystem)
+  protected val authenticatedHttpClient    = new AuthenticatedHttpClient(httpAuditing, wsClient, actorSystem, realConfig)
+  protected val standardHttpClient         = new DefaultHttpClient(app.configuration, httpAuditing, wsClient, actorSystem)
 
   override def beforeEach(): Unit = {
     super.beforeEach()

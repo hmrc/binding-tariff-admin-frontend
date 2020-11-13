@@ -32,21 +32,20 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class SearchController @Inject()(
-                                  authenticatedAction: AuthenticatedAction,
-                                 monitorService: AdminMonitorService,
-                                  mcc: MessagesControllerComponents,
-                                 override val messagesApi: MessagesApi,
-                                 implicit val appConfig: AppConfig
-                                ) extends FrontendController(mcc) with I18nSupport {
+class SearchController @Inject() (
+  authenticatedAction: AuthenticatedAction,
+  monitorService: AdminMonitorService,
+  mcc: MessagesControllerComponents,
+  override val messagesApi: MessagesApi,
+  implicit val appConfig: AppConfig
+) extends FrontendController(mcc)
+    with I18nSupport {
 
   private val form: Form[CaseSearch] = CaseSearch.form
 
   def get(s: CaseSearch, pagination: Pagination): Action[AnyContent] = authenticatedAction.async { implicit request =>
     form.bindFromRequest.fold(
-      errors =>
-        Future.successful(Ok(search(errors, pagination))),
-
+      errors => Future.successful(Ok(search(errors, pagination))),
       query =>
         for {
           cases: Paged[Case] <- monitorService.getCases(query, pagination)
@@ -59,16 +58,18 @@ class SearchController @Inject()(
           agentLetterIds: Set[String] = cases.results
             .map(_.application)
             .filter(_.`type` == ApplicationType.BTI)
-              .flatMap(_.asInstanceOf[BTIApplication].agent)
-              .flatMap(_.letterOfAuthorisation)
-              .map(_.id)
-              .toSet
+            .flatMap(_.asInstanceOf[BTIApplication].agent)
+            .flatMap(_.letterOfAuthorisation)
+            .map(_.id)
+            .toSet
 
           fileSearch = FileSearch(ids = Some(attachmentIds ++ agentLetterIds))
-          files: Paged[FileUploaded] <- if(cases.nonEmpty) monitorService.getFiles(fileSearch, Pagination.max) else Future.successful(Paged.empty[FileUploaded])
+          files: Paged[FileUploaded] <- if (cases.nonEmpty) monitorService.getFiles(fileSearch, Pagination.max)
+                                       else Future.successful(Paged.empty[FileUploaded])
 
           eventSearch = EventSearch(Some(cases.results.map(_.reference).toSet))
-          events: Paged[Event] <- if(cases.nonEmpty) monitorService.getEvents(eventSearch, Pagination.max) else Future.successful(Paged.empty[Event])
+          events: Paged[Event] <- if (cases.nonEmpty) monitorService.getEvents(eventSearch, Pagination.max)
+                                 else Future.successful(Paged.empty[Event])
         } yield Ok(search(form.fill(query), pagination, cases.map(_.anonymize), files.results, events.results))
     )
   }

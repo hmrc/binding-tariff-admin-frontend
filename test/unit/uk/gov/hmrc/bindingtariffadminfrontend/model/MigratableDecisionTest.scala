@@ -28,48 +28,48 @@ class MigratableDecisionTest extends UnitSpec with MockitoSugar {
 
     "Convert To Decision" in {
       MigratableDecision(
-        bindingCommodityCode = "bindingCommodityCode",
-        effectiveStartDate = Some(Instant.EPOCH),
-        effectiveEndDate = Some(Instant.EPOCH),
-        justification = "justification",
-        goodsDescription = "goodsDescription",
-        methodSearch = Some("methodSearch"),
+        bindingCommodityCode         = "bindingCommodityCode",
+        effectiveStartDate           = Some(Instant.EPOCH),
+        effectiveEndDate             = Some(Instant.EPOCH),
+        justification                = "justification",
+        goodsDescription             = "goodsDescription",
+        methodSearch                 = Some("methodSearch"),
         methodCommercialDenomination = Some("methodCommercialDenomination"),
-        methodExclusion = Some("methodExclusion"),
-        appeal = Some(Seq(Appeal("1", AppealStatus.DISMISSED, AppealType.REVIEW))),
-        cancellation = Some(Cancellation(CancelReason.ANNULLED, true))
+        methodExclusion              = Some("methodExclusion"),
+        appeal                       = Some(Seq(Appeal("1", AppealStatus.DISMISSED, AppealType.REVIEW))),
+        cancellation                 = Some(Cancellation(CancelReason.ANNULLED, true))
       ).toDecision shouldBe Decision(
-        bindingCommodityCode = "bindingCommodityCode",
-        effectiveStartDate = Some(Instant.EPOCH),
-        effectiveEndDate = Some(Instant.EPOCH),
-        justification = "justification",
-        goodsDescription = "goodsDescription",
-        methodSearch = Some("methodSearch"),
+        bindingCommodityCode         = "bindingCommodityCode",
+        effectiveStartDate           = Some(Instant.EPOCH),
+        effectiveEndDate             = Some(Instant.EPOCH),
+        justification                = "justification",
+        goodsDescription             = "goodsDescription",
+        methodSearch                 = Some("methodSearch"),
         methodCommercialDenomination = Some("methodCommercialDenomination"),
-        methodExclusion = Some("methodExclusion"),
-        appeal = Seq(Appeal("1", AppealStatus.DISMISSED, AppealType.REVIEW)),
-        cancellation = Some(Cancellation(CancelReason.ANNULLED, true))
+        methodExclusion              = Some("methodExclusion"),
+        appeal                       = Seq(Appeal("1", AppealStatus.DISMISSED, AppealType.REVIEW)),
+        cancellation                 = Some(Cancellation(CancelReason.ANNULLED, true))
       )
     }
 
     "Convert To Decision with defaults" in {
       MigratableDecision(
         bindingCommodityCode = "bindingCommodityCode",
-        effectiveStartDate = Some(Instant.EPOCH),
-        effectiveEndDate = Some(Instant.EPOCH),
-        justification = "justification",
-        goodsDescription = "goodsDescription"
+        effectiveStartDate   = Some(Instant.EPOCH),
+        effectiveEndDate     = Some(Instant.EPOCH),
+        justification        = "justification",
+        goodsDescription     = "goodsDescription"
       ).toDecision shouldBe Decision(
-        bindingCommodityCode = "bindingCommodityCode",
-        effectiveStartDate = Some(Instant.EPOCH),
-        effectiveEndDate = Some(Instant.EPOCH),
-        justification = "justification",
-        goodsDescription = "goodsDescription",
-        methodSearch = None,
+        bindingCommodityCode         = "bindingCommodityCode",
+        effectiveStartDate           = Some(Instant.EPOCH),
+        effectiveEndDate             = Some(Instant.EPOCH),
+        justification                = "justification",
+        goodsDescription             = "goodsDescription",
+        methodSearch                 = None,
         methodCommercialDenomination = None,
-        methodExclusion = None,
-        appeal = Seq.empty,  // Note: type conversion
-        cancellation = None
+        methodExclusion              = None,
+        appeal                       = Seq.empty, // Note: type conversion
+        cancellation                 = None
       )
     }
   }

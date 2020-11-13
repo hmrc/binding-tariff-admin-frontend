@@ -20,48 +20,51 @@ import play.api.mvc.QueryStringBindable
 
 import scala.util.Try
 
-case class FileSearch
-(
-  ids: Option[Set[String]] = None,
+case class FileSearch(
+  ids: Option[Set[String]]   = None,
   published: Option[Boolean] = None
 )
 
 object FileSearch {
-  private val idKey = "id"
+  private val idKey        = "id"
   private val publishedKey = "published"
 
-  implicit def bindable(implicit
-                        stringBinder: QueryStringBindable[String],
-                        booleanBinder: QueryStringBindable[Boolean]
-                       ): QueryStringBindable[FileSearch] = new QueryStringBindable[FileSearch] {
+  implicit def bindable(
+    implicit
+    stringBinder: QueryStringBindable[String],
+    booleanBinder: QueryStringBindable[Boolean]
+  ): QueryStringBindable[FileSearch] = new QueryStringBindable[FileSearch] {
 
     override def bind(key: String, requestParams: Map[String, Seq[String]]): Option[Either[String, FileSearch]] = {
-      def params[T](name: String, map: String => T): Option[Set[T]] = {
-        requestParams.get(name)
+      def params[T](name: String, map: String => T): Option[Set[T]] =
+        requestParams
+          .get(name)
           .map {
             _.flatMap(_.split(",").filter(_.nonEmpty))
               .map(v => Try(map(v)))
               .filter(_.isSuccess)
               .map(_.get)
               .toSet
-          }.filter(_.nonEmpty)
-      }
+          }
+          .filter(_.nonEmpty)
 
-      def param[T](name: String, map: String => T): Option[T] = {
+      def param[T](name: String, map: String => T): Option[T] =
         params(name, map).map(_.head)
-      }
 
-      Some(Right(FileSearch(
-        ids = params(idKey, s => s),
-        published = param(publishedKey, _.toBoolean)
-      )))
+      Some(
+        Right(
+          FileSearch(
+            ids       = params(idKey, s => s),
+            published = param(publishedKey, _.toBoolean)
+          )
+        )
+      )
     }
 
-    override def unbind(key: String, search: FileSearch): String = {
+    override def unbind(key: String, search: FileSearch): String =
       Seq(
         search.ids.map(_.map(stringBinder.unbind(idKey, _)).mkString("&")),
         search.published.map(booleanBinder.unbind(publishedKey, _))
       ).filter(_.isDefined).map(_.get).mkString("&")
-    }
   }
 }

@@ -35,7 +35,7 @@ class BindingTariffModule extends Module {
 
 }
 
-class LockRepositoryProvider @Inject()(component: ReactiveMongoComponent) extends Provider[LockRepository] {
+class LockRepositoryProvider @Inject() (component: ReactiveMongoComponent) extends Provider[LockRepository] {
   private implicit val db: () => DefaultDB = component.mongoConnector.db
 
   override def get(): LockRepository = new LockRepository

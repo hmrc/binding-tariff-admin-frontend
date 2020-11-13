@@ -21,10 +21,9 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SampleReturn.
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SampleStatus.SampleStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 
-case class Sample
-(
-  status: Option[SampleStatus] = None,
-  requestedBy: Option[Operator] = None,
+case class Sample(
+  status: Option[SampleStatus]       = None,
+  requestedBy: Option[Operator]      = None,
   returnStatus: Option[SampleReturn] = None
 )
 
@@ -36,7 +35,7 @@ object SampleStatus extends Enumeration {
   type SampleStatus = Value
 
   val NONE, AWAITING, MOVED_TO_ACT, MOVED_TO_ELM, SENT_FOR_ANALYSIS, SENT_TO_APPEALS, STORAGE, RETURNED_APPLICANT,
-  RETURNED_PORT_OFFICER, RETURNED_COURIER, DESTROYED = Value
+    RETURNED_PORT_OFFICER, RETURNED_COURIER, DESTROYED = Value
 
   implicit val format: Format[SampleStatus.Value] = JsonUtil.format(SampleStatus)
 }
@@ -48,4 +47,3 @@ object SampleReturn extends Enumeration {
 
   implicit val format: Format[SampleReturn.Value] = JsonUtil.format(SampleReturn)
 }
-

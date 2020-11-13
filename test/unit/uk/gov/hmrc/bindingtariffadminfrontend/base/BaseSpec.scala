@@ -31,7 +31,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 abstract class BaseSpec
-  extends UnitSpec
+    extends UnitSpec
     with GuiceOneAppPerSuite
     with MockitoSugar
     with ResourceFiles
@@ -40,9 +40,10 @@ abstract class BaseSpec
   override lazy val fakeApplication: Application = GuiceApplicationBuilder()
     .configure(
       //turn off metrics
-      "metrics.jvm" -> false,
+      "metrics.jvm"     -> false,
       "metrics.enabled" -> false
-    ).build()
+    )
+    .build()
 
   def inject[T](implicit m: Manifest[T]): T = app.injector.instanceOf[T]
 
@@ -50,11 +51,11 @@ abstract class BaseSpec
   implicit val mat: Materializer = fakeApplication.materializer
 
   implicit val realConfig: AppConfig = app.injector.instanceOf[AppConfig]
-  val mockAppConfig: AppConfig = mock[AppConfig]
+  val mockAppConfig: AppConfig       = mock[AppConfig]
 
   val defaultBodyParser: BodyParsers.Default = app.injector.instanceOf[BodyParsers.Default]
-  val mcc: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
-  val messageApi: MessagesApi = app.injector.instanceOf[MessagesApi]
+  val mcc: MessagesControllerComponents      = app.injector.instanceOf[MessagesControllerComponents]
+  val messageApi: MessagesApi                = app.injector.instanceOf[MessagesApi]
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

@@ -23,14 +23,13 @@ import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 trait WiremockTestServer extends UnitSpec with BeforeAndAfterAll {
 
-  private val wireHost = "localhost"
-  protected val wirePort = 20001
+  private val wireHost                   = "localhost"
+  protected val wirePort                 = 20001
   protected lazy val wireMockUrl: String = s"http://$wireHost:$wirePort"
-  private val wireMockServer = new WireMockServer(wirePort)
+  private val wireMockServer             = new WireMockServer(wirePort)
 
-  protected def getUrl: String = {
+  protected def getUrl: String =
     s"http://$wireHost:$wirePort"
-  }
 
   override def beforeAll(): Unit = {
     super.beforeAll()

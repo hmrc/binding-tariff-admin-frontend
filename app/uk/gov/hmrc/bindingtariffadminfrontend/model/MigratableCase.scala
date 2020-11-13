@@ -23,34 +23,32 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.Ca
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SampleStatus.SampleStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 
-case class MigratableCase
-(
+case class MigratableCase(
   reference: String,
   status: CaseStatus,
   createdDate: Instant,
-  daysElapsed: Long = 0,
-  referredDaysElapsed: Option[Long] = None,
-  closedDate: Option[Instant] = None,
+  daysElapsed: Long                    = 0,
+  referredDaysElapsed: Option[Long]    = None,
+  closedDate: Option[Instant]          = None,
   caseBoardsFileNumber: Option[String] = None,
-  assignee: Option[Operator] = None,
-  queueId: Option[String] = None,
+  assignee: Option[Operator]           = None,
+  queueId: Option[String]              = None,
   application: Application,
   decision: Option[MigratableDecision] = None,
   attachments: Seq[MigratedAttachment],
   events: Seq[MigratableEvent],
   keywords: Set[String],
   sampleStatus: Option[SampleStatus] = None,
-  dateOfExtract: Option[Instant] = None,
-  migratedDaysElapsed: Option[Long] = None
+  dateOfExtract: Option[Instant]     = None,
+  migratedDaysElapsed: Option[Long]  = None
 ) {
 
-  def toSample: Sample = {
+  def toSample: Sample =
     sampleStatus match {
       case Some(s) => Sample(status = Some(s))
-      case _ => Sample()
+      case _       => Sample()
     }
-  }
-  def toCase: Case = {
+  def toCase: Case =
     Case(
       reference,
       status,
@@ -64,12 +62,11 @@ case class MigratableCase
       application,
       decision.map(_.toDecision),
       attachments = attachments.map(m => m.asAttachment),
-      keywords = keywords,
-      sample = toSample,
+      keywords    = keywords,
+      sample      = toSample,
       dateOfExtract,
       migratedDaysElapsed
     )
-  }
 }
 
 object MigratableCase {

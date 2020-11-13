@@ -19,11 +19,11 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 import play.api.libs.json.{Json, OFormat}
 
 case class Address(
-                    buildingAndStreet: String,
-                    townOrCity: String,
-                    county: Option[String],
-                    postCode: Option[String]
-                  )
+  buildingAndStreet: String,
+  townOrCity: String,
+  county: Option[String],
+  postCode: Option[String]
+)
 
 object Address {
 

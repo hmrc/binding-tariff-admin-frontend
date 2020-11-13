@@ -23,8 +23,7 @@ import play.api.libs.json.{JsPath, Reads, Writes, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.AppealStatus.AppealStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.AppealType.AppealType
 
-case class Appeal
-(
+case class Appeal(
   id: String,
   status: AppealStatus,
   `type`: AppealType
@@ -36,7 +35,7 @@ object Appeal {
   implicit val reads: Reads[Appeal] = {
     ((JsPath \ "id").readNullable[String].map(_.getOrElse(UUID.randomUUID().toString)) and
       (JsPath \ "status").readNullable[AppealStatus].map(_.getOrElse(AppealStatus.IN_PROGRESS)) and
-      (JsPath \ "type").readNullable[AppealType].map(_.getOrElse(AppealType.REVIEW))) (Appeal.apply _)
+      (JsPath \ "type").readNullable[AppealType].map(_.getOrElse(AppealType.REVIEW)))(Appeal.apply _)
   }
 
   implicit val writes: Writes[Appeal] = Json.writes[Appeal]

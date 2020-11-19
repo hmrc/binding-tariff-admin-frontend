@@ -18,7 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model
 
 import java.time.Instant
 
-import play.api.libs.json.{JsObject, Json, OFormat}
+import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseStatus.CaseStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.SampleStatus.SampleStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
@@ -41,33 +41,7 @@ case class MigratableCase(
   sampleStatus: Option[SampleStatus] = None,
   dateOfExtract: Option[Instant]     = None,
   migratedDaysElapsed: Option[Long]  = None
-) {
-
-  def toSample: Sample =
-    sampleStatus match {
-      case Some(s) => Sample(status = Some(s))
-      case _       => Sample()
-    }
-  def toCase: Case =
-    Case(
-      reference,
-      status,
-      createdDate,
-      daysElapsed,
-      referredDaysElapsed.getOrElse(0),
-      closedDate,
-      caseBoardsFileNumber,
-      assignee,
-      queueId,
-      application,
-      decision.map(_.toDecision),
-      attachments = attachments.map(m => m.asAttachment),
-      keywords    = keywords,
-      sample      = toSample,
-      dateOfExtract,
-      migratedDaysElapsed
-    )
-}
+)
 
 object MigratableCase {
   object Mongo {

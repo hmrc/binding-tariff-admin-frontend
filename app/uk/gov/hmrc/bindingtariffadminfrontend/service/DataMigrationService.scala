@@ -32,7 +32,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.connector._
 import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Case
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Case, Sample}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.{MigrationRepository, UploadRepository}
@@ -40,7 +40,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.Future.{sequence, successful}
+import scala.concurrent.Future.sequence
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.util.{Random, Success}
 
@@ -187,20 +187,17 @@ class DataMigrationService @Inject() (
 
   def attemptMigration(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] =
     for {
-      // Find the files for this Migration
-      migratedFiles: Seq[FileUploaded] <- findMigratedFiles(migration)
+      // Find uploaded attachments
+      uploadedAttachments: Seq[FileUploaded] <- findUploadedAttachments(migration)
 
-      // Filter any un-migrated files from the migration & add a warning
-      updated: Migration = filterUnMigratedAttachmentsFromTheMigration(migratedFiles, migration)
+      // Publish the available uploaded attachments, and remove any failed attachments from the case
+      updated: Migration <- publishUploadedAttachments(uploadedAttachments, migration)
 
       // Create or Update The Case
-      _ <- caseConnector.upsertCase(updated.`case`.toCase)
+      _ <- caseConnector.upsertCase(convertCase(updated.`case`, uploadedAttachments))
 
       // Create the events
       updated: Migration <- createEvents(updated)
-
-      //Publish The Files
-      updated: Migration <- publishUploads(migratedFiles, updated)
 
       // Notify The Ruling Store
       updated: Migration <- notifyRulingStore(updated)
@@ -309,64 +306,57 @@ class DataMigrationService @Inject() (
         migration
     }
 
-  private def publishUploads(migratedFiles: Seq[FileUploaded], migration: Migration)(
+  private def publishUploadedAttachments(uploadedAttachments: Seq[FileUploaded], migration: Migration)(
     implicit hc: HeaderCarrier
   ): Future[Migration] = {
-    val filesById: Map[String, FileUploaded] = migratedFiles.map(f => f.id -> f).toMap
+    val missingFailures =
+      migration.`case`.attachments
+        .filterNot(att => uploadedAttachments.exists(_.fileName == att.name))
+        .map(att => MigrationFailure(att, MigrationFailedException("Not found")))
+
+    val attachmentsByName  = migration.`case`.attachments.map(att => (att.name, att)).toMap
+    val unpublishedUploads = uploadedAttachments.filterNot(_.published)
 
     sequence(
-      migration.`case`.attachments.map { a =>
-        filesById.get(a.id) match {
-          case Some(file) if file.published => Future.successful(MigrationSuccess(a))
-          case Some(_)                      => fileConnector.publish(a.id).map(_ => MigrationSuccess(a)) recover withFailure(a)
-          case None                         => Future.successful(MigrationFailure(a, MigrationFailedException("Not found")))
-        }
+      unpublishedUploads.map { file =>
+        val attachment = attachmentsByName(file.fileName)
+        fileConnector.publish(file.id).map(_ => MigrationSuccess(attachment)) recover withFailure(
+          attachment
+        )
       }
-    ) map {
-      case migrations: Seq[MigrationState[MigratedAttachment]] if migrations.exists(_.isFailure) =>
-        val failedMigrations = migrations.filter(_.isFailure).map(_.asFailure)
-        val summaryMessage   = s"Failed to migrate ${failedMigrations.size}/${migrations.size} attachments"
-        val failureMessages =
-          failedMigrations.map(f => s"Failed to migrate file [${f.subject.name}] because [${f.cause.getMessage}]")
+    ).map(_.filter(_.isFailure).map(_.asFailure))
+      .map(publishFailures => missingFailures ++ publishFailures)
+      .map {
+        case failures if failures.nonEmpty =>
+          val availableAttachments =
+            migration.`case`.attachments.filterNot(att => failures.exists(_.subject.name == att.name))
 
-        migration
-          .copy(status = MigrationStatus.PARTIAL_SUCCESS)
-          .appendMessage(summaryMessage)
-          .appendMessage(failureMessages)
-      case _ =>
-        migration
-    }
+          val summaryMessage = s"Failed to migrate ${failures.size}/${migration.`case`.attachments.size} attachments"
+          val failureMessages =
+            failures.map(f => s"Failed to migrate file [${f.subject.name}] because [${f.cause.getMessage}]")
+          val `case` = migration.`case`.copy(attachments = availableAttachments)
+
+          migration
+            .copy(status = MigrationStatus.PARTIAL_SUCCESS, `case` = `case`)
+            .appendMessage(summaryMessage)
+            .appendMessage(failureMessages)
+        case _ =>
+          migration
+      }
   }
 
-  def findMigratedFiles(migration: Migration)(implicit hc: HeaderCarrier): Future[Seq[FileUploaded]] = {
-    val newFiles   = migration.`case`.attachments
-    val newFileIds = newFiles.map(_.id).toSet
-    if (newFileIds.nonEmpty) {
-      fileConnector.find(FileSearch(ids = Some(newFileIds)), Pagination.max).map(_.results) recover withResponse(
-        Seq.empty
-      )
-    } else successful(Seq.empty)
-  }
+  def findUploadedAttachments(migration: Migration)(implicit hc: HeaderCarrier): Future[Seq[FileUploaded]] = {
+    val attachmentFileNames = migration.`case`.attachments.map(_.name).toList
 
-  private def filterUnMigratedAttachmentsFromTheMigration(
-    filesMigrated: Seq[FileUploaded],
-    migration: Migration
-  ): Migration = {
-    val newFiles                                        = migration.`case`.attachments
-    val newFileIds                                      = newFiles.map(_.id).toSet
-    val newFileIdsFound: Seq[String]                    = filesMigrated.map(_.id)
-    val missingMigratableFiles: Seq[MigratedAttachment] = newFiles.filterNot(att => newFileIdsFound.contains(att.id))
-    missingMigratableFiles match {
-      case missing if missing.nonEmpty =>
-        val summaryMessage  = s"Failed to migrate ${missing.size}/${newFileIds.size} attachments"
-        val failureMessages = missing.map(f => s"Failed to migrate file [${f.name}] because [Not Found]")
-        val `case`          = migration.`case`.copy(attachments = newFiles.filter(f => newFileIdsFound.contains(f.id)))
-        migration
-          .copy(status = MigrationStatus.PARTIAL_SUCCESS, `case` = `case`)
-          .appendMessage(summaryMessage)
-          .appendMessage(failureMessages)
-      case _ =>
-        migration
+    if (attachmentFileNames.nonEmpty) {
+      val uploadedAttachments = for {
+        uploadedRequests <- uploadRepository.getByFileNames(attachmentFileNames)
+        fileSearch       <- fileConnector.find(FileSearch(ids = Some(uploadedRequests.map(_.id).toSet)), Pagination.max)
+      } yield fileSearch.results
+
+      uploadedAttachments recover withResponse(Seq.empty)
+    } else {
+      Future.successful(Seq.empty)
     }
   }
 
@@ -381,4 +371,41 @@ class DataMigrationService @Inject() (
     case _ => response
   }
 
+  private def convertCase(migratableCase: MigratableCase, uploadedAttachments: Seq[FileUploaded]): Case = {
+    val sample = migratableCase.sampleStatus match {
+      case Some(s) => Sample(status = Some(s))
+      case _       => Sample()
+    }
+
+    val attachments = for {
+      att <- migratableCase.attachments
+      id = uploadedAttachments.find(_.fileName == att.name).map(_.id)
+      if id.isDefined
+    } yield Attachment(
+      id          = id.get,
+      public      = att.public,
+      operator    = att.operator,
+      timestamp   = att.timestamp,
+      description = att.description
+    )
+
+    Case(
+      reference            = migratableCase.reference,
+      status               = migratableCase.status,
+      createdDate          = migratableCase.createdDate,
+      daysElapsed          = migratableCase.daysElapsed,
+      referredDaysElapsed  = migratableCase.referredDaysElapsed.getOrElse(0),
+      closedDate           = migratableCase.closedDate,
+      caseBoardsFileNumber = migratableCase.caseBoardsFileNumber,
+      assignee             = migratableCase.assignee,
+      queueId              = migratableCase.queueId,
+      application          = migratableCase.application,
+      decision             = migratableCase.decision.map(_.toDecision),
+      attachments          = attachments,
+      keywords             = migratableCase.keywords,
+      sample               = sample,
+      dateOfExtract        = migratableCase.dateOfExtract,
+      migratedDaysElapsed  = migratableCase.migratedDaysElapsed
+    )
+  }
 }

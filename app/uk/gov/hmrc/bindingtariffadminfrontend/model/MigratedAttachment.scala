@@ -19,7 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model
 import java.time.Instant
 
 import play.api.libs.json.{Format, Json}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Operator}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Operator
 
 case class MigratedAttachment(
   public: Boolean = false,
@@ -27,20 +27,7 @@ case class MigratedAttachment(
   operator: Option[Operator] = None,
   timestamp: Instant,
   description: Option[String] = None
-) {
-  // TODO: FIX
-  def id: String = "" //FilenameUtil.toID(name)
-
-  // TODO: Move this, use UploadRepository to get the id
-  def asAttachment: Attachment =
-    Attachment(
-      id          = id,
-      public      = public,
-      operator    = operator,
-      timestamp   = timestamp,
-      description = description
-    )
-}
+)
 
 object MigratedAttachment {
   implicit val format: Format[MigratedAttachment] = Json.using[Json.WithDefaultValues].format[MigratedAttachment]

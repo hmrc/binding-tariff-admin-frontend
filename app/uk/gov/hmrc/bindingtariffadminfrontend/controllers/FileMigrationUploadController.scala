@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
+import java.util.UUID
+
 import javax.inject.{Inject, Singleton}
 import play.api.data.Form
 import play.api.data.Forms._
@@ -43,9 +45,10 @@ class FileMigrationUploadController @Inject() (
     with I18nSupport {
 
   private lazy val form = Form[UploadAttachmentRequest](
-    mapping[UploadAttachmentRequest, String, String](
+    mapping[UploadAttachmentRequest, String, String, String](
       "filename" -> text,
-      "mimetype" -> text
+      "mimetype" -> text,
+      "id"       -> optional(text).transform(_.getOrElse(UUID.randomUUID().toString), (id: String) => Some(id))
     )(UploadAttachmentRequest.apply)(UploadAttachmentRequest.unapply)
   )
 

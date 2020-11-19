@@ -35,17 +35,19 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.Case
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
-import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
+import uk.gov.hmrc.bindingtariffadminfrontend.repository.{MigrationRepository, UploadRepository}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.{sequence, successful}
 import scala.concurrent.duration.{FiniteDuration, _}
+import scala.reflect.ClassTag
 import scala.util.{Random, Success}
 
 class DataMigrationService @Inject() (
   repository: MigrationRepository,
+  uploadRepository: UploadRepository,
   migrationLock: MigrationLock,
   fileConnector: FileStoreConnector,
   upscanS3Connector: UpscanS3Connector,
@@ -72,10 +74,11 @@ class DataMigrationService @Inject() (
     Future.sequence(opts)
   }
 
-  def getAvailableFileDetails(fileIds: List[String])(implicit hc: HeaderCarrier): Future[List[FileUploaded]] =
-    Future
-      .sequence(fileIds.map(fileConnector.find))
-      .map(_.flatten)
+  def getUploadedFiles[T <: UploadRequest: ClassTag](implicit hc: HeaderCarrier): Future[List[FileUploaded]] =
+    for {
+      uploads <- uploadRepository.get[T]
+      results <- Future.sequence(uploads.map(_.id).map(fileConnector.find))
+    } yield results.flatten
 
   def getState(status: Seq[MigrationStatus], pagination: Pagination): Future[Paged[Migration]] =
     repository.get(status, pagination)
@@ -153,6 +156,7 @@ class DataMigrationService @Inject() (
 
     for {
       _ <- resetIfPresent(Store.FILES, fileConnector.delete())
+      _ <- resetIfPresent(Store.FILES, uploadRepository.clear())
       _ <- resetIfPresent(Store.CASES, caseConnector.deleteCases())
       _ <- resetIfPresent(Store.EVENTS, caseConnector.deleteEvents())
       _ <- resetIfPresent(Store.RULINGS, rulingConnector.delete())
@@ -166,6 +170,7 @@ class DataMigrationService @Inject() (
 
   def upload(upload: UploadRequest, file: TemporaryFile)(implicit hc: HeaderCarrier): Future[Unit] =
     for {
+      _        <- uploadRepository.update(upload)
       template <- fileConnector.initiate(upload)
       _        <- upscanS3Connector.upload(template, file, upload)
     } yield ()

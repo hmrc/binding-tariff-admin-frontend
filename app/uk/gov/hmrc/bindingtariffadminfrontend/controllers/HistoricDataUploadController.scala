@@ -16,10 +16,12 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
+import java.util.UUID
+
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.data.Form
-import play.api.data.Forms.{mapping, text}
+import play.api.data.Forms.{mapping, optional, text}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.ws.WSResponse
@@ -47,47 +49,11 @@ class HistoricDataUploadController @Inject() (
 ) extends FrontendController(mcc)
     with I18nSupport {
   private lazy val form = Form[UploadHistoricDataRequest](
-    mapping[UploadHistoricDataRequest, String, String](
+    mapping[UploadHistoricDataRequest, String, String, String](
       "filename" -> text,
-      "mimetype" -> text
+      "mimetype" -> text,
+      "id"       -> optional(text).transform(_.getOrElse(UUID.randomUUID().toString), (id: String) => Some(id))
     )(UploadHistoricDataRequest.apply)(UploadHistoricDataRequest.unapply)
-  )
-
-  private lazy val historicDataFileIds = List(
-    "ALLAPPLDATA-2004_csv",
-    "ALLAPPLDATA-2005_csv",
-    "ALLAPPLDATA-2006_csv",
-    "ALLAPPLDATA-2007_csv",
-    "ALLAPPLDATA-2008_csv",
-    "ALLAPPLDATA-2009_csv",
-    "ALLAPPLDATA-2010_csv",
-    "ALLAPPLDATA-2011_csv",
-    "ALLAPPLDATA-2012_csv",
-    "ALLAPPLDATA-2013_csv",
-    "ALLAPPLDATA-2014_csv",
-    "ALLAPPLDATA-2015_csv",
-    "ALLAPPLDATA-2016_csv",
-    "ALLAPPLDATA-2017_csv",
-    "ALLAPPLDATA-2018_csv",
-    "ALLBTIDATA-2004-1_csv",
-    "ALLBTIDATA-2004-2_csv",
-    "ALLBTIDATA-2004-3_csv",
-    "ALLBTIDATA-2004-4_csv",
-    "ALLBTIDATA-2004-5_csv",
-    "ALLBTIDATA-2005_csv",
-    "ALLBTIDATA-2006_csv",
-    "ALLBTIDATA-2007_csv",
-    "ALLBTIDATA-2008_csv",
-    "ALLBTIDATA-2009_csv",
-    "ALLBTIDATA-2010_csv",
-    "ALLBTIDATA-2011_csv",
-    "ALLBTIDATA-2012_csv",
-    "ALLBTIDATA-2013_csv",
-    "ALLBTIDATA-2014_csv",
-    "ALLBTIDATA-2015_csv",
-    "ALLBTIDATA-2016_csv",
-    "ALLBTIDATA-2017_csv",
-    "ALLBTIDATA-2018_csv"
   )
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
@@ -126,7 +92,7 @@ class HistoricDataUploadController @Inject() (
 
   def postDataAndRedirect: Action[AnyContent] = authenticatedAction.async { implicit request =>
     for {
-      files <- service.getAvailableFileDetails(historicDataFileIds)
+      files <- service.getUploadedFiles[UploadHistoricDataRequest]
       if files.nonEmpty
       result <- connector.sendHistoricDataForProcessing(files)
     } yield {

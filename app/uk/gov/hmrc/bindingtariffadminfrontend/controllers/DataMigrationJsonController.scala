@@ -35,7 +35,7 @@ import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploadSubmission
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploadSubmission, UploadMigrationDataRequest}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.csv_processing_status
@@ -151,20 +151,7 @@ class DataMigrationJsonController @Inject() (
       _ => successful(BadRequest(views.html.data_migration_upload())),
       extractionDateForm =>
         for {
-          files <- service.getDataMigrationFilesDetails(
-                    List(
-                      "tblCaseClassMeth_csv",
-                      "historicCases_csv",
-                      "eBTI_Application_csv",
-                      "eBTI_Addresses_csv",
-                      "tblCaseRecord_csv",
-                      "tblCaseBTI_csv",
-                      "tblImages_csv",
-                      "tblCaseLMComments_csv",
-                      "tblMovement_csv",
-                      "Legal_Proceedings_csv"
-                    )
-                  )
+          files  <- service.getUploadedFiles[UploadMigrationDataRequest]
           result <- connector.sendDataForProcessing(FileUploadSubmission(extractionDateForm.extractionDate, files))
         } yield {
           result.status match {

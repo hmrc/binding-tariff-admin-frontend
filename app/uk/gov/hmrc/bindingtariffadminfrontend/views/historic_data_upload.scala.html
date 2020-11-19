@@ -18,8 +18,9 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.form_button
-@(form: Form[_])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+@import uk.gov.hmrc.play.views.html.helpers
+
+@(batchId: String)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
  <a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
@@ -47,7 +48,7 @@
  </div>
 
  <div>
-  <button id="upload-button" class="button" type="button" onclick="fileMigration.uploadData('@{routes.HistoricDataUploadController.post().url}')">Upload</button>
+  <button id="upload-button" class="button" type="button" onclick="fileMigration.uploadData('@{routes.HistoricDataUploadController.post().url}', '@batchId')">Upload</button>
  </div>
 
  <div class="display-none mt-30" id="progress">
@@ -70,7 +71,10 @@
   <table id="success-table"></table>
 
   <div class="mt-30">
-   @form_button(call = routes.HistoricDataUploadController.postDataAndRedirect(), label = "Continue to upload status", css = "display-none")
+   @helpers.form(action = routes.HistoricDataUploadController.initiateProcessing()) {
+    <input type="hidden" id="batchId" name="batchId" value="@batchId" required>
+    <input type="submit" id="continue" class="button display-none" value="Continue to upload status"/>
+   }
   </div>
 
  </div>

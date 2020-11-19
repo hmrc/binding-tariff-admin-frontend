@@ -20,15 +20,13 @@ import java.util.UUID
 
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
-import play.api.data.Form
-import play.api.data.Forms.{mapping, optional, text}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.ws.WSResponse
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadHistoricDataRequest
+import uk.gov.hmrc.bindingtariffadminfrontend.forms.{InitiateHistoricDataFormProvider, UploadHistoricDataFormProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.http.{BadRequestException, Upstream4xxResponse, Upstream5xxResponse}
@@ -43,21 +41,18 @@ class HistoricDataUploadController @Inject() (
   authenticatedAction: AuthenticatedAction,
   service: DataMigrationService,
   connector: DataMigrationJsonConnector,
+  uploadHistoricDataFormProvider: UploadHistoricDataFormProvider,
+  initiateHistoricDataFormProvider: InitiateHistoricDataFormProvider,
   mcc: MessagesControllerComponents,
   override val messagesApi: MessagesApi,
   implicit val appConfig: AppConfig
 ) extends FrontendController(mcc)
     with I18nSupport {
-  private lazy val form = Form[UploadHistoricDataRequest](
-    mapping[UploadHistoricDataRequest, String, String, String](
-      "filename" -> text,
-      "mimetype" -> text,
-      "id"       -> optional(text).transform(_.getOrElse(UUID.randomUUID().toString), (id: String) => Some(id))
-    )(UploadHistoricDataRequest.apply)(UploadHistoricDataRequest.unapply)
-  )
+  private lazy val uploadForm   = uploadHistoricDataFormProvider()
+  private lazy val initiateForm = initiateHistoricDataFormProvider()
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
-    successful(Ok(views.html.historic_data_upload(form)))
+    successful(Ok(views.html.historic_data_upload(batchId = UUID.randomUUID().toString)))
   }
 
   def checkHistoricStatus: Action[AnyContent] = authenticatedAction.async { implicit request =>
@@ -77,7 +72,7 @@ class HistoricDataUploadController @Inject() (
 
   def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) {
     implicit request =>
-      form.bindFromRequest.fold(
+      uploadForm.bindFromRequest.fold(
         _ => successful(BadRequest),
         uploadRequest => {
           val file = request.body.files.find(_.filename.nonEmpty)
@@ -90,17 +85,21 @@ class HistoricDataUploadController @Inject() (
       )
   }
 
-  def postDataAndRedirect: Action[AnyContent] = authenticatedAction.async { implicit request =>
-    for {
-      files <- service.getUploadedFiles[UploadHistoricDataRequest]
-      if files.nonEmpty
-      result <- connector.sendHistoricDataForProcessing(files)
-    } yield {
-      result.status match {
-        case ACCEPTED => Redirect(routes.HistoricDataUploadController.checkHistoricStatus())
-        case _        => throw new RuntimeException("data processing error")
-      }
-    }
+  def initiateProcessing: Action[AnyContent] = authenticatedAction.async { implicit request =>
+    initiateForm.bindFromRequest.fold(
+      _ => successful(BadRequest),
+      initiate =>
+        for {
+          files  <- service.getUploadedBatch(initiate.batchId)
+          result <- connector.sendHistoricDataForProcessing(files)
+        } yield {
+          result.status match {
+            case ACCEPTED => Redirect(routes.HistoricDataUploadController.checkHistoricStatus())
+            case _        => throw new RuntimeException("data processing error")
+          }
+        }
+    )
+
   }
 
   private def handlingError: PartialFunction[Throwable, Result] = {

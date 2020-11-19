@@ -19,13 +19,13 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 import java.util.UUID
 
 import javax.inject.{Inject, Singleton}
-import play.api.data.Form
-import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadMigrationDataRequest
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
+import uk.gov.hmrc.bindingtariffadminfrontend.forms.{InitiateMigrationDataFormProvider, UploadMigrationDataFormProvider}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploadSubmission
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.http.{Upstream4xxResponse, Upstream5xxResponse}
@@ -38,27 +38,25 @@ import scala.concurrent.Future.successful
 class DataMigrationUploadController @Inject() (
   authenticatedAction: AuthenticatedAction,
   service: DataMigrationService,
+  connector: DataMigrationJsonConnector,
+  uploadMigrationDataFormProvider: UploadMigrationDataFormProvider,
+  initiateMigrationDataFormProvider: InitiateMigrationDataFormProvider,
   mcc: MessagesControllerComponents,
   override val messagesApi: MessagesApi,
   implicit val appConfig: AppConfig
 ) extends FrontendController(mcc)
     with I18nSupport {
 
-  private lazy val form = Form[UploadMigrationDataRequest](
-    mapping[UploadMigrationDataRequest, String, String, String](
-      "filename" -> text,
-      "mimetype" -> text,
-      "id"       -> optional(text).transform(_.getOrElse(UUID.randomUUID().toString), (id: String) => Some(id))
-    )(UploadMigrationDataRequest.apply)(UploadMigrationDataRequest.unapply)
-  )
+  private lazy val uploadForm   = uploadMigrationDataFormProvider()
+  private lazy val initiateForm = initiateMigrationDataFormProvider()
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
-    successful(Ok(views.html.data_migration_upload()))
+    successful(Ok(views.html.data_migration_upload(batchId = UUID.randomUUID().toString)))
   }
 
   def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) {
     implicit request =>
-      form.bindFromRequest.fold(
+      uploadForm.bindFromRequest.fold(
         _ => successful(BadRequest),
         uploadRequest => {
           val file = request.body.files.find(_.filename.nonEmpty)
@@ -69,6 +67,22 @@ class DataMigrationUploadController @Inject() (
           }
         }
       )
+  }
+
+  def initiateProcessing: Action[AnyContent] = authenticatedAction.async { implicit request =>
+    initiateForm.bindFromRequest.fold(
+      _ => successful(BadRequest),
+      initiate =>
+        for {
+          files  <- service.getUploadedBatch(initiate.batchId)
+          result <- connector.sendDataForProcessing(FileUploadSubmission(initiate.extractionDate, files))
+        } yield {
+          result.status match {
+            case ACCEPTED => Redirect(routes.DataMigrationJsonController.checkStatus())
+            case _        => throw new RuntimeException("data processing error")
+          }
+        }
+    )
   }
 
   private def handlingError: PartialFunction[Throwable, Result] = {

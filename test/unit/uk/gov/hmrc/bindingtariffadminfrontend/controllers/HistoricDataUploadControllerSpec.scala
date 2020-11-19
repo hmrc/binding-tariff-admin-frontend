@@ -209,7 +209,7 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
       given(migrationConnector.sendHistoricDataForProcessing(refEq(successfullyUploadedFiles))(any[HeaderCarrier]))
         .willReturn(Future.successful(HttpResponse.apply(202)))
 
-      val result: Result = await(controller.postDataAndRedirect()(fakeUploadFileRequest(successfullyUploadedFiles)))
+      val result: Result = await(controller.initiateProcessing()(fakeUploadFileRequest(successfullyUploadedFiles)))
 
       status(result) shouldBe SEE_OTHER
 
@@ -223,7 +223,7 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
         .thenReturn(Future.failed(Upstream4xxResponse("error", 409, 0)))
 
       intercept[Upstream4xxResponse] {
-        await(controller.postDataAndRedirect()(fakeUploadFileRequest(Nil)))
+        await(controller.initiateProcessing()(fakeUploadFileRequest(Nil)))
       }
 
       verify(migrationService, atLeastOnce()).getAvailableFileDetails(refEq(historicDataFileIds))(any[HeaderCarrier])
@@ -238,7 +238,7 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
         .willReturn(Future.failed(Upstream5xxResponse("error", 500, 0)))
 
       intercept[Upstream5xxResponse] {
-        await(controller.postDataAndRedirect()(fakeUploadFileRequest(Nil)))
+        await(controller.initiateProcessing()(fakeUploadFileRequest(Nil)))
       }
 
       verify(migrationService, atLeastOnce()).getAvailableFileDetails(refEq(historicDataFileIds))(any[HeaderCarrier])
@@ -256,7 +256,7 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
         .willReturn(Future.successful(HttpResponse.apply(BAD_REQUEST)))
 
       intercept[RuntimeException] {
-        await(controller.postDataAndRedirect()(fakeUploadFileRequest(Nil)))
+        await(controller.initiateProcessing()(fakeUploadFileRequest(Nil)))
       }
 
       verify(migrationService, atLeastOnce()).getAvailableFileDetails(refEq(historicDataFileIds))(any[HeaderCarrier])
@@ -269,7 +269,7 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
         .willReturn(Future.successful(Nil))
 
       intercept[java.util.NoSuchElementException] {
-        await(controller.postDataAndRedirect()(fakeUploadFileRequest(successfullyUploadedFiles)))
+        await(controller.initiateProcessing()(fakeUploadFileRequest(successfullyUploadedFiles)))
       }
 
       verify(migrationService, atLeastOnce()).getAvailableFileDetails(refEq(historicDataFileIds))(any[HeaderCarrier])

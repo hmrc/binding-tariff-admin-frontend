@@ -1,11 +1,11 @@
 var fileMigration = {
-    uploadAll: function upload(url) {
+    uploadAll: function upload(url, batchId) {
         var files = document.getElementById("files");
         var folders = document.getElementById("folders");
-        uploadAll(files);
-        uploadAll(folders);
+        uploadAll(files, batchId);
+        uploadAll(folders, batchId);
 
-        function uploadAll(input) {
+        function uploadAll(input, batchId) {
             if (input.files.length === 0) {
                 return;
             }
@@ -15,7 +15,7 @@ var fileMigration = {
 
             for (var i = 0; i < input.files.length; i++) {
                 var file = input.files[i];
-                fileMigration.upload(url, file)
+                fileMigration.upload(url, file, batchId)
                     .then(function (response) {
                         incrementSuccessCount();
                         appendToSuccessTable(response.file);
@@ -100,11 +100,12 @@ var fileMigration = {
         }
     },
 
-    upload: function initiate(url, file) {
+    upload: function initiate(url, file, batchId) {
         var filename = file.name;
         var type = file.type;
 
         var form = new FormData();
+        form.append("batchId", batchId)
         form.append("filename", filename);
         form.append("mimetype", type);
         form.append("file", file);
@@ -132,7 +133,7 @@ var fileMigration = {
         });
     },
 
-    uploadData: function upload(url) {
+    uploadData: function upload(url, batchId) {
             var files = document.getElementById("files");
             uploadAllData(files);
 
@@ -146,7 +147,7 @@ var fileMigration = {
 
                 for (var i = 0; i < input.files.length; i++) {
                     var file = input.files[i];
-                    fileMigration.upload(url, file)
+                    fileMigration.upload(url, file, batchId)
                         .then(function (response) {
                             incrementSuccessCount();
                             updateContinueMessage(input.files.length);
@@ -178,7 +179,7 @@ var fileMigration = {
             function updateContinueMessage(total) {
                 var count = document.getElementById("success-count");
                 if(parseInt(count.innerHTML) == total){
-                    var data_migration_upload = document.getElementById("label");
+                    var data_migration_upload = document.getElementById("continue");
                     data_migration_upload.classList.remove("display-none");
                 }
             }

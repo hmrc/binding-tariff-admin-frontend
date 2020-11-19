@@ -21,6 +21,7 @@ import uk.gov.hmrc.play.json.Union
 
 sealed trait UploadRequest {
   def id: String
+  def batchId: String
   def fileName: String
   def mimeType: String
 }
@@ -28,19 +29,22 @@ sealed trait UploadRequest {
 case class UploadAttachmentRequest(
   override val fileName: String,
   override val mimeType: String,
-  override val id: String
+  override val id: String,
+  override val batchId: String
 ) extends UploadRequest
 
 case class UploadMigrationDataRequest(
   override val fileName: String,
   override val mimeType: String,
-  override val id: String
+  override val id: String,
+  override val batchId: String
 ) extends UploadRequest
 
 case class UploadHistoricDataRequest(
   override val fileName: String,
   override val mimeType: String,
-  override val id: String
+  override val id: String,
+  override val batchId: String
 ) extends UploadRequest
 
 object UploadRequest {

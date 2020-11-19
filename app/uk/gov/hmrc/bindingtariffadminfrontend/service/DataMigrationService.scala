@@ -42,7 +42,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.{sequence, successful}
 import scala.concurrent.duration.{FiniteDuration, _}
-import scala.reflect.ClassTag
 import scala.util.{Random, Success}
 
 class DataMigrationService @Inject() (
@@ -74,9 +73,9 @@ class DataMigrationService @Inject() (
     Future.sequence(opts)
   }
 
-  def getUploadedFiles[T <: UploadRequest: ClassTag](implicit hc: HeaderCarrier): Future[List[FileUploaded]] =
+  def getUploadedBatch(batchId: String)(implicit hc: HeaderCarrier): Future[List[FileUploaded]] =
     for {
-      uploads <- uploadRepository.get[T]
+      uploads <- uploadRepository.getByBatch(batchId)
       results <- Future.sequence(uploads.map(_.id).map(fileConnector.find))
     } yield results.flatten
 
@@ -156,7 +155,7 @@ class DataMigrationService @Inject() (
 
     for {
       _ <- resetIfPresent(Store.FILES, fileConnector.delete())
-      _ <- resetIfPresent(Store.FILES, uploadRepository.clear())
+      _ <- resetIfPresent(Store.FILES, uploadRepository.deleteAll())
       _ <- resetIfPresent(Store.CASES, caseConnector.deleteCases())
       _ <- resetIfPresent(Store.EVENTS, caseConnector.deleteEvents())
       _ <- resetIfPresent(Store.RULINGS, rulingConnector.delete())

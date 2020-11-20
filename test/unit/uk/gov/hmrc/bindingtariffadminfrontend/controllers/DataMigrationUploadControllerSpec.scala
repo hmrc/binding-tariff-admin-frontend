@@ -22,7 +22,7 @@ import play.api.http.Status.OK
 import play.api.libs.Files.{SingletonTemporaryFileCreator, TemporaryFile}
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{MultipartFormData, Result}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{UploadMigrationDataRequest, UploadRequest}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{MigrationDataUpload, UploadRequest}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse, Upstream5xxResponse}
 

@@ -19,7 +19,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.connector
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.http.Status
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadAttachmentRequest, UploadRequest, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{AttachmentUpload, FileSearch, FileUploaded, UploadRequest, UploadTemplate}
 
 class FileStoreConnectorTest extends ConnectorTest {
 

@@ -16,50 +16,20 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.filestore
 
-import play.api.libs.json._
-import uk.gov.hmrc.play.json.Union
+import play.api.libs.json.{Json, Writes}
 
-sealed trait UploadRequest {
+abstract class UploadRequest {
   def id: String
-  def batchId: String
   def fileName: String
   def mimeType: String
 }
 
-case class UploadAttachmentRequest(
-  override val fileName: String,
-  override val mimeType: String,
-  override val id: String,
-  override val batchId: String
-) extends UploadRequest
-
-case class UploadMigrationDataRequest(
-  override val fileName: String,
-  override val mimeType: String,
-  override val id: String,
-  override val batchId: String
-) extends UploadRequest
-
-case class UploadHistoricDataRequest(
-  override val fileName: String,
-  override val mimeType: String,
-  override val id: String,
-  override val batchId: String
-) extends UploadRequest
-
 object UploadRequest {
-  val Attachment    = classOf[UploadAttachmentRequest].getSimpleName()
-  val MigrationData = classOf[UploadMigrationDataRequest].getSimpleName()
-  val HistoricData  = classOf[UploadHistoricDataRequest].getSimpleName()
-
-  implicit val attachmentFormat: Format[UploadAttachmentRequest]   = Json.format[UploadAttachmentRequest]
-  implicit val migrationFormat: Format[UploadMigrationDataRequest] = Json.format[UploadMigrationDataRequest]
-  implicit val historicFormat: Format[UploadHistoricDataRequest]   = Json.format[UploadHistoricDataRequest]
-
-  implicit val format: Format[UploadRequest] = Union
-    .from[UploadRequest]("type")
-    .and[UploadAttachmentRequest](Attachment)
-    .and[UploadMigrationDataRequest](MigrationData)
-    .and[UploadHistoricDataRequest](HistoricData)
-    .format
+  implicit val writes: Writes[UploadRequest] = Writes(upload =>
+    Json.obj(
+      "id"       -> upload.id,
+      "fileName" -> upload.fileName,
+      "mimeType" -> upload.mimeType
+    )
+  )
 }

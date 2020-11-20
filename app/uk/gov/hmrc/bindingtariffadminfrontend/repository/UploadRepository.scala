@@ -24,7 +24,7 @@ import reactivemongo.api.indexes.Index
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadRequest
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Upload
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.MongoIndexCreator.createSingleFieldAscendingIndex
 import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 import uk.gov.hmrc.mongo.ReactiveRepository
@@ -35,29 +35,29 @@ import scala.reflect.{ClassTag, classTag}
 
 @ImplementedBy(classOf[UploadMongoRepository])
 trait UploadRepository {
-  def getByFileName(fileName: String): Future[Option[UploadRequest]]
+  def getByFileName(fileName: String): Future[Option[Upload]]
 
-  def getByFileNames(fileNames: List[String]): Future[List[UploadRequest]]
+  def getByFileNames(fileNames: List[String]): Future[List[Upload]]
 
-  def getByBatch(batchId: String): Future[List[UploadRequest]]
+  def getByBatch(batchId: String): Future[List[Upload]]
 
-  def getByType[T <: UploadRequest: ClassTag]: Future[List[UploadRequest]]
+  def getByType[T <: Upload: ClassTag]: Future[List[Upload]]
 
-  def update(upload: UploadRequest): Future[Option[UploadRequest]]
+  def update(upload: Upload): Future[Option[Upload]]
 
   def deleteAll(): Future[Unit]
 }
 
 @Singleton
 class UploadMongoRepository @Inject() (config: AppConfig, mongoDbProvider: MongoDbProvider)
-    extends ReactiveRepository[UploadRequest, BSONObjectID](
+    extends ReactiveRepository[Upload, BSONObjectID](
       collectionName = "Uploads",
       mongo          = mongoDbProvider.mongo,
-      domainFormat   = JsonUtil.oFormatOf(UploadRequest.format)
+      domainFormat   = JsonUtil.oFormatOf(Upload.format)
     )
     with UploadRepository {
 
-  implicit val uploadRequestFormat: OFormat[UploadRequest] = JsonUtil.oFormatOf(UploadRequest.format)
+  implicit val uploadRequestFormat: OFormat[Upload] = JsonUtil.oFormatOf(Upload.format)
 
   override lazy val indexes: Seq[Index] = Seq(
     createSingleFieldAscendingIndex("id", isUnique       = true),
@@ -68,37 +68,37 @@ class UploadMongoRepository @Inject() (config: AppConfig, mongoDbProvider: Mongo
   override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] =
     Future.sequence(indexes.map(collection.indexesManager(ec).ensure(_)))(implicitly, ec)
 
-  override def getByFileName(fileName: String): Future[Option[UploadRequest]] =
+  override def getByFileName(fileName: String): Future[Option[Upload]] =
     collection
-      .find[JsObject, UploadRequest](byFileName(fileName))
-      .one[UploadRequest]
+      .find[JsObject, Upload](byFileName(fileName))
+      .one[Upload]
 
-  override def getByFileNames(fileNames: List[String]): Future[List[UploadRequest]] =
+  override def getByFileNames(fileNames: List[String]): Future[List[Upload]] =
     collection
-      .find[JsObject, UploadRequest](byFileNames(fileNames))
-      .cursor[UploadRequest]()
-      .collect[List](Int.MaxValue, Cursor.FailOnError[List[UploadRequest]]())
+      .find[JsObject, Upload](byFileNames(fileNames))
+      .cursor[Upload]()
+      .collect[List](Int.MaxValue, Cursor.FailOnError[List[Upload]]())
 
-  override def getByBatch(batchId: String): Future[List[UploadRequest]] =
+  override def getByBatch(batchId: String): Future[List[Upload]] =
     collection
-      .find[JsObject, UploadRequest](byBatchId(batchId))
-      .cursor[UploadRequest]()
-      .collect[List](Int.MaxValue, Cursor.FailOnError[List[UploadRequest]]())
+      .find[JsObject, Upload](byBatchId(batchId))
+      .cursor[Upload]()
+      .collect[List](Int.MaxValue, Cursor.FailOnError[List[Upload]]())
 
-  override def getByType[T <: UploadRequest: ClassTag]: Future[List[UploadRequest]] =
+  override def getByType[T <: Upload: ClassTag]: Future[List[Upload]] =
     collection
-      .find[JsObject, UploadRequest](byType[T])
-      .cursor[UploadRequest]()
-      .collect[List](Int.MaxValue, Cursor.FailOnError[List[UploadRequest]]())
+      .find[JsObject, Upload](byType[T])
+      .cursor[Upload]()
+      .collect[List](Int.MaxValue, Cursor.FailOnError[List[Upload]]())
 
-  override def update(upload: UploadRequest): Future[Option[UploadRequest]] =
+  override def update(upload: Upload): Future[Option[Upload]] =
     collection
       .findAndUpdate(
         selector = byFileName(upload.fileName),
         update   = upload,
         upsert   = true
       )
-      .map(_.value.map(_.as[UploadRequest]))
+      .map(_.value.map(_.as[Upload]))
 
   private def byFileName(fileName: String): JsObject =
     Json.obj("fileName" -> fileName)
@@ -106,7 +106,7 @@ class UploadMongoRepository @Inject() (config: AppConfig, mongoDbProvider: Mongo
   private def byFileNames(fileNames: List[String]): JsObject =
     Json.obj("fileName" -> Json.obj("$in" -> fileNames))
 
-  private def byType[T <: UploadRequest: ClassTag]: JsObject =
+  private def byType[T <: Upload: ClassTag]: JsObject =
     Json.obj("type" -> classTag[T].runtimeClass.getSimpleName)
 
   private def byBatchId(batchId: String): JsObject =

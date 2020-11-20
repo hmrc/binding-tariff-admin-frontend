@@ -20,7 +20,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.matching.{MultipartValuePattern, MultipartValuePatternBuilder}
 import play.api.http.Status
 import play.api.libs.Files.SingletonTemporaryFileCreator
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{UploadAttachmentRequest, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{AttachmentUpload, UploadTemplate}
 
 class UpscanS3ConnectorTest extends ConnectorTest {
 

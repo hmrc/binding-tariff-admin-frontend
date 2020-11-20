@@ -21,16 +21,16 @@ import java.util.UUID
 import javax.inject.Inject
 import play.api.data.Form
 import play.api.data.Forms.{mapping, optional, text}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadHistoricDataRequest
+import uk.gov.hmrc.bindingtariffadminfrontend.model.HistoricDataUpload
 
 class UploadHistoricDataFormProvider @Inject() () {
-  def apply(): Form[UploadHistoricDataRequest] =
-    Form[UploadHistoricDataRequest](
-      mapping[UploadHistoricDataRequest, String, String, String, String](
+  def apply(): Form[HistoricDataUpload] =
+    Form[HistoricDataUpload](
+      mapping[HistoricDataUpload, String, String, String, String](
         "filename" -> text,
         "mimetype" -> text,
         "id"       -> optional(text).transform(_.getOrElse(UUID.randomUUID().toString), { id: String => Some(id) }),
         "batchId"  -> text
-      )(UploadHistoricDataRequest.apply)(UploadHistoricDataRequest.unapply)
+      )(HistoricDataUpload.apply)(HistoricDataUpload.unapply)
     )
 }

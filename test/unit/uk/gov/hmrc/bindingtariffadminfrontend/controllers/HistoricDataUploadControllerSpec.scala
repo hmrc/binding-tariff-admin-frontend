@@ -32,7 +32,7 @@ import play.api.mvc.{AnyContentAsEmpty, AnyContentAsJson, MultipartFormData, Res
 import play.api.test.CSRFTokenHelper.CSRFFRequestHeader
 import play.api.test.{FakeHeaders, FakeRequest}
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, UploadHistoricDataRequest}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploaded, HistoricDataUpload}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http._
 
@@ -123,7 +123,7 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
 
   "POST /" should {
     "Upload" in {
-      given(migrationService.upload(any[UploadHistoricDataRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+      given(migrationService.upload(any[HistoricDataUpload], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
         .successful(())
 
       val f              = aForm(filename = "filename", mimeType = "text/plain")
@@ -133,7 +133,7 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
     }
 
     "Handle 4xx Errors" in {
-      given(migrationService.upload(any[UploadHistoricDataRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+      given(migrationService.upload(any[HistoricDataUpload], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
         .failed(Upstream4xxResponse("error", 409, 0))
 
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(aForm())))
@@ -142,7 +142,7 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
     }
 
     "Handle 5xx Errors" in {
-      given(migrationService.upload(any[UploadHistoricDataRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+      given(migrationService.upload(any[HistoricDataUpload], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
         .failed(Upstream5xxResponse("error", 500, 0))
 
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(aForm())))
@@ -151,7 +151,7 @@ class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfte
     }
 
     "Handle unknown Errors" in {
-      given(migrationService.upload(any[UploadHistoricDataRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+      given(migrationService.upload(any[HistoricDataUpload], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
         .failed(new RuntimeException("error"))
 
       val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(aForm())))

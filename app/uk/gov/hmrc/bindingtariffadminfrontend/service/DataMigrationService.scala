@@ -167,7 +167,7 @@ class DataMigrationService @Inject() (
   def initiateFileMigration(upload: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] =
     fileConnector.initiate(upload)
 
-  def upload(upload: UploadRequest, file: TemporaryFile)(implicit hc: HeaderCarrier): Future[Unit] =
+  def upload(upload: Upload, file: TemporaryFile)(implicit hc: HeaderCarrier): Future[Unit] =
     for {
       _        <- uploadRepository.update(upload)
       template <- fileConnector.initiate(upload)

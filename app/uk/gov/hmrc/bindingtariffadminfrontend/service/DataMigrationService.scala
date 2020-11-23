@@ -302,8 +302,6 @@ class DataMigrationService @Inject() (
     val attachmentsByName  = migration.`case`.attachments.map(att => (att.name, att)).toMap
     val unpublishedUploads = uploadedAttachments.filterNot(_.published)
 
-    println(s"uploaded: $uploadedAttachments")
-
     sequence(
       unpublishedUploads.map { file =>
         val attachment = attachmentsByName(file.fileName)
@@ -338,8 +336,7 @@ class DataMigrationService @Inject() (
     if (attachmentFileNames.nonEmpty) {
       val uploadedAttachments = for {
         uploadedRequests <- uploadRepository.getByFileNames(attachmentFileNames)
-        _ = println(s"uploadedRequests: $uploadedRequests")
-        fileSearch <- fileConnector.find(FileSearch(ids = Some(uploadedRequests.map(_.id).toSet)), Pagination.max)
+        fileSearch       <- fileConnector.find(FileSearch(ids = Some(uploadedRequests.map(_.id).toSet)), Pagination.max)
       } yield fileSearch.results
 
       uploadedAttachments recover withResponse(Seq.empty)

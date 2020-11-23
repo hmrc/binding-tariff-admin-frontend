@@ -684,12 +684,17 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     "Skip existing Case from newer extract - with aborted status" in withService { service =>
       givenTheCaseExistsFromHistoricExtract()
 
-      val migrated = await(service.process(anUnprocessedMigration))
+      val migrated = await(
+        service.process(
+          anUnprocessedMigration.copy(`case` = anUnprocessedMigration.`case`.copy(status = CaseStatus.COMPLETED))
+        )
+      )
       migrated.status shouldBe MigrationStatus.ABORTED
       migrated.message shouldBe Seq(
         "An earlier extract containing this case has already been uploaded",
         "Previously migrated from the 1970-01-01 extracts",
-        "Newer information from this 2020-12-31 extract may be lost"
+        "Newer information from this 2020-12-31 extract may be lost",
+        "Status from migration [COMPLETED] is different to the existing case [OPEN]"
       )
 
       verifyNoCaseCreated

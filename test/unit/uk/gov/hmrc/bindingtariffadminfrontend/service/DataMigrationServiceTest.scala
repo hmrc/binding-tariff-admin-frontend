@@ -36,8 +36,8 @@ import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Cases.btiApplicationExample
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, MigrationDataUpload, UploadTemplate}
-import uk.gov.hmrc.bindingtariffadminfrontend.repository.MigrationRepository
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.repository.{MigrationRepository, UploadRepository}
 import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 import uk.gov.hmrc.lock.LockRepository
@@ -48,7 +48,8 @@ import scala.concurrent.duration.FiniteDuration
 
 class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
-  private val repository             = mock[MigrationRepository]
+  private val migrationRepository    = mock[MigrationRepository]
+  private val uploadRepository       = mock[UploadRepository]
   private val caseConnector          = mock[BindingTariffClassificationConnector]
   private val fileConnector          = mock[FileStoreConnector]
   private val rulingConnector        = mock[RulingConnector]
@@ -56,12 +57,15 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   private val dataMigrationConnector = mock[DataMigrationJsonConnector]
   private val appConfig              = mock[AppConfig]
   private val lockRepository         = mock[LockRepository]
-  private def migrationLock          = new MigrationLock(lockRepository, appConfig)
-  private def actorSystem            = ActorSystem.create("testActorSystem")
+
+  private def migrationLock = new MigrationLock(lockRepository, appConfig)
+  private def actorSystem   = ActorSystem.create("testActorSystem")
+
   private def withService(test: DataMigrationService => Any) =
     test(
       new DataMigrationService(
-        repository             = repository,
+        migrationRepository    = migrationRepository,
+        uploadRepository       = uploadRepository,
         migrationLock          = migrationLock,
         fileConnector          = fileConnector,
         upscanS3Connector      = upscanS3Connector,
@@ -77,7 +81,8 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   override protected def afterEach(): Unit = {
     super.afterEach()
     reset(
-      repository,
+      migrationRepository,
+      uploadRepository,
       caseConnector,
       fileConnector,
       rulingConnector,
@@ -90,71 +95,62 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
+
     when(appConfig.dataMigrationLockLifetime) thenReturn FiniteDuration(60, TimeUnit.SECONDS)
     when(lockRepository.lock(anyString(), anyString(), any())) thenReturn Future.successful(true)
     when(lockRepository.releaseLock(anyString(), anyString())) thenReturn Future.successful(())
   }
 
-  "Service getDataMigrationFilesDetails" should {
-    val aSuccessfullyUploadedFile = FileUploaded("name", "published", "text/plain", None, None)
+  "Service 'getUploadedBatch'" should {
+    "return the matching files" in withService { service =>
+      val batch1 = List(
+        FileUploaded(id = "id1", fileName = "name1", mimeType = "text/plain"),
+        FileUploaded(id = "id2", fileName = "name2", mimeType = "text/plain")
+      )
 
-    "if connector is returning the file metadata" in withService { service =>
-      given(fileConnector.find(refEq("name"))(any[HeaderCarrier]))
-        .willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
+      givenBatchUploaded("batch1", batch1)
 
-      val result = await(service.getDataMigrationFilesDetails(List("name")))
+      val result = await(service.getUploadedBatch("batch1"))
 
-      result shouldBe List(aSuccessfullyUploadedFile)
-      verify(fileConnector, atLeastOnce()).find(refEq("name"))(any[HeaderCarrier])
+      result shouldBe batch1
     }
 
-    "if connector is returning the file metadata for mutiple callers" in withService { service =>
-      given(fileConnector.find(refEq("name1"))(any[HeaderCarrier]))
-        .willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
-      given(fileConnector.find(refEq("name2"))(any[HeaderCarrier]))
-        .willReturn(Future.successful(Some(aSuccessfullyUploadedFile)))
-
-      val result = await(service.getDataMigrationFilesDetails(List("name1", "name2")))
-
-      result shouldBe List(aSuccessfullyUploadedFile, aSuccessfullyUploadedFile)
-      verify(fileConnector, atLeastOnce()).find(refEq("name1"))(any[HeaderCarrier])
-      verify(fileConnector, atLeastOnce()).find(refEq("name2"))(any[HeaderCarrier])
-    }
-
-    "if connector is not returning the file metadata" in withService { service =>
-      given(fileConnector.find(any[String])(any[HeaderCarrier])).willReturn(Future.successful(None))
-
-      intercept[RuntimeException] {
-        await(service.getDataMigrationFilesDetails(List("name")))
-      }
-      verify(fileConnector, atLeastOnce()).find(refEq("name"))(any[HeaderCarrier])
+    def givenBatchUploaded(batchId: String, files: List[FileUploaded]) = {
+      given(uploadRepository.getByBatch(batchId)) willReturn Future.successful(
+        files.map(file =>
+          AttachmentUpload(fileName = file.fileName, mimeType = file.mimeType, id = file.id, batchId = batchId)
+        )
+      )
+      files.map(file =>
+        given(fileConnector.find(refEq(file.id))(any[HeaderCarrier])) willReturn Future.successful(Some(file))
+      )
     }
   }
-
-  "Service 'getAvailableFileDetails'" should {
-    val file1 = FileUploaded("id1", "name1", "text/plain", None, None)
-    val file3 = FileUploaded("id3", "name3", "text/plain", None, None)
-
-    "return the available files" in withService { service =>
-      given(fileConnector.find(refEq("id1"))(any[HeaderCarrier])).willReturn(Future.successful(Some(file1)))
-      given(fileConnector.find(refEq("id2"))(any[HeaderCarrier])).willReturn(Future.successful(None))
-      given(fileConnector.find(refEq("id3"))(any[HeaderCarrier])).willReturn(Future.successful(Some(file3)))
-
-      val result = await(service.getAvailableFileDetails(List("id1", "id2", "id3")))
-
-      result shouldBe List(file1, file3)
-
-      verify(fileConnector, atLeastOnce()).find(refEq("id1"))(any[HeaderCarrier])
-      verify(fileConnector, atLeastOnce()).find(refEq("id2"))(any[HeaderCarrier])
-      verify(fileConnector, atLeastOnce()).find(refEq("id3"))(any[HeaderCarrier])
-    }
-  }
+//
+//  "Service 'getAvailableFileDetails'" should {
+//    val file1 = FileUploaded("id1", "name1", "text/plain", None, None)
+//    val file3 = FileUploaded("id3", "name3", "text/plain", None, None)
+//
+//    "return the available files" in withService { service =>
+//      given(fileConnector.find(refEq("id1"))(any[HeaderCarrier])).willReturn(Future.successful(Some(file1)))
+//      given(fileConnector.find(refEq("id2"))(any[HeaderCarrier])).willReturn(Future.successful(None))
+//      given(fileConnector.find(refEq("id3"))(any[HeaderCarrier])).willReturn(Future.successful(Some(file3)))
+//
+//      val result = await(service.getAvailableFileDetails(List("id1", "id2", "id3")))
+//
+//      result shouldBe List(file1, file3)
+//
+//      verify(fileConnector, atLeastOnce()).find(refEq("id1"))(any[HeaderCarrier])
+//      verify(fileConnector, atLeastOnce()).find(refEq("id2"))(any[HeaderCarrier])
+//      verify(fileConnector, atLeastOnce()).find(refEq("id3"))(any[HeaderCarrier])
+//    }
+//  }
 
   "Service 'Counts'" should {
 
     "Delegate to Repository" in withService { service =>
       val counts = mock[MigrationCounts]
-      given(repository.countByStatus) willReturn Future.successful(counts)
+      given(migrationRepository.countByStatus) willReturn Future.successful(counts)
       await(service.counts) shouldBe counts
     }
   }
@@ -164,7 +160,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val migrations = Paged(Seq(migration))
 
     "Delegate to Repository" in withService { service =>
-      given(repository.get(Seq.empty, Pagination())) willReturn Future.successful(migrations)
+      given(migrationRepository.get(Seq.empty, Pagination())) willReturn Future.successful(migrations)
       await(service.getState(Seq.empty, Pagination())) shouldBe migrations
     }
   }
@@ -173,7 +169,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val migration = mock[Migration]
 
     "Delegate to Repository" in withService { service =>
-      given(repository.get(MigrationStatus.UNPROCESSED)) willReturn Future.successful(Some(migration))
+      given(migrationRepository.get(MigrationStatus.UNPROCESSED)) willReturn Future.successful(Some(migration))
       await(service.getNextMigration) shouldBe Some(migration)
     }
   }
@@ -182,8 +178,8 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val `case` = mock[MigratableCase]
 
     "Delegate to Repository" in withService { service =>
-      given(repository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
-      given(repository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
+      given(migrationRepository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
+      given(migrationRepository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
 
       await(service.prepareMigration(Source(List(`case`)))) shouldBe true
 
@@ -198,13 +194,13 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
     def theMigrationsCreated: Seq[Migration] = {
       val captor: ArgumentCaptor[Seq[Migration]] = ArgumentCaptor.forClass(classOf[Seq[Migration]])
-      verify(repository).insert(captor.capture())
+      verify(migrationRepository).insert(captor.capture())
       captor.getValue
     }
 
     def theMigrationsDeleted: Seq[Migration] = {
       val captor: ArgumentCaptor[Seq[Migration]] = ArgumentCaptor.forClass(classOf[Seq[Migration]])
-      verify(repository).delete(captor.capture())
+      verify(migrationRepository).delete(captor.capture())
       captor.getValue
     }
   }
@@ -214,7 +210,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val migrationUpdated = mock[Migration]
 
     "Delegate to Repository" in withService { service =>
-      given(repository.update(migration)) willReturn Future.successful(Some(migrationUpdated))
+      given(migrationRepository.update(migration)) willReturn Future.successful(Some(migrationUpdated))
 
       await(service.update(migration)) shouldBe Some(migrationUpdated)
     }
@@ -224,34 +220,38 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val stores = Store.values
 
     "Clear Back Ends" in withService { service =>
+      given(uploadRepository.deleteAll()) willReturn Future.successful((): Unit)
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(repository.delete(None)) willReturn Future.successful(true)
+      given(migrationRepository.delete(None)) willReturn Future.successful(true)
 
       await(service.resetEnvironment(stores))
 
+      verify(uploadRepository).deleteAll()
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
-      verify(repository).delete(None)
+      verify(migrationRepository).delete(None)
     }
 
     "Clear Files" in withService { service =>
+      given(uploadRepository.deleteAll()) willReturn Future.successful((): Unit)
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
 
       await(service.resetEnvironment(Set(Store.FILES)))
 
+      verify(uploadRepository).deleteAll()
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector, never()).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
-      verify(repository, never()).delete(None)
+      verify(migrationRepository, never()).delete(None)
     }
 
     "Clear Cases" in withService { service =>
@@ -259,12 +259,13 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       await(service.resetEnvironment(Set(Store.CASES)))
 
+      verify(uploadRepository, never()).deleteAll()
       verify(fileConnector, never()).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector, never()).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
-      verify(repository, never()).delete(None)
+      verify(migrationRepository, never()).delete(None)
     }
 
     "Clear Events" in withService { service =>
@@ -272,12 +273,13 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       await(service.resetEnvironment(Set(Store.EVENTS)))
 
+      verify(uploadRepository, never()).deleteAll()
       verify(fileConnector, never()).delete()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector, never()).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
-      verify(repository, never()).delete(None)
+      verify(migrationRepository, never()).delete(None)
     }
 
     "Clear Rulings" in withService { service =>
@@ -285,12 +287,13 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       await(service.resetEnvironment(Set(Store.RULINGS)))
 
+      verify(uploadRepository, never()).deleteAll()
       verify(fileConnector, never()).delete()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
-      verify(repository, never()).delete(None)
+      verify(migrationRepository, never()).delete(None)
     }
 
     "Clear Historic Data" in withService { service =>
@@ -298,118 +301,151 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       await(service.resetEnvironment(Set(Store.HISTORIC_DATA)))
 
+      verify(uploadRepository, never()).deleteAll()
       verify(fileConnector, never()).delete()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector, never()).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
-      verify(repository, never()).delete(None)
+      verify(migrationRepository, never()).delete(None)
     }
 
     "Clear Migrations" in withService { service =>
-      given(repository.delete(None)) willReturn Future.successful(true)
+      given(migrationRepository.delete(None)) willReturn Future.successful(true)
 
       await(service.resetEnvironment(Set(Store.MIGRATION)))
 
+      verify(uploadRepository, never()).deleteAll()
       verify(fileConnector, never()).delete()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector, never()).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
-      verify(repository).delete(None)
+      verify(migrationRepository).delete(None)
+    }
+
+    "Handle UploadRepository Failure" in withService { service =>
+      given(uploadRepository.deleteAll()) willReturn Future.failed(new RuntimeException("Error"))
+      given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(migrationRepository.delete(None)) willReturn Future.successful(true)
+
+      await(service.resetEnvironment(stores))
+
+      verify(uploadRepository).deleteAll()
+      verify(fileConnector).delete()(any[HeaderCarrier])
+      verify(caseConnector).deleteCases()(any[HeaderCarrier])
+      verify(caseConnector).deleteEvents()(any[HeaderCarrier])
+      verify(rulingConnector).delete()(any[HeaderCarrier])
+      verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
+      verify(migrationRepository).delete(None)
     }
 
     "Handle FileStore Failure" in withService { service =>
+      given(uploadRepository.deleteAll()) willReturn Future.successful((): Unit)
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(repository.delete(None)) willReturn Future.successful(true)
+      given(migrationRepository.delete(None)) willReturn Future.successful(true)
 
       await(service.resetEnvironment(stores))
 
+      verify(uploadRepository).deleteAll()
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
-      verify(repository).delete(None)
+      verify(migrationRepository).delete(None)
     }
 
     "Handle CaseStore Case Delete Failure " in withService { service =>
+      given(uploadRepository.deleteAll()) willReturn Future.successful((): Unit)
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(repository.delete(None)) willReturn Future.successful(true)
+      given(migrationRepository.delete(None)) willReturn Future.successful(true)
 
       await(service.resetEnvironment(stores))
 
+      verify(uploadRepository).deleteAll()
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
-      verify(repository).delete(None)
+      verify(migrationRepository).delete(None)
     }
 
     "Handle CaseStore Event Delete Failure" in withService { service =>
+      given(uploadRepository.deleteAll()) willReturn Future.successful((): Unit)
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(repository.delete(None)) willReturn Future.successful(true)
+      given(migrationRepository.delete(None)) willReturn Future.successful(true)
 
       await(service.resetEnvironment(stores))
 
+      verify(uploadRepository).deleteAll()
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
-      verify(repository).delete(None)
+      verify(migrationRepository).delete(None)
     }
 
     "Handle Migrations Delete Failure" in withService { service =>
+      given(uploadRepository.deleteAll()) willReturn Future.successful((): Unit)
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(repository.delete(None)) willReturn Future.failed(new RuntimeException("Error"))
+      given(migrationRepository.delete(None)) willReturn Future.failed(new RuntimeException("Error"))
 
       await(service.resetEnvironment(stores))
 
+      verify(uploadRepository).deleteAll()
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
-      verify(repository).delete(None)
+      verify(migrationRepository).delete(None)
     }
 
     "Handle Ruling Delete Failure" in withService { service =>
+      given(uploadRepository.deleteAll()) willReturn Future.successful((): Unit)
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
       given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(repository.delete(None)) willReturn Future.successful(true)
+      given(migrationRepository.delete(None)) willReturn Future.successful(true)
 
       await(service.resetEnvironment(stores))
 
+      verify(uploadRepository).deleteAll()
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
-      verify(repository).delete(None)
+      verify(migrationRepository).delete(None)
     }
 
     "Handle Historic Data Delete Failure" in withService { service =>
+      given(uploadRepository.deleteAll()) willReturn Future.successful((): Unit)
       given(fileConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
@@ -417,16 +453,17 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.failed(
         new RuntimeException("Error")
       )
-      given(repository.delete(None)) willReturn Future.successful(true)
+      given(migrationRepository.delete(None)) willReturn Future.successful(true)
 
       await(service.resetEnvironment(stores))
 
+      verify(uploadRepository).deleteAll()
       verify(fileConnector).delete()(any[HeaderCarrier])
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
-      verify(repository).delete(None)
+      verify(migrationRepository).delete(None)
     }
   }
 
@@ -487,7 +524,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       dateOfExtract = Some(extractDate)
     )
 
-    val attachment = Attachment(id = "name", public = true, timestamp = Instant.EPOCH)
+    val attachment = Attachment(id = "id", public = true, timestamp = Instant.EPOCH)
     val aCase = Case(
       "1",
       CaseStatus.OPEN,
@@ -567,7 +604,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     }
 
     "Migrate new Case with Attachments - with publish failure" in withService { service =>
-      val aSuccessfullyUploadedFile = FileUploaded("name", "published", "text/plain", None, None)
+      val aSuccessfullyUploadedFile = FileUploaded(id = "id", fileName = "name", mimeType = "text/plain")
 
       givenTheCaseDoesNotAlreadyExist()
       givenRetrievingTheUploadedFilesReturns(aSuccessfullyUploadedFile)
@@ -582,11 +619,18 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
         "Failed to migrate file [name] because [Publish Error]"
       )
 
-      theCaseCreated shouldBe aCaseWithAttachments
+      theCaseCreated shouldBe aCase
     }
 
     "Migrate new Case with Attachments - with pre-published file" in withService { service =>
-      val aSuccessfullyUploadedFile = FileUploaded("name", "published", "text/plain", None, None, published = true)
+      val aSuccessfullyUploadedFile = FileUploaded(
+        id         = "id",
+        fileName   = "name",
+        mimeType   = "text/plain",
+        url        = None,
+        scanStatus = None,
+        published  = true
+      )
 
       givenTheCaseDoesNotAlreadyExist()
       givenRetrievingTheUploadedFilesReturns(aSuccessfullyUploadedFile)
@@ -701,25 +745,35 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
         new RuntimeException("Create Event Failure")
       )
 
-    def givenPublishingTheFileReturns(aSuccessfullyUploadedFile: FileUploaded): Unit =
-      given(fileConnector.publish(anyString())(any[HeaderCarrier])) willReturn Future.successful(
-        aSuccessfullyUploadedFile
+    def givenRetrievingTheUploadedFilesFails(): Unit = {
+      given(uploadRepository.getByFileNames(any[List[String]])) willReturn Future.successful(
+        Nil
       )
-
-    def givenRetrievingTheUploadedFilesFails(): Unit =
       given(fileConnector.find(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.failed(
         new RuntimeException("Find Error")
       )
+    }
 
-    def givenRetrievingTheUploadedFilesReturnsNone(): Unit =
+    def givenRetrievingTheUploadedFilesReturnsNone(): Unit = {
+      println("none")
+      given(uploadRepository.getByFileNames(any[List[String]])) willReturn Future.successful(
+        Nil
+      )
+
       given(fileConnector.find(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(
         Paged.empty[FileUploaded]
       )
+    }
 
-    def givenRetrievingTheUploadedFilesReturns(files: FileUploaded*): Unit =
+    def givenRetrievingTheUploadedFilesReturns(files: FileUploaded*): Unit = {
+      println("something")
+      given(uploadRepository.getByFileNames(any[List[String]])) willReturn Future.successful(
+        files.toList.map(file => AttachmentUpload(file.fileName, file.mimeType, file.id, "batchId"))
+      )
       given(fileConnector.find(any[FileSearch], any[Pagination])(any[HeaderCarrier])) willReturn Future.successful(
         Paged(files.toSeq)
       )
+    }
 
     def givenPublishingTheFileFails(): Unit =
       given(fileConnector.publish(anyString())(any[HeaderCarrier])) willReturn Future.failed(
@@ -769,37 +823,32 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
   "Service clear" should {
     "Delegate to repository" in withService { service =>
-      given(repository.delete(None)) willReturn Future.successful(true)
+      given(migrationRepository.delete(None)) willReturn Future.successful(true)
       await(service.clear()) shouldBe true
     }
 
     "Delegate to repository with status" in withService { service =>
-      given(repository.delete(Some(MigrationStatus.SUCCESS))) willReturn Future.successful(true)
+      given(migrationRepository.delete(Some(MigrationStatus.SUCCESS))) willReturn Future.successful(true)
       await(service.clear(Some(MigrationStatus.SUCCESS))) shouldBe true
-    }
-  }
-
-  "Service initiate" should {
-    "Delegate to connector" in withService { service =>
-      val request  = UploadMigrationDataRequest("name", "type")
-      val template = UploadTemplate("href", Map())
-
-      given(fileConnector.initiate(request)) willReturn Future.successful(template)
-
-      await(service.initiateFileMigration(request)) shouldBe template
     }
   }
 
   "Service upload" should {
     "Delegate to connector" in withService { service =>
-      val request  = UploadMigrationDataRequest("name", "type")
+      val request  = AttachmentUpload("name", "type", "id", "batchId")
       val template = UploadTemplate("href", Map())
       val file     = mock[TemporaryFile]
 
+      given(uploadRepository.update(request)) willReturn Future.successful(Some(request))
       given(fileConnector.initiate(request)) willReturn Future.successful(template)
       given(upscanS3Connector.upload(template, file, request)) willReturn Future.successful(())
 
-      await(service.initiateFileMigration(request)) shouldBe template
+      await(service.upload(request, file))
+
+      verify(uploadRepository).update(request)
+      verify(fileConnector).initiate(request)
+      verify(upscanS3Connector).upload(template, file, request)
+
     }
   }
 

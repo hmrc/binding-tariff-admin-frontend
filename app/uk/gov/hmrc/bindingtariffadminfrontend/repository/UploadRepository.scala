@@ -94,9 +94,10 @@ class UploadMongoRepository @Inject() (config: AppConfig, mongoDbProvider: Mongo
   override def update(upload: Upload): Future[Option[Upload]] =
     collection
       .findAndUpdate(
-        selector = byFileName(upload.fileName),
-        update   = upload,
-        upsert   = true
+        selector       = byFileName(upload.fileName),
+        update         = upload,
+        upsert         = true,
+        fetchNewObject = true
       )
       .map(_.value.map(_.as[Upload]))
 

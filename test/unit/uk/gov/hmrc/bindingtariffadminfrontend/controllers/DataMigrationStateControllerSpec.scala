@@ -36,8 +36,14 @@ class DataMigrationStateControllerSpec extends ControllerSpec with BeforeAndAfte
 
   private val migrationService = mock[DataMigrationService]
   private val appConfig        = mock[AppConfig]
-  private val controller =
-    new DataMigrationStateController(new SuccessfulAuthenticatedAction, migrationService, mcc, messageApi, appConfig)
+
+  private val controller = new DataMigrationStateController(
+    authenticatedAction = new SuccessfulAuthenticatedAction,
+    service             = migrationService,
+    mcc                 = mcc,
+    messagesApi         = messageApi,
+    appConfig           = appConfig
+  )
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

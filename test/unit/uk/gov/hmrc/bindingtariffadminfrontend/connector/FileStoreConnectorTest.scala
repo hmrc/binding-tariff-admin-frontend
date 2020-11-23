@@ -16,10 +16,12 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
+import java.util.UUID
+
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.http.Status
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{AttachmentUpload, FileSearch, FileUploaded, UploadRequest, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{AttachmentUpload, Pagination}
 
 class FileStoreConnectorTest extends ConnectorTest {
 
@@ -68,7 +70,7 @@ class FileStoreConnectorTest extends ConnectorTest {
       stubFor(
         post("/file")
           .withHeader("Content-Type", equalTo("application/json"))
-          .withRequestBody(matchingJsonPath("id", equalTo("file_name_jpg")))
+          .withRequestBody(matchingJsonPath("id", equalTo("id")))
           .withRequestBody(matchingJsonPath("fileName", equalTo("file name.jpg")))
           .withRequestBody(matchingJsonPath("mimeType", equalTo("type")))
           .willReturn(
@@ -78,7 +80,13 @@ class FileStoreConnectorTest extends ConnectorTest {
           )
       )
 
-      val file     = UploadAttachmentRequest(fileName = "file name.jpg", mimeType = "type")
+      val file = AttachmentUpload(
+        fileName = "file name.jpg",
+        mimeType = "type",
+        id       = "id",
+        batchId  = UUID.randomUUID().toString
+      )
+
       val response = await(connector.initiate(file))
 
       response shouldBe UploadTemplate("url", Map("field" -> "value"))

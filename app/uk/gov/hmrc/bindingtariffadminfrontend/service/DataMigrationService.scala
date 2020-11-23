@@ -33,7 +33,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Case, Sample}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.{MigrationRepository, UploadRepository}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -45,7 +45,7 @@ import scala.concurrent.duration.{FiniteDuration, _}
 import scala.util.{Random, Success}
 
 class DataMigrationService @Inject() (
-  repository: MigrationRepository,
+  migrationRepository: MigrationRepository,
   uploadRepository: UploadRepository,
   migrationLock: MigrationLock,
   fileConnector: FileStoreConnector,
@@ -61,18 +61,6 @@ class DataMigrationService @Inject() (
 
   private lazy val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC)
 
-  def getDataMigrationFilesDetails(fileNames: List[String])(implicit hc: HeaderCarrier): Future[List[FileUploaded]] = {
-
-    val opts = fileNames.map { file =>
-      fileConnector.find(file).map {
-        case Some(data) => data
-        case None       => throw new RuntimeException("No data found")
-      }
-    }
-
-    Future.sequence(opts)
-  }
-
   def getUploadedBatch(batchId: String)(implicit hc: HeaderCarrier): Future[List[FileUploaded]] =
     for {
       uploads <- uploadRepository.getByBatch(batchId)
@@ -80,17 +68,17 @@ class DataMigrationService @Inject() (
     } yield results.flatten
 
   def getState(status: Seq[MigrationStatus], pagination: Pagination): Future[Paged[Migration]] =
-    repository.get(status, pagination)
+    migrationRepository.get(status, pagination)
 
   def counts: Future[MigrationCounts] =
-    repository.countByStatus
+    migrationRepository.countByStatus
 
   def prepareMigrationGroup(migrations: Seq[Migration], priority: Boolean)(
     implicit hc: HeaderCarrier
   ): Future[Boolean] =
     for {
-      _      <- repository.delete(migrations)
-      result <- repository.insert(migrations)
+      _      <- migrationRepository.delete(migrations)
+      result <- migrationRepository.insert(migrations)
       _ <- if (priority) {
             Future.sequence(migrations.map(process(_).flatMap(update)))
           } else Future.successful(())
@@ -134,13 +122,13 @@ class DataMigrationService @Inject() (
   }
 
   def getNextMigration: Future[Option[Migration]] =
-    repository.get(MigrationStatus.UNPROCESSED)
+    migrationRepository.get(MigrationStatus.UNPROCESSED)
 
   def update(migration: Migration): Future[Option[Migration]] =
-    repository.update(migration)
+    migrationRepository.update(migration)
 
   def clear(status: Option[MigrationStatus] = None): Future[Boolean] =
-    repository.delete(status)
+    migrationRepository.delete(status)
 
   def resetEnvironment(stores: Set[Store])(implicit hc: HeaderCarrier): Future[Unit] = {
 
@@ -163,9 +151,6 @@ class DataMigrationService @Inject() (
       _ <- resetIfPresent(Store.MIGRATION, clear())
     } yield ()
   }
-
-  def initiateFileMigration(upload: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] =
-    fileConnector.initiate(upload)
 
   def upload(upload: Upload, file: TemporaryFile)(implicit hc: HeaderCarrier): Future[Unit] =
     for {
@@ -312,10 +297,12 @@ class DataMigrationService @Inject() (
     val missingFailures =
       migration.`case`.attachments
         .filterNot(att => uploadedAttachments.exists(_.fileName == att.name))
-        .map(att => MigrationFailure(att, MigrationFailedException("Not found")))
+        .map(att => MigrationFailure(att, MigrationFailedException("Not Found")))
 
     val attachmentsByName  = migration.`case`.attachments.map(att => (att.name, att)).toMap
     val unpublishedUploads = uploadedAttachments.filterNot(_.published)
+
+    println(s"uploaded: $uploadedAttachments")
 
     sequence(
       unpublishedUploads.map { file =>
@@ -351,7 +338,8 @@ class DataMigrationService @Inject() (
     if (attachmentFileNames.nonEmpty) {
       val uploadedAttachments = for {
         uploadedRequests <- uploadRepository.getByFileNames(attachmentFileNames)
-        fileSearch       <- fileConnector.find(FileSearch(ids = Some(uploadedRequests.map(_.id).toSet)), Pagination.max)
+        _ = println(s"uploadedRequests: $uploadedRequests")
+        fileSearch <- fileConnector.find(FileSearch(ids = Some(uploadedRequests.map(_.id).toSet)), Pagination.max)
       } yield fileSearch.results
 
       uploadedAttachments recover withResponse(Seq.empty)

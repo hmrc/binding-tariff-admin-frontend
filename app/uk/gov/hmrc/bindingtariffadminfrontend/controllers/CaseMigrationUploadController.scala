@@ -42,6 +42,8 @@ import scala.concurrent.Future.successful
 import scala.util._
 import com.fasterxml.jackson.core.JsonParseException
 
+import scala.util.control.NonFatal
+
 @Singleton
 class CaseMigrationUploadController @Inject() (
   authenticatedAction: AuthenticatedAction,
@@ -90,7 +92,7 @@ class CaseMigrationUploadController @Inject() (
 
   private def toJsonSource(file: File, contentType: Option[String]): Source[MigratableCase, _] = {
     val dataSource: Source[ByteString, _] =
-      if (contentType.contains("application/zip")) {
+      try {
         val zipFile    = new ZipFile(file)
         val zipEntries = zipFile.entries()
 
@@ -100,8 +102,9 @@ class CaseMigrationUploadController @Inject() (
           Source.empty[ByteString]
         }
 
-      } else {
-        FileIO.fromPath(file.toPath)
+      } catch {
+        case NonFatal(_) =>
+          FileIO.fromPath(file.toPath)
       }
 
     dataSource

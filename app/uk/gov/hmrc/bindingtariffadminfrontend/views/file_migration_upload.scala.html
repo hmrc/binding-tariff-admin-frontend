@@ -18,7 +18,7 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
-@(form: Form[_])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+@(form: Form[_], batchId: String)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
  <a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
@@ -52,7 +52,7 @@
  </div>
 
  <div>
-  <button id="upload-button" class="button" type="button" onclick="fileMigration.uploadAll('@{routes.FileMigrationUploadController.post().url}')">Upload</button>
+  <button id="upload-button" class="button" type="button" onclick="fileMigration.uploadAll('@{routes.FileMigrationUploadController.post().url}', '@batchId')">Upload</button>
   <a id="file_migration_upload-continue" class="button button-info" href="@routes.CaseMigrationUploadController.get()">Continue to Case Migration</a>
  </div>
 

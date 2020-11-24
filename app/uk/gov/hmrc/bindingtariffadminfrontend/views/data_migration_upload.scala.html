@@ -18,9 +18,9 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.submit_button
-@import helper._
-@()(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+@import uk.gov.hmrc.play.views.html.helpers
+
+@(batchId: String)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
  <a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
@@ -43,7 +43,7 @@
  </div>
 
  <div>
-  <button id="upload-button" class="button" type="button" onclick="fileMigration.uploadData('@{routes.DataMigrationUploadController.post().url}')">Upload</button>
+  <button id="upload-button" class="button" type="button" onclick="fileMigration.uploadData('@{routes.DataMigrationUploadController.post().url}', '@batchId')">Upload</button>
  </div>
 
  <div class="display-none mt-30" id="progress">
@@ -66,10 +66,11 @@
   <table id="success-table"></table>
 
   <div class="mt-30 form-group">
-   @form(action = routes.DataMigrationJsonController.postDataAndRedirect()) {
+   @helpers.form(action = routes.DataMigrationUploadController.initiateProcessing()) {
     <h3 class="heading-small"><label for="extractionDate">Date of Extraction</label></h3>
     <div class="mb-30"><input type="date" id="extractionDate" name="extractionDate" required></div>
-    <input type="submit" id="label" class="button display-none" value="Continue to build Json"/>
+    <input type="hidden" id="batchId" name="batchId" value="@batchId" required>
+    <input type="submit" id="continue" class="button display-none" value="Continue to build Json"/>
    }
    </div>
 

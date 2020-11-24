@@ -16,36 +16,39 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
-import akka.stream.Materializer
 import org.mockito.ArgumentMatchers._
 import org.mockito.BDDMockito.given
-import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.{Matchers, WordSpec}
-import play.api.http.Status.OK
-import play.api.i18n.{DefaultLangs, DefaultMessagesApi}
+import org.mockito.Mockito.reset
+import org.scalatest.BeforeAndAfterEach
+import play.api.http.Status._
 import play.api.libs.Files.{SingletonTemporaryFileCreator, TemporaryFile}
 import play.api.mvc.MultipartFormData.FilePart
-import play.api.mvc.{AnyContentAsEmpty, AnyContentAsJson, MultipartFormData, Result}
-import play.api.test.{FakeHeaders, FakeRequest}
-import play.api.{Configuration, Environment}
-import play.filters.csrf.CSRF.{Token, TokenProvider}
-import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{UploadAttachmentRequest, UploadRequest}
+import play.api.mvc.{MultipartFormData, Result}
+import play.api.test.FakeRequest
+import uk.gov.hmrc.bindingtariffadminfrontend.forms.UploadAttachmentFormProvider
+import uk.gov.hmrc.bindingtariffadminfrontend.model.AttachmentUpload
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse, Upstream5xxResponse}
 
 import scala.concurrent.Future
 
-class FileMigrationUploadControllerSpec extends ControllerSpec {
+class FileMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
   private val migrationService = mock[DataMigrationService]
+
   private val controller = new FileMigrationUploadController(
-    new SuccessfulAuthenticatedAction,
-    migrationService,
-    mcc,
-    messageApi,
-    realConfig
+    authenticatedAction          = new SuccessfulAuthenticatedAction,
+    service                      = migrationService,
+    uploadAttachmentFormProvider = new UploadAttachmentFormProvider,
+    mcc                          = mcc,
+    messagesApi                  = messageApi,
+    appConfig                    = realConfig
   )
+
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    reset(migrationService)
+  }
 
   "GET /" should {
     "return 200" in {
@@ -56,57 +59,58 @@ class FileMigrationUploadControllerSpec extends ControllerSpec {
   }
 
   "POST /" should {
-    val request = UploadAttachmentRequest(
-      fileName = "filename",
-      mimeType = "text/plain"
-    )
-
     "Upload" in {
-      given(migrationService.upload(any[UploadRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+      given(migrationService.upload(any[AttachmentUpload], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
         .successful(())
 
-      val f              = aForm(filename = "filename", mimeType = "text/plain")
-      val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(f)))
+      val result: Result = await(controller.post(fakeAttachmentUpload()))
 
-      status(result) shouldBe 202
+      status(result) shouldBe ACCEPTED
     }
 
     "Handle 4xx Errors" in {
-      given(migrationService.upload(any[UploadRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
-        .failed(Upstream4xxResponse("error", 409, 0))
+      given(migrationService.upload(any[AttachmentUpload], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+        .failed(Upstream4xxResponse("error", CONFLICT, 0))
 
-      val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(aForm())))
+      val result: Result = await(controller.post(fakeAttachmentUpload()))
 
-      status(result) shouldBe 409
+      status(result) shouldBe CONFLICT
     }
 
     "Handle 5xx Errors" in {
-      given(migrationService.upload(any[UploadRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
-        .failed(Upstream5xxResponse("error", 500, 0))
+      given(migrationService.upload(any[AttachmentUpload], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+        .failed(Upstream5xxResponse("error", INTERNAL_SERVER_ERROR, 0))
 
-      val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(aForm())))
+      val result: Result = await(controller.post(fakeAttachmentUpload()))
 
-      status(result) shouldBe 502
+      status(result) shouldBe BAD_GATEWAY
     }
 
     "Handle unknown Errors" in {
-      given(migrationService.upload(any[UploadRequest], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
+      given(migrationService.upload(any[AttachmentUpload], any[TemporaryFile])(any[HeaderCarrier])) willReturn Future
         .failed(new RuntimeException("error"))
 
-      val result: Result = await(controller.post(newFakePOSTRequestWithCSRF.withBody(aForm())))
+      val result: Result = await(controller.post(fakeAttachmentUpload()))
 
-      status(result) shouldBe 500
+      status(result) shouldBe INTERNAL_SERVER_ERROR
     }
+  }
 
-    def aForm(filename: String = "file.txt", mimeType: String = "text/html"): MultipartFormData[TemporaryFile] = {
+  private def fakeAttachmentUpload(
+    filename: String = "file.txt",
+    mimeType: String = "text/html",
+    batchId: String  = "batchId"
+  ): FakeRequest[MultipartFormData[TemporaryFile]] = {
+    def form: MultipartFormData[TemporaryFile] = {
       val file     = SingletonTemporaryFileCreator.create(filename)
       val filePart = FilePart[TemporaryFile](key = "file", filename, contentType = Some(mimeType), ref = file)
       MultipartFormData[TemporaryFile](
-        dataParts = Map("id" -> Seq(filename), "filename" -> Seq(filename), "mimetype" -> Seq(mimeType)),
+        dataParts = Map("filename" -> Seq(filename), "mimetype" -> Seq(mimeType), "batchId" -> Seq(batchId)),
         files     = Seq(filePart),
         badParts  = Seq.empty
       )
     }
 
+    newFakePOSTRequestWithCSRF.withBody(form)
   }
 }

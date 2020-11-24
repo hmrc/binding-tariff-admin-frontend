@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.util
+package uk.gov.hmrc.bindingtariffadminfrontend.forms
 
-object FilenameUtil {
-  def toCsvID(filename: String): String = {
-    val segments             = filename.split("[\\s\\.]")
-    val nameWithoutExtension = segments.init
-    nameWithoutExtension.mkString("", "_", "_csv")
-  }
-  def toID(filename: String): String =
-    filename.replaceAll("[\\s\\.]", "_")
+import javax.inject.Inject
+import play.api.data.Form
+import play.api.data.Forms.{mapping, text}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.InitiateHistoricDataProcessing
+
+class InitiateHistoricDataFormProvider @Inject() () {
+  def apply(): Form[InitiateHistoricDataProcessing] =
+    Form[InitiateHistoricDataProcessing](
+      mapping[InitiateHistoricDataProcessing, String](
+        "batchId" -> text
+      )(InitiateHistoricDataProcessing.apply)(InitiateHistoricDataProcessing.unapply)
+    )
 }

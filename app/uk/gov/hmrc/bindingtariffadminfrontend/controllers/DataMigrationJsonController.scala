@@ -26,8 +26,6 @@ import akka.stream.scaladsl.{FileIO, Source}
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.Logger
-import play.api.data.Form
-import play.api.data.Forms.{localDate, mapping}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.ws.WSResponse
@@ -35,8 +33,6 @@ import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploadSubmission
-import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.csv_processing_status
 import uk.gov.hmrc.http.BadRequestException
@@ -50,7 +46,6 @@ import scala.concurrent.Future.successful
 @Singleton
 class DataMigrationJsonController @Inject() (
   authenticatedAction: AuthenticatedAction,
-  service: DataMigrationService,
   connector: DataMigrationJsonConnector,
   implicit val system: ActorSystem,
   implicit val materializer: Materializer,
@@ -63,10 +58,6 @@ class DataMigrationJsonController @Inject() (
   def getAnonymiseData: Action[AnyContent] = authenticatedAction.async { implicit request =>
     successful(Ok(views.html.file_anonymisation_upload()))
   }
-
-  val extractionDateForm = Form(
-    mapping("extractionDate" -> localDate)(ExtractionDateForm.apply)(ExtractionDateForm.unapply)
-  )
 
   private def errorLog(filename: String) = s" ************ Error occurred while processing file $filename ************"
 
@@ -144,35 +135,6 @@ class DataMigrationJsonController @Inject() (
         case None =>
           successful(BadRequest)
       }
-  }
-
-  def postDataAndRedirect: Action[AnyContent] = authenticatedAction.async { implicit request =>
-    extractionDateForm.bindFromRequest.fold(
-      _ => successful(BadRequest(views.html.data_migration_upload())),
-      extractionDateForm =>
-        for {
-          files <- service.getDataMigrationFilesDetails(
-                    List(
-                      "tblCaseClassMeth_csv",
-                      "historicCases_csv",
-                      "eBTI_Application_csv",
-                      "eBTI_Addresses_csv",
-                      "tblCaseRecord_csv",
-                      "tblCaseBTI_csv",
-                      "tblImages_csv",
-                      "tblCaseLMComments_csv",
-                      "tblMovement_csv",
-                      "Legal_Proceedings_csv"
-                    )
-                  )
-          result <- connector.sendDataForProcessing(FileUploadSubmission(extractionDateForm.extractionDate, files))
-        } yield {
-          result.status match {
-            case ACCEPTED => Redirect(routes.DataMigrationJsonController.checkStatus())
-            case _        => throw new RuntimeException("data processing error")
-          }
-        }
-    )
   }
 
   def checkStatus: Action[AnyContent] = authenticatedAction.async { implicit request =>

@@ -16,11 +16,14 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
+import java.util.UUID
+
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.matching.{MultipartValuePattern, MultipartValuePatternBuilder}
 import play.api.http.Status
 import play.api.libs.Files.SingletonTemporaryFileCreator
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{UploadAttachmentRequest, UploadTemplate}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.AttachmentUpload
+import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadTemplate
 
 class UpscanS3ConnectorTest extends ConnectorTest {
 
@@ -48,7 +51,12 @@ class UpscanS3ConnectorTest extends ConnectorTest {
 
       val file = SingletonTemporaryFileCreator.create("example-file.json")
 
-      val upload = UploadAttachmentRequest("example-file.json", "application/json")
+      val upload = AttachmentUpload(
+        fileName = "example-file.json",
+        mimeType = "application/json",
+        id       = UUID.randomUUID().toString,
+        batchId  = UUID.randomUUID().toString
+      )
 
       await(connector.upload(templateUploading, file, upload)) shouldBe ((): Unit)
 
@@ -79,7 +87,12 @@ class UpscanS3ConnectorTest extends ConnectorTest {
 
       val file = SingletonTemporaryFileCreator.create("example-file.json")
 
-      val upload = UploadAttachmentRequest("example-file.json", "application/json")
+      val upload = AttachmentUpload(
+        fileName = "example-file.json",
+        mimeType = "application/json",
+        id       = UUID.randomUUID().toString,
+        batchId  = UUID.randomUUID().toString
+      )
 
       intercept[RuntimeException] {
         await(connector.upload(templateUploading, file, upload))

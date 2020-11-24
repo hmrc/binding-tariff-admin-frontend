@@ -20,6 +20,8 @@ import java.io.{BufferedWriter, File, FileWriter}
 import java.nio.file.{Files, Path, StandardCopyOption}
 import java.time.{Instant, LocalDate, ZoneOffset}
 
+import akka.stream.scaladsl.{Sink, Source}
+import com.fasterxml.jackson.core.JsonParseException
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers._
 import org.mockito.BDDMockito.given
@@ -28,25 +30,19 @@ import org.scalatest.BeforeAndAfterEach
 import play.api.http.HeaderNames.LOCATION
 import play.api.http.Status.{OK, SEE_OTHER}
 import play.api.libs.Files.{SingletonTemporaryFileCreator, TemporaryFile}
+import play.api.libs.json.{JsResultException, Json, Reads}
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{MultipartFormData, Result}
 import play.api.test.FakeRequest
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
-
-import scala.concurrent.Future
 import uk.gov.hmrc.http.HeaderCarrier
-import play.api.libs.json.Json
-import play.api.libs.json.Reads
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.Sink
-import scala.concurrent.Await
+
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import play.api.libs.json.JsResultException
-import com.fasterxml.jackson.core.JsonParseException
 
 class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
@@ -55,8 +51,19 @@ class CaseMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAft
   private val configuration    = Configuration.load(env)
   private val migrationService = mock[DataMigrationService]
   private val appConfig        = new AppConfig(configuration)
-  private val controller =
-    new CaseMigrationUploadController(new SuccessfulAuthenticatedAction, migrationService, mcc, messageApi, appConfig)
+
+  private val controller = new CaseMigrationUploadController(
+    authenticatedAction = new SuccessfulAuthenticatedAction,
+    service             = migrationService,
+    mcc                 = mcc,
+    messagesApi         = messageApi,
+    appConfig           = appConfig
+  )
+
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    reset(migrationService)
+  }
 
   "GET /" should {
     "return 200" in {

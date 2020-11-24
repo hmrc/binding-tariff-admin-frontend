@@ -6,7 +6,8 @@ import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
 
 val appName = "binding-tariff-admin-frontend"
 
-lazy val plugins: Seq[Plugins] = Seq(PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
+lazy val plugins: Seq[Plugins] =
+  Seq(PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
 lazy val playSettings: Seq[Setting[_]] = Seq.empty
 
 lazy val microservice = (project in file("."))
@@ -22,7 +23,7 @@ lazy val microservice = (project in file("."))
     name := appName,
     scalaVersion := "2.12.12",
     targetJvm := "jvm-1.8",
-    libraryDependencies ++= (AppDependencies.compile ++ AppDependencies.test),//.map(_ withSources()),
+    libraryDependencies ++= (AppDependencies.compile ++ AppDependencies.test), //.map(_ withSources()),
     evictionWarningOptions in update := EvictionWarningOptions.default.withWarnScalaVersionEviction(false),
     parallelExecution in Test := false,
     fork in Test := true,
@@ -54,17 +55,19 @@ lazy val microservice = (project in file("."))
     ),
     resourceDirectory in IntegrationTest := baseDirectory.value / "test" / "resources",
     addTestReportOption(IntegrationTest, "int-test-reports"),
-    parallelExecution in IntegrationTest := false)
+    parallelExecution in IntegrationTest := false
+  )
   .settings(
     resolvers += Resolver.bintrayRepo("hmrc", "releases"),
     resolvers += Resolver.jcenterRepo,
-    resolvers += Resolver.bintrayRepo("akka", "snapshots"))
+    resolvers += Resolver.bintrayRepo("akka", "snapshots")
+  )
 
-lazy val TemplateTest = config("tt") extend Test
+lazy val TemplateTest   = config("tt") extend Test
 lazy val TemplateItTest = config("tit") extend IntegrationTest
 
 // Coverage configuration
-coverageMinimum := 88
+coverageMinimum := 90
 coverageFailOnMinimum := true
 coverageExcludedPackages := "<empty>;Reverse.*;com.kenshoo.play.metrics.*;prod.*;testOnlyDoNotUseInAppConf.*;app.*;uk.gov.hmrc.BuildInfo;.*Routes.*"
 coverageExcludedFiles := "<empty>;Reverse.*;.*components.*;.*repositories.*;" +

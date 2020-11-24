@@ -16,14 +16,14 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
+import java.util.UUID
+
 import javax.inject.{Inject, Singleton}
-import play.api.data.Form
-import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.UploadAttachmentRequest
+import uk.gov.hmrc.bindingtariffadminfrontend.forms.UploadAttachmentFormProvider
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.http.{Upstream4xxResponse, Upstream5xxResponse}
@@ -36,21 +36,17 @@ import scala.concurrent.Future.successful
 class FileMigrationUploadController @Inject() (
   authenticatedAction: AuthenticatedAction,
   service: DataMigrationService,
+  uploadAttachmentFormProvider: UploadAttachmentFormProvider,
   mcc: MessagesControllerComponents,
   override val messagesApi: MessagesApi,
   implicit val appConfig: AppConfig
 ) extends FrontendController(mcc)
     with I18nSupport {
 
-  private lazy val form = Form[UploadAttachmentRequest](
-    mapping[UploadAttachmentRequest, String, String](
-      "filename" -> text,
-      "mimetype" -> text
-    )(UploadAttachmentRequest.apply)(UploadAttachmentRequest.unapply)
-  )
+  private lazy val form = uploadAttachmentFormProvider()
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
-    successful(Ok(views.html.file_migration_upload(form)))
+    successful(Ok(views.html.file_migration_upload(form, batchId = UUID.randomUUID().toString)))
   }
 
   def post: Action[MultipartFormData[TemporaryFile]] = authenticatedAction.async(parse.multipartFormData) {

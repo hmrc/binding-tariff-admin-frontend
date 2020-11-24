@@ -16,69 +16,20 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.filestore
 
-import play.api.libs.json._
-import uk.gov.hmrc.bindingtariffadminfrontend.util.FilenameUtil
-import uk.gov.hmrc.play.json.Union
+import play.api.libs.json.{Json, Writes}
 
-sealed abstract class UploadRequest(val fileName: String, val mimeType: String)
-
-case class UploadAttachmentRequest(
-  override val fileName: String,
-  override val mimeType: String
-) extends UploadRequest(fileName, mimeType)
-
-case class UploadMigrationDataRequest(
-  override val fileName: String,
-  override val mimeType: String
-) extends UploadRequest(fileName, mimeType)
-
-case class UploadHistoricDataRequest(
-  override val fileName: String,
-  override val mimeType: String
-) extends UploadRequest(fileName, mimeType)
+abstract class UploadRequest {
+  def id: String
+  def fileName: String
+  def mimeType: String
+}
 
 object UploadRequest {
-  val Attachment    = classOf[UploadAttachmentRequest].getSimpleName()
-  val MigrationData = classOf[UploadMigrationDataRequest].getSimpleName()
-  val HistoricData  = classOf[UploadHistoricDataRequest].getSimpleName()
-
-  val attachmentWrites: Writes[UploadAttachmentRequest] = Writes(upload =>
+  implicit val writes: Writes[UploadRequest] = Writes(upload =>
     Json.obj(
-      "id"       -> FilenameUtil.toID(upload.fileName),
+      "id"       -> upload.id,
       "fileName" -> upload.fileName,
       "mimeType" -> upload.mimeType
     )
   )
-
-  implicit val attachmentFormat: Format[UploadAttachmentRequest] =
-    Format(Json.reads[UploadAttachmentRequest], attachmentWrites)
-
-  val migrationDataWrites: Writes[UploadMigrationDataRequest] = Writes(upload =>
-    Json.obj(
-      "id"       -> FilenameUtil.toCsvID(upload.fileName),
-      "fileName" -> upload.fileName,
-      "mimeType" -> upload.mimeType
-    )
-  )
-
-  implicit val migrationDataFormat: Format[UploadMigrationDataRequest] =
-    Format(Json.reads[UploadMigrationDataRequest], migrationDataWrites)
-
-  val historicDataWrites: Writes[UploadHistoricDataRequest] = Writes(upload =>
-    Json.obj(
-      "id"       -> FilenameUtil.toCsvID(upload.fileName),
-      "fileName" -> upload.fileName,
-      "mimeType" -> upload.mimeType
-    )
-  )
-
-  implicit val historicDataFormat: Format[UploadHistoricDataRequest] =
-    Format(Json.reads[UploadHistoricDataRequest], historicDataWrites)
-
-  implicit val format: Format[UploadRequest] = Union
-    .from[UploadRequest]("type")
-    .and[UploadAttachmentRequest](Attachment)
-    .and[UploadMigrationDataRequest](MigrationData)
-    .and[UploadHistoricDataRequest](HistoricData)
-    .format
 }

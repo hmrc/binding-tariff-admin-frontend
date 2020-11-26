@@ -38,27 +38,27 @@ import scala.concurrent.Future
 
 class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
-  private val uploadRepository       = mock[UploadRepository]
-  private val caseConnector          = mock[BindingTariffClassificationConnector]
-  private val fileConnector          = mock[FileStoreConnector]
-  private val rulingConnector        = mock[RulingConnector]
-  private val dataMigrationConnector = mock[DataMigrationJsonConnector]
-  private val dataMigrationService   = mock[DataMigrationService]
-  private val migrationDeletionLock  = mock[MigrationDeletionLock]
+  private val uploadRepository            = mock[UploadRepository]
+  private val caseConnector               = mock[BindingTariffClassificationConnector]
+  private val fileConnector               = mock[FileStoreConnector]
+  private val rulingConnector             = mock[RulingConnector]
+  private val dataTransformationConnector = mock[DataTransformationConnector]
+  private val dataMigrationService        = mock[DataMigrationService]
+  private val migrationDeletionLock       = mock[MigrationDeletionLock]
 
   private def actorSystem = ActorSystem.create("testActorSystem")
 
   private def withService(test: ResetService => Any) =
     test(
       new ResetService(
-        uploadRepository       = uploadRepository,
-        fileConnector          = fileConnector,
-        rulingConnector        = rulingConnector,
-        caseConnector          = caseConnector,
-        dataMigrationConnector = dataMigrationConnector,
-        dataMigrationService   = dataMigrationService,
-        migrationDeletionLock  = migrationDeletionLock,
-        actorSystem            = actorSystem
+        uploadRepository            = uploadRepository,
+        fileConnector               = fileConnector,
+        rulingConnector             = rulingConnector,
+        caseConnector               = caseConnector,
+        dataTransformationConnector = dataTransformationConnector,
+        dataMigrationService        = dataMigrationService,
+        migrationDeletionLock       = migrationDeletionLock,
+        actorSystem                 = actorSystem
       )
     )
 
@@ -71,7 +71,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       caseConnector,
       fileConnector,
       rulingConnector,
-      dataMigrationConnector,
+      dataTransformationConnector,
       dataMigrationService
     )
   }
@@ -88,7 +88,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(dataTransformationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(dataMigrationService.clear(refEq(None))) willReturn Future.successful(true)
 
       await(service.resetEnvironment(stores))
@@ -98,7 +98,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService).clear(refEq(None))
     }
 
@@ -113,7 +113,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector, never()).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService, never()).clear(any[Option[MigrationStatus]])
     }
 
@@ -127,7 +127,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector, never()).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService, never()).clear(any[Option[MigrationStatus]])
     }
 
@@ -141,7 +141,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector, never()).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService, never()).clear(any[Option[MigrationStatus]])
     }
 
@@ -155,12 +155,12 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService, never()).clear(any[Option[MigrationStatus]])
     }
 
     "Clear Historic Data" in withService { service =>
-      given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(dataTransformationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
 
       await(service.resetEnvironment(Set(Store.HISTORIC_DATA)))
 
@@ -169,7 +169,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector, never()).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService, never()).clear(any[Option[MigrationStatus]])
     }
 
@@ -183,7 +183,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector, never()).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService).clear(refEq(None))
     }
 
@@ -193,7 +193,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(dataTransformationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(dataMigrationService.clear(refEq(None))) willReturn Future.successful(true)
 
       await(service.resetEnvironment(stores))
@@ -203,7 +203,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService).clear(refEq(None))
     }
 
@@ -213,7 +213,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(dataTransformationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(dataMigrationService.clear(refEq(None))) willReturn Future.successful(true)
 
       await(service.resetEnvironment(stores))
@@ -223,7 +223,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService).clear(refEq(None))
     }
 
@@ -233,7 +233,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(dataTransformationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(dataMigrationService.clear(refEq(None))) willReturn Future.successful(true)
 
       await(service.resetEnvironment(stores))
@@ -243,7 +243,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService).clear(refEq(None))
     }
 
@@ -253,7 +253,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(dataTransformationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(dataMigrationService.clear(refEq(None))) willReturn Future.successful(true)
 
       await(service.resetEnvironment(stores))
@@ -263,7 +263,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService).clear(refEq(None))
     }
 
@@ -273,7 +273,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(dataTransformationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(dataMigrationService.clear(refEq(None))) willReturn Future.failed(new RuntimeException("Error"))
 
       await(service.resetEnvironment(stores))
@@ -283,7 +283,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService).clear(refEq(None))
     }
 
@@ -293,7 +293,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.failed(new RuntimeException("Error"))
-      given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      given(dataTransformationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(dataMigrationService.clear(refEq(None))) willReturn Future.successful(true)
 
       await(service.resetEnvironment(stores))
@@ -303,7 +303,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService).clear(refEq(None))
     }
 
@@ -313,7 +313,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       given(caseConnector.deleteCases()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(caseConnector.deleteEvents()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
       given(rulingConnector.delete()(any[HeaderCarrier])) willReturn Future.successful((): Unit)
-      given(dataMigrationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.failed(
+      given(dataTransformationConnector.deleteHistoricData()(any[HeaderCarrier])) willReturn Future.failed(
         new RuntimeException("Error")
       )
       given(dataMigrationService.clear(refEq(None))) willReturn Future.successful(true)
@@ -325,7 +325,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector).deleteCases()(any[HeaderCarrier])
       verify(caseConnector).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService).clear(refEq(None))
     }
   }
@@ -535,7 +535,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
       verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
       verify(rulingConnector, never()).delete()(any[HeaderCarrier])
-      verify(dataMigrationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
+      verify(dataTransformationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService).clear(refEq(None))
     }
   }

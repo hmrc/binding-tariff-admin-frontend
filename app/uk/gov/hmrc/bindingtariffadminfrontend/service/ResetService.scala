@@ -37,7 +37,7 @@ class ResetService @Inject() (
   fileConnector: FileStoreConnector,
   rulingConnector: RulingConnector,
   caseConnector: BindingTariffClassificationConnector,
-  dataMigrationConnector: DataMigrationJsonConnector,
+  dataTransformationConnector: DataTransformationConnector,
   dataMigrationService: DataMigrationService,
   migrationDeletionLock: MigrationDeletionLock,
   actorSystem: ActorSystem
@@ -61,7 +61,7 @@ class ResetService @Inject() (
       _ <- resetIfPresent(Store.CASES, caseConnector.deleteCases())
       _ <- resetIfPresent(Store.EVENTS, caseConnector.deleteEvents())
       _ <- resetIfPresent(Store.RULINGS, rulingConnector.delete())
-      _ <- resetIfPresent(Store.HISTORIC_DATA, dataMigrationConnector.deleteHistoricData())
+      _ <- resetIfPresent(Store.HISTORIC_DATA, dataTransformationConnector.deleteHistoricData())
       _ <- resetIfPresent(Store.MIGRATION, dataMigrationService.clear(None))
     } yield ()
   }

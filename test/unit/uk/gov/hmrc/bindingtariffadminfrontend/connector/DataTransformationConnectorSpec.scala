@@ -25,9 +25,9 @@ import play.api.libs.ws.WSClient
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploadSubmission, FileUploaded}
 import uk.gov.hmrc.http.{NotFoundException, Upstream5xxResponse}
 
-class DataMigrationJsonConnectorSpec extends ConnectorTest {
+class DataTransformationConnectorSpec extends ConnectorTest {
 
-  private val connector = new DataMigrationJsonConnector(mockAppConfig, authenticatedHttpClient, inject[WSClient])
+  private val connector = new DataTransformationConnector(mockAppConfig, authenticatedHttpClient, inject[WSClient])
 
   private val file = FileUploaded("name", "published", "text/plain", None, None)
 

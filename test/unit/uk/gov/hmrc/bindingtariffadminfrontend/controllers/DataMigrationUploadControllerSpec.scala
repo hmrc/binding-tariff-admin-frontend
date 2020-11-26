@@ -29,7 +29,7 @@ import play.api.libs.json.{Format, Json}
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsEmpty, MultipartFormData, Result}
 import play.api.test.FakeRequest
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataTransformationConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.forms.{InitiateMigrationDataFormProvider, UploadMigrationDataFormProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploadSubmission, FileUploaded}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{InitiateMigrationDataProcessing, MigrationDataUpload}
@@ -41,7 +41,7 @@ import scala.concurrent.Future
 class DataMigrationUploadControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
   private val migrationService   = mock[DataMigrationService]
-  private val migrationConnector = mock[DataMigrationJsonConnector]
+  private val migrationConnector = mock[DataTransformationConnector]
 
   private val controller = new DataMigrationUploadController(
     authenticatedAction               = new SuccessfulAuthenticatedAction,

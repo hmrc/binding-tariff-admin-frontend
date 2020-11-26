@@ -31,7 +31,7 @@ import play.api.libs.ws.WSResponse
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsEmpty, MultipartFormData, Result}
 import play.api.test.FakeRequest
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataTransformationConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.forms.{InitiateHistoricDataFormProvider, UploadHistoricDataFormProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{HistoricDataUpload, InitiateHistoricDataProcessing}
@@ -42,7 +42,7 @@ import scala.concurrent.Future
 
 class HistoricDataUploadControllerSpec extends ControllerSpec with BeforeAndAfterEach {
   private val migrationService   = mock[DataMigrationService]
-  private val migrationConnector = mock[DataMigrationJsonConnector]
+  private val migrationConnector = mock[DataTransformationConnector]
 
   private val controller = new HistoricDataUploadController(
     authenticatedAction              = new SuccessfulAuthenticatedAction,

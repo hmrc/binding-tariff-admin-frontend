@@ -26,7 +26,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class DataMigrationJsonConnector @Inject() (
+class DataTransformationConnector @Inject() (
   configuration: AppConfig,
   http: AuthenticatedHttpClient,
   wsClient: WSClient

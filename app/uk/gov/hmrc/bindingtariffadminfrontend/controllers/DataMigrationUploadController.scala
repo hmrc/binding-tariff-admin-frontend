@@ -23,7 +23,7 @@ import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.Files.TemporaryFile
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataTransformationConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.forms.{InitiateMigrationDataFormProvider, UploadMigrationDataFormProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploadSubmission
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
@@ -38,7 +38,7 @@ import scala.concurrent.Future.successful
 class DataMigrationUploadController @Inject() (
   authenticatedAction: AuthenticatedAction,
   service: DataMigrationService,
-  connector: DataMigrationJsonConnector,
+  connector: DataTransformationConnector,
   uploadMigrationDataFormProvider: UploadMigrationDataFormProvider,
   initiateMigrationDataFormProvider: InitiateMigrationDataFormProvider,
   mcc: MessagesControllerComponents,

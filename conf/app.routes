@@ -22,6 +22,10 @@ GET        /check-historic-status       @uk.gov.hmrc.bindingtariffadminfrontend.
 GET        /get-historic-status         @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.getStatusOfHistoricDataProcessing
 GET        /download-historic-json      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.downloadHistoricJson
 
+GET        /historic-transform          @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataTransformationController.get
+POST       /historic-transform-initiate @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataTransformationController.initiate
+GET        /historic-transform-status   @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataTransformationController.status
+
 GET        /data-migration              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.get
 POST       /data-migration              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.post
 POST       /data-migration-initiate     @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.initiateProcessing

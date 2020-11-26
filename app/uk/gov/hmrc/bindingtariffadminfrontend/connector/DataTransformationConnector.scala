@@ -20,6 +20,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.ws._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploadSubmission, FileUploaded}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.transformation.HistoricTransformationStatistics
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -68,6 +69,16 @@ class DataTransformationConnector @Inject() (
   def getStatusOfHistoricDataProcessing(implicit hc: HeaderCarrier): Future[HttpResponse] =
     http.GET[HttpResponse](
       s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-processing-status"
+    )
+
+  def getHistoricTransformationStatistics(implicit hc: HeaderCarrier): Future[HistoricTransformationStatistics] =
+    http.GET[HistoricTransformationStatistics](
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-transformation-statistics"
+    )
+
+  def initiateHistoricTransformation(implicit hc: HeaderCarrier): Future[HttpResponse] =
+    http.POSTEmpty[HttpResponse](
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/initiate-historic-transformation"
     )
 
   def downloadHistoricJson: Future[WSResponse] =

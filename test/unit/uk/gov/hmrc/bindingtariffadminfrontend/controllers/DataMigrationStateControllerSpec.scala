@@ -16,19 +16,15 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
-import org.mockito.ArgumentMatchers._
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito
-import org.mockito.Mockito.{never, verify}
 import org.scalatest.BeforeAndAfterEach
 import play.api.http.HeaderNames.LOCATION
 import play.api.http.Status.{OK, SEE_OTHER}
 import play.api.mvc.Result
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
-import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
 
@@ -110,46 +106,6 @@ class DataMigrationStateControllerSpec extends ControllerSpec with BeforeAndAfte
       val result: Result = await(controller.delete(Some("other"))(newFakeGETRequestWithCSRF))
       status(result)     shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
-    }
-  }
-
-  "GET /reset" should {
-    "return 200 when permitted" in {
-      given(appConfig.resetPermitted) willReturn true
-      val result: Result = await(controller.reset()(newFakeGETRequestWithCSRF))
-      status(result) shouldBe OK
-      bodyOf(result) should include("Are You Sure?")
-    }
-
-    "return 303 when not permitted" in {
-      given(appConfig.resetPermitted) willReturn false
-      val result: Result = await(controller.reset()(newFakeGETRequestWithCSRF))
-      status(result)     shouldBe SEE_OTHER
-      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
-    }
-  }
-
-  "POST /reset" should {
-    "return 303 when permitted" in {
-      given(appConfig.resetPermitted) willReturn true
-      given(migrationService.resetEnvironment(any[Set[Store]])(any[HeaderCarrier])) willReturn Future.successful(
-        (): Unit
-      )
-
-      val result: Result =
-        await(controller.resetConfirm()(newFakeGETRequestWithCSRF.withFormUrlEncodedBody("store[0]" -> "CASES")))
-      status(result)     shouldBe SEE_OTHER
-      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
-      verify(migrationService).resetEnvironment(refEq(Set(Store.CASES)))(any[HeaderCarrier])
-    }
-
-    "return 303 when not permitted" in {
-      given(appConfig.resetPermitted) willReturn false
-      val result: Result = await(controller.resetConfirm()(newFakeGETRequestWithCSRF))
-
-      status(result)     shouldBe SEE_OTHER
-      locationOf(result) shouldBe Some("/binding-tariff-admin/state")
-      verify(migrationService, never()).resetEnvironment(any[Set[Store]])(any[HeaderCarrier])
     }
   }
 

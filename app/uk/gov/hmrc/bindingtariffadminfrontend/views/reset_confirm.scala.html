@@ -21,6 +21,8 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.components.CheckOption
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.input_checkbox_group
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
+@import uk.gov.hmrc.play.views.html.helpers
+
 @(form: Form[Set[Store]])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
@@ -38,7 +40,7 @@
   </strong>
  </div>
 
- @helper.form(routes.DataMigrationStateController.resetConfirm()) {
+ @helpers.form(action = routes.ResetController.resetConfirm()) {
 
   @input_checkbox_group(
    field = form("store[]"),

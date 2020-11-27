@@ -31,7 +31,9 @@
 <p>
  Note that this adds to historic data already uploaded.<br>
  To access data that is already uploaded, see <a href="@routes.HistoricDataUploadController.checkHistoricStatus()">previous results</a>.<br>
- To clear the data, see <a href="@routes.DataMigrationStateController.reset()">Reset binding tariff services</a>.<br>
+ @if(appConfig.resetPermitted) {
+   To clear the data, see <a href="@routes.ResetController.reset()">Reset binding tariff services</a>.<br>
+ }
 </p>
 
  <div class="form-group">

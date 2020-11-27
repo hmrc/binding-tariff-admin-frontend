@@ -17,19 +17,15 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
-import play.api.data.Form
-import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, Pagination, Store}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, Pagination}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
-import uk.gov.hmrc.bindingtariffadminfrontend.views.html.{data_migration_state, reset_confirm}
+import uk.gov.hmrc.bindingtariffadminfrontend.views.html.data_migration_state
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future.successful
 
 @Singleton
 class DataMigrationStateController @Inject() (
@@ -52,33 +48,6 @@ class DataMigrationStateController @Inject() (
   def delete(status: Option[String]): Action[AnyContent] = authenticatedAction.async {
     val statusFilter = status.flatMap(MigrationStatus(_))
     service.clear(statusFilter).map(_ => Redirect(routes.DataMigrationStateController.get()))
-  }
-
-  private val form: Form[Set[Store]] = Form(
-    mapping[Set[Store], Set[Store]](
-      "store" -> set(
-        nonEmptyText.verifying(v => Store.values.exists(v == _.toString)).transform(Store(_).get, _.toString)
-      )
-    )(identity)(Some(_))
-  ).fill(Store.defaultValues)
-
-  def reset(): Action[AnyContent] = authenticatedAction.async { implicit request =>
-    if (appConfig.resetPermitted) {
-      successful(Ok(reset_confirm(form)))
-    } else {
-      successful(Redirect(routes.DataMigrationStateController.get()))
-    }
-  }
-
-  def resetConfirm(): Action[AnyContent] = authenticatedAction.async { implicit request =>
-    if (appConfig.resetPermitted) {
-      form.bindFromRequest.fold(
-        errors => successful(Ok(reset_confirm(errors))),
-        stores => service.resetEnvironment(stores).map(_ => Redirect(routes.DataMigrationStateController.get()))
-      )
-    } else {
-      successful(Redirect(routes.DataMigrationStateController.get()))
-    }
   }
 
 }

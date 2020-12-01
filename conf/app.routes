@@ -41,4 +41,6 @@ POST       /state                       @uk.gov.hmrc.bindingtariffadminfrontend.
 GET        /reset                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.reset()
 POST       /reset                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.resetConfirm()
 
+GET        /reset-migration             @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.resetMigration()
+POST       /reset-migration             @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.resetMigrationConfirm()
 

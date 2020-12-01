@@ -18,8 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.config
 
 import java.util.concurrent.TimeUnit
 
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.{Configuration, Environment}
+import play.api.Configuration
 import uk.gov.hmrc.bindingtariffadminfrontend.base.BaseSpec
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Credentials
 
@@ -85,12 +84,17 @@ class AppConfigSpec extends BaseSpec {
       configWith("page-size" -> "20").pageSize shouldBe 20
     }
 
-    "Build 'Reset Permitted" in {
+    "Build Reset Permitted" in {
       configWith("reset-permitted" -> "true").resetPermitted  shouldBe true
       configWith("reset-permitted" -> "false").resetPermitted shouldBe false
     }
 
-    "Build 'Credentials" in {
+    "Build Reset Migration Permitted" in {
+      configWith("reset-migration-permitted" -> "true").resetMigrationPermitted  shouldBe true
+      configWith("reset-migration-permitted" -> "false").resetMigrationPermitted shouldBe false
+    }
+
+    "Build Credentials" in {
       configWith("auth.credentials" -> "x : y , a : b").credentials shouldBe Seq(
         Credentials("x", "y"),
         Credentials("a", "b")

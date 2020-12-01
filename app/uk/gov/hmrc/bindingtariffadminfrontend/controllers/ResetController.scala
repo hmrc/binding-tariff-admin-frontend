@@ -17,15 +17,13 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
-import play.api.data.Form
-import play.api.data.Forms.{mapping, nonEmptyText, set}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+import uk.gov.hmrc.bindingtariffadminfrontend.forms.{ResetFormProvider, ResetMigrationFormProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
-import uk.gov.hmrc.bindingtariffadminfrontend.service.ResetService
-import uk.gov.hmrc.bindingtariffadminfrontend.views.html.reset_confirm
+import uk.gov.hmrc.bindingtariffadminfrontend.service.{DataMigrationService, ResetService}
+import uk.gov.hmrc.bindingtariffadminfrontend.views.html.{reset_confirm, reset_migration_confirm, reset_migration_results}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -34,23 +32,21 @@ import scala.concurrent.Future.successful
 @Singleton
 class ResetController @Inject() (
   authenticatedAction: AuthenticatedAction,
-  service: ResetService,
+  resetService: ResetService,
+  dataMigrationService: DataMigrationService,
+  resetFormProvider: ResetFormProvider,
+  resetMigrationFormProvider: ResetMigrationFormProvider,
   mcc: MessagesControllerComponents,
   override val messagesApi: MessagesApi,
   implicit val appConfig: AppConfig
 ) extends FrontendController(mcc)
     with I18nSupport {
-  private val form: Form[Set[Store]] = Form(
-    mapping[Set[Store], Set[Store]](
-      "store" -> set(
-        nonEmptyText.verifying(v => Store.values.exists(v == _.toString)).transform(Store(_).get, _.toString)
-      )
-    )(identity)(Some(_))
-  ).fill(Store.defaultValues)
+  private val resetForm          = resetFormProvider.apply
+  private val resetMigrationForm = resetMigrationFormProvider.apply
 
   def reset(): Action[AnyContent] = authenticatedAction.async { implicit request =>
     if (appConfig.resetPermitted) {
-      successful(Ok(reset_confirm(form)))
+      successful(Ok(reset_confirm(resetForm.fill(Store.defaultValues))))
     } else {
       successful(Redirect(routes.IndexController.get()))
     }
@@ -58,12 +54,46 @@ class ResetController @Inject() (
 
   def resetConfirm(): Action[AnyContent] = authenticatedAction.async { implicit request =>
     if (appConfig.resetPermitted) {
-      form.bindFromRequest.fold(
+      resetForm.bindFromRequest.fold(
         errors => successful(Ok(reset_confirm(errors))),
-        stores => service.resetEnvironment(stores).map(_ => Redirect(routes.DataMigrationStateController.get()))
+        stores => resetService.resetEnvironment(stores).map(_ => Redirect(routes.DataMigrationStateController.get()))
       )
     } else {
       successful(Redirect(routes.DataMigrationStateController.get()))
+    }
+  }
+
+  def resetMigration(): Action[AnyContent] = authenticatedAction.async { implicit request =>
+    if (appConfig.resetMigrationPermitted) {
+      for {
+        migrationCounts   <- dataMigrationService.counts
+        migratedCaseCount <- dataMigrationService.migratedCaseCount
+      } yield Ok(reset_migration_confirm(resetMigrationForm, migrationCounts, migratedCaseCount))
+    } else {
+      successful(Redirect(routes.IndexController.get()))
+    }
+  }
+
+  def resetMigrationConfirm(): Action[AnyContent] = authenticatedAction.async { implicit request =>
+    if (appConfig.resetMigrationPermitted) {
+      resetMigrationForm.bindFromRequest.fold(
+        errors =>
+          for {
+            migrationCounts   <- dataMigrationService.counts
+            migratedCaseCount <- dataMigrationService.migratedCaseCount
+          } yield Ok(reset_migration_confirm(errors, migrationCounts, migratedCaseCount)), {
+          case true =>
+            for {
+              migratedBefore <- dataMigrationService.migratedCaseCount
+              _              <- resetService.resetMigratedCases
+              migratedAfter  <- dataMigrationService.migratedCaseCount
+              totalCaseCount <- dataMigrationService.totalCaseCount
+            } yield Ok(reset_migration_results(migratedBefore, migratedAfter, totalCaseCount))
+          case false => successful(Redirect(routes.IndexController.get()))
+        }
+      )
+    } else {
+      successful(Redirect(routes.IndexController.get()))
     }
   }
 }

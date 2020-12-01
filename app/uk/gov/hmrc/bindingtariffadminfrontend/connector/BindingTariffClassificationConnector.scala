@@ -75,6 +75,16 @@ class BindingTariffClassificationConnector @Inject() (configuration: AppConfig, 
     client.DELETE[Option[Event]](url = url).map(_ => ())
   }
 
+  def deleteCase(reference: String)(implicit hc: HeaderCarrier): Future[Unit] = {
+    val url = s"${configuration.classificationBackendUrl}/case/$reference"
+    client.DELETE[Option[Case]](url = url).map(_ => ())
+  }
+
+  def deleteCaseEvents(reference: String)(implicit hc: HeaderCarrier): Future[Unit] = {
+    val url = s"${configuration.classificationBackendUrl}/events/$reference"
+    client.DELETE[Option[Event]](url = url).map(_ => ())
+  }
+
   def runDaysElapsed(implicit hc: HeaderCarrier): Future[Unit] = {
     val url = s"${configuration.classificationBackendUrl}/scheduler/days-elapsed"
     client.PUT[String, HttpResponse](url = url, body = "").map(_ => ())

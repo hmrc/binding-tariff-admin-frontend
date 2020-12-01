@@ -31,7 +31,7 @@ import play.api.libs.Files.TemporaryFile
 import uk.gov.hmrc.bindingtariffadminfrontend.connector._
 import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Case, Sample}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Case, CaseSearch, Sample}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.{MigrationRepository, UploadRepository}
@@ -71,6 +71,12 @@ class DataMigrationService @Inject() (
 
   def counts: Future[MigrationCounts] =
     migrationRepository.countByStatus
+
+  def migratedCaseCount(implicit hc: HeaderCarrier): Future[Int] =
+    caseConnector.getCases(CaseSearch(migrated = Some(true)), Pagination(1, 1)).map(_.resultCount)
+
+  def totalCaseCount(implicit hc: HeaderCarrier): Future[Int] =
+    caseConnector.getCases(CaseSearch(), Pagination(1, 1)).map(_.resultCount)
 
   def prepareMigrationGroup(migrations: Seq[Migration], priority: Boolean)(
     implicit hc: HeaderCarrier

@@ -38,12 +38,9 @@
     <div class="inline-block">
      <a class="button inline-block" href="@routes.FileMigrationUploadController.get()">Migrate More</a>
     </div>
-    <div class="inline-block">
-      @form_button(call = routes.DataMigrationStateController.delete(None), label = "Clear Migration Log", disabled = counts.isEmpty, css = "button-warn")
-    </div>
-    @if(appConfig.resetPermitted) {
+    @if(appConfig.resetMigrationPermitted) {
      <div class="inline-block">
-      <a class="button button-warn inline-block" href="@routes.ResetController.reset()">Reset Services</a>
+      <a class="button button-warn inline-block" href="@routes.ResetController.resetMigration()">Reset Migrated Cases</a>
      </div>
     }
    </div>

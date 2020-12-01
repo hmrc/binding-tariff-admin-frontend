@@ -32,4 +32,7 @@ class RulingConnector @Inject() (configuration: AppConfig, http: AuthenticatedHt
   def delete()(implicit hc: HeaderCarrier): Future[Unit] =
     http.DELETE[HttpResponse](s"${configuration.rulingUrl}/binding-tariff-rulings/ruling").map(_ => ())
 
+  def delete(id: String)(implicit hc: HeaderCarrier): Future[Unit] =
+    http.DELETE[HttpResponse](s"${configuration.rulingUrl}/binding-tariff-rulings/ruling/$id").map(_ => ())
+
 }

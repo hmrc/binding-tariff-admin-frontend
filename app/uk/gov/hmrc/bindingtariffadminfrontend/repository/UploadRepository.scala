@@ -46,6 +46,8 @@ trait UploadRepository {
   def update(upload: Upload): Future[Option[Upload]]
 
   def deleteAll(): Future[Unit]
+
+  def deleteById(id: String): Future[Unit]
 }
 
 @Singleton
@@ -100,6 +102,14 @@ class UploadMongoRepository @Inject() (config: AppConfig, mongoDbProvider: Mongo
         fetchNewObject = true
       )
       .map(_.value.map(_.as[Upload]))
+
+  override def deleteById(id: String): Future[Unit] =
+    collection
+      .findAndRemove(selector = byId(id))
+      .map(_ => ())
+
+  private def byId(id: String): JsObject =
+    Json.obj("id" -> id)
 
   private def byFileName(fileName: String): JsObject =
     Json.obj("fileName" -> fileName)

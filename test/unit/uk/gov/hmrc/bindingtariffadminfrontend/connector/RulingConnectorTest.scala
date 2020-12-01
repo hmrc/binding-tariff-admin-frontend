@@ -63,4 +63,24 @@ class RulingConnectorTest extends ConnectorTest {
     }
   }
 
+  "Connector Delete by reference" should {
+
+    "POST to the Ruling Store" in {
+      stubFor(
+        delete("/binding-tariff-rulings/ruling/ref")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.NO_CONTENT)
+          )
+      )
+
+      await(connector.delete("ref"))
+
+      verify(
+        deleteRequestedFor(urlEqualTo("/binding-tariff-rulings/ruling/ref"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
+  }
+
 }

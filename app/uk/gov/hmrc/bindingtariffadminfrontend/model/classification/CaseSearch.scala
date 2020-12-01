@@ -40,6 +40,7 @@ case class CaseSearch(
   commodityCode: Option[String]            = None,
   decisionDetails: Option[String]          = None,
   keywords: Option[Set[String]]            = None,
+  migrated: Option[Boolean]                = None,
   sortField: Option[SortField]             = None,
   sortDirection: Option[SortDirection]     = None
 )
@@ -59,8 +60,12 @@ object CaseSearch {
   val sortFieldKey       = "sort_by"
   val sortDirectionKey   = "sort_direction"
   val keywordKey         = "keyword"
+  val migratedKey        = "migrated"
 
-  implicit def bindable(implicit stringBinder: QueryStringBindable[String]): QueryStringBindable[CaseSearch] =
+  implicit def bindable(
+    implicit stringBinder: QueryStringBindable[String],
+    boolBinder: QueryStringBindable[Boolean]
+  ): QueryStringBindable[CaseSearch] =
     new QueryStringBindable[CaseSearch] {
 
       private def bindCaseStatus(key: String): Option[CaseStatus] =
@@ -99,6 +104,7 @@ object CaseSearch {
               commodityCode   = param(commodityCodeKey),
               decisionDetails = param(decisionDetailsKey),
               keywords        = params(keywordKey).map(_.map(_.toUpperCase)),
+              migrated        = boolBinder.bind(migratedKey, requestParams).flatMap(_.toOption),
               sortField       = param(sortFieldKey).flatMap(bindSortField),
               sortDirection   = param(sortDirectionKey).flatMap(bindSortDirection)
             )
@@ -119,6 +125,7 @@ object CaseSearch {
           filter.commodityCode.map(stringBinder.unbind(commodityCodeKey, _)),
           filter.decisionDetails.map(stringBinder.unbind(decisionDetailsKey, _)),
           filter.keywords.map(_.map(s => stringBinder.unbind(keywordKey, s.toString)).mkString("&")),
+          filter.migrated.map(boolBinder.unbind(migratedKey, _)),
           filter.sortField.map(f => stringBinder.unbind(sortFieldKey, f.toString)),
           filter.sortDirection.map(d => stringBinder.unbind(sortDirectionKey, d.toString))
         ).filter(_.isDefined).map(_.get).mkString("&")
@@ -147,6 +154,7 @@ object CaseSearch {
       commodityCodeKey   -> optional[String](text),
       decisionDetailsKey -> optional[String](text),
       keywordKey         -> optional[Set[String]](textTransformingToSet(identity, identity)),
+      migratedKey        -> optional[Boolean](boolean),
       sortFieldKey       -> optional[SortField](textTransformingTo(SortField.withName, _.toString)),
       sortDirectionKey   -> optional[SortDirection](textTransformingTo(SortDirection.withName, _.toString))
     )(CaseSearch.apply)(CaseSearch.unapply)

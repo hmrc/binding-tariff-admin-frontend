@@ -136,6 +136,38 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     }
   }
 
+  //def migratedCaseCount(implicit hc: HeaderCarrier): Future[Int] =
+  //    caseConnector.getCases(CaseSearch(migrated = Some(true)), Pagination(1, 1)).map(_.resultCount)
+  //
+  //  def totalCaseCount(implicit hc: HeaderCarrier): Future[Int] =
+  //    caseConnector.getCases(CaseSearch(), Pagination(1, 1)).map(_.resultCount)
+
+  "Service 'migratedCaseCount'" should {
+    "Delegate to Repository" in withService { service =>
+      val result = mock[Paged[Case]]
+      given(result.resultCount) willReturn 35
+
+      given(
+        caseConnector.getCases(refEq(CaseSearch(migrated = Some(true))), refEq(Pagination(1, 1)))(any[HeaderCarrier])
+      ) willReturn Future.successful(result)
+
+      await(service.migratedCaseCount) shouldBe 35
+    }
+  }
+
+  "Service 'totalCaseCount'" should {
+    "Delegate to Repository" in withService { service =>
+      val result = mock[Paged[Case]]
+      given(result.resultCount) willReturn 35
+
+      given(
+        caseConnector.getCases(refEq(CaseSearch()), refEq(Pagination(1, 1)))(any[HeaderCarrier])
+      ) willReturn Future.successful(result)
+
+      await(service.totalCaseCount) shouldBe 35
+    }
+  }
+
   "Service 'Get State'" should {
     val migration  = mock[Migration]
     val migrations = Paged(Seq(migration))

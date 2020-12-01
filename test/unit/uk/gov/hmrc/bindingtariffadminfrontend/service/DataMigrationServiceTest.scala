@@ -522,7 +522,6 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     }
 
     def givenRetrievingTheUploadedFilesReturnsNone(): Unit = {
-      println("none")
       given(uploadRepository.getByFileNames(any[List[String]])) willReturn Future.successful(
         Nil
       )
@@ -533,7 +532,6 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     }
 
     def givenRetrievingTheUploadedFilesReturns(files: FileUploaded*): Unit = {
-      println("something")
       given(uploadRepository.getByFileNames(any[List[String]])) willReturn Future.successful(
         files.toList.map(file => AttachmentUpload(file.fileName, file.mimeType, file.id, "batchId"))
       )

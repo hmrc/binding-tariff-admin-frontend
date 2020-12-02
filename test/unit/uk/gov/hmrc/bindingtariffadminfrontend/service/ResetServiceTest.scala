@@ -18,6 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.service
 
 import java.time.Instant
 
+import akka.actor.ActorSystem
 import org.mockito.ArgumentMatchers.{any, refEq}
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito._
@@ -43,6 +44,8 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
   private val dataMigrationConnector = mock[DataMigrationJsonConnector]
   private val dataMigrationService   = mock[DataMigrationService]
 
+  private def actorSystem = ActorSystem.create("testActorSystem")
+
   private def withService(test: ResetService => Any) =
     test(
       new ResetService(
@@ -51,7 +54,8 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
         rulingConnector        = rulingConnector,
         caseConnector          = caseConnector,
         dataMigrationConnector = dataMigrationConnector,
-        dataMigrationService   = dataMigrationService
+        dataMigrationService   = dataMigrationService,
+        actorSystem            = actorSystem
       )
     )
 
@@ -361,9 +365,10 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
     )
 
     val caseSearch = CaseSearch(migrated = Some(true))
-    val pagination = Pagination(1, 1024)
+    val pagination = Pagination(1, 512)
 
     val success: Future[Unit] = Future.successful((): Unit)
+    val failure: Future[Unit] = Future.failed(new RuntimeException("simulated error"))
 
     "clear migrations" in withService { service =>
       val cases = Future.successful(
@@ -474,6 +479,35 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(caseConnector).deleteCaseEvents(refEq(aCase.reference))(any[HeaderCarrier])
       verify(caseConnector).deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
       verify(caseConnector).deleteCase(refEq(aCase.reference))(any[HeaderCarrier])
+      verify(caseConnector).deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+    }
+
+    "delete a case with attachments and ignore errors" in withService { service =>
+      val cases = Future.successful(
+        Paged[Case](results = Seq(aCaseWithAttachments), pageIndex = 1, pageSize = 1, resultCount = 1)
+      )
+
+      given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn cases
+      given(rulingConnector.delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn failure
+      given(fileConnector.delete(refEq(attachment1.id))(any[HeaderCarrier])) willReturn failure
+      given(fileConnector.delete(refEq(attachment2.id))(any[HeaderCarrier])) willReturn failure
+      given(uploadRepository.deleteById(refEq(attachment1.id))) willReturn failure
+      given(uploadRepository.deleteById(refEq(attachment2.id))) willReturn failure
+      given(caseConnector.deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn failure
+      given(caseConnector.deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn failure
+
+      givenMigrationsClearSuccessfully()
+      val result = await(service.resetMigratedCases())
+      verifyMigrationsCleared()
+
+      result shouldBe 1
+
+      verify(rulingConnector).delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+      verify(fileConnector).delete(refEq(attachment1.id))(any[HeaderCarrier])
+      verify(fileConnector).delete(refEq(attachment2.id))(any[HeaderCarrier])
+      verify(uploadRepository).deleteById(refEq(attachment1.id))
+      verify(uploadRepository).deleteById(refEq(attachment2.id))
+      verify(caseConnector).deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
       verify(caseConnector).deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
     }
 

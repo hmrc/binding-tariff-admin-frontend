@@ -16,6 +16,9 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.service
 
+import akka.actor.ActorSystem
+import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
 import javax.inject.Inject
 import play.api.Logger
 import uk.gov.hmrc.bindingtariffadminfrontend.connector._
@@ -34,8 +37,11 @@ class ResetService @Inject() (
   rulingConnector: RulingConnector,
   caseConnector: BindingTariffClassificationConnector,
   dataMigrationConnector: DataMigrationJsonConnector,
-  dataMigrationService: DataMigrationService
+  dataMigrationService: DataMigrationService,
+  actorSystem: ActorSystem
 ) {
+  implicit val materializer: Materializer = ActorMaterializer.create(actorSystem)
+
   def resetEnvironment(stores: Set[Store])(implicit hc: HeaderCarrier): Future[Unit] = {
     def resetIfPresent(store: Store, expression: => Future[Any]): Future[Unit] = {
       def loggingAWarning: PartialFunction[Throwable, Unit] = {
@@ -61,35 +67,44 @@ class ResetService @Inject() (
   def resetMigratedCases()(implicit hc: HeaderCarrier): Future[Int] =
     for {
       _     <- resetEnvironment(Set(Store.MIGRATION))
-      count <- deleteCases(search = CaseSearch(migrated = Some(true)), pageSize = 1024)
+      count <- deleteCases(search = CaseSearch(migrated = Some(true)), pageSize = 512)
     } yield count
 
-  private def deleteCases(search: CaseSearch, pageSize: Int)(implicit hc: HeaderCarrier): Future[Int] = {
-    def deletePage(search: CaseSearch, pagination: Pagination): Future[Int] =
-      caseConnector.getCases(search, pagination).flatMap { result =>
-        val cases = result.results
-        Future.sequence(cases.map(deleteCase)).map(_ => cases.size)
-      }
-
-    def deleteCase(`case`: Case): Future[Unit] =
-      for {
-        _ <- rulingConnector.delete(`case`.reference)
-        _ <- Future.sequence(`case`.attachments.map(attachment => fileConnector.delete(attachment.id)))
-        _ <- Future.sequence(`case`.attachments.map(attachment => uploadRepository.deleteById(attachment.id)))
-        _ <- caseConnector.deleteCaseEvents(`case`.reference)
-        _ <- caseConnector.deleteCase(`case`.reference)
-      } yield ()
-
+  private def deleteCases(search: CaseSearch, pageSize: Int)(
+    implicit hc: HeaderCarrier
+  ): Future[Int] =
     caseConnector
       .getCases(search, pagination = Pagination(1, pageSize))
-      .map(_.pageCount)
-      .flatMap { pageCount =>
-        Future
-          .sequence {
-            (1 to pageCount)
-              .map(page => deletePage(search, Pagination(page, pageSize)))
-          }
-          .map(_.fold(0) { case (a, b) => a + b })
+      .flatMap { info =>
+        Source(info.pageCount to 1 by -1)
+          .mapAsync(1)(page =>
+            caseConnector
+              .getCases(search, Pagination(page, pageSize))
+              .map(_.results)
+          )
+          .flatMapMerge(1, cases => Source(cases.toList))
+          .mapAsync(1)(c => deleteCase(c))
+          .runWith(Sink.ignore)
+          .map(_ => info.resultCount)
       }
+
+  private def deleteCase(`case`: Case)(implicit hc: HeaderCarrier): Future[Unit] = {
+    def warning(message: String): PartialFunction[Throwable, Unit] = {
+      case t: Throwable => Logger.warn(message, t)
+    }
+
+    for {
+      _ <- rulingConnector.delete(`case`.reference) recover warning(s"Failed to delete ruling [${`case`.reference}]")
+      _ <- Source(`case`.attachments.toList)
+            .mapAsync(1) { attachment =>
+              fileConnector.delete(attachment.id) recover warning(s"Failed to delete attachment [${attachment.id}]")
+              uploadRepository.deleteById(attachment.id) recover warning(s"Failed to delete upload [${attachment.id}]")
+            }
+            .runWith(Sink.ignore)
+      _ <- caseConnector.deleteCaseEvents(`case`.reference) recover warning(
+            s"Failed to delete case [${`case`.reference}] events"
+          )
+      _ <- caseConnector.deleteCase(`case`.reference) recover warning(s"Failed to delete case [${`case`.reference}]")
+    } yield ()
   }
 }

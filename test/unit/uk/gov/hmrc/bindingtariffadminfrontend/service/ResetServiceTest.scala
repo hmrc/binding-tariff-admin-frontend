@@ -25,6 +25,7 @@ import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.bindingtariffadminfrontend.connector._
+import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationDeletionLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Cases.btiApplicationExample
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
@@ -43,6 +44,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
   private val rulingConnector        = mock[RulingConnector]
   private val dataMigrationConnector = mock[DataMigrationJsonConnector]
   private val dataMigrationService   = mock[DataMigrationService]
+  private val migrationDeletionLock  = mock[MigrationDeletionLock]
 
   private def actorSystem = ActorSystem.create("testActorSystem")
 
@@ -55,6 +57,7 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
         caseConnector          = caseConnector,
         dataMigrationConnector = dataMigrationConnector,
         dataMigrationService   = dataMigrationService,
+        migrationDeletionLock  = migrationDeletionLock,
         actorSystem            = actorSystem
       )
     )
@@ -324,6 +327,18 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
       verify(rulingConnector).delete()(any[HeaderCarrier])
       verify(dataMigrationConnector).deleteHistoricData()(any[HeaderCarrier])
       verify(dataMigrationService).clear(refEq(None))
+    }
+  }
+
+  "initiateResetMigratedCases" should {
+    "return false" in withService { service =>
+      given(migrationDeletionLock.isLocked) willReturn Future.successful(true)
+      await(service.initiateResetMigratedCases()) shouldBe false
+    }
+
+    "return true" in withService { service =>
+      given(migrationDeletionLock.isLocked) willReturn Future.successful(false)
+      await(service.initiateResetMigratedCases()) shouldBe true
     }
   }
 

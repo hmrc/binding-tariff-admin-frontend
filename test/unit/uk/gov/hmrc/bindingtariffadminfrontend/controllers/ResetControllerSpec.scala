@@ -157,39 +157,19 @@ class ResetControllerSpec extends ControllerSpec with BeforeAndAfterEach {
   }
 
   "POST /resetMigration" should {
-    "return 200 when permitted and all cases were deleted" in {
+    "return 303 when permitted" in {
       given(appConfig.resetMigrationPermitted) willReturn true
-      given(resetService.resetMigratedCases()(any[HeaderCarrier])) willReturn Future.successful(50)
+      given(resetService.initiateResetMigratedCases()(any[HeaderCarrier])) willReturn Future.successful(true)
       given(dataMigrationService.totalCaseCount(any[HeaderCarrier])) willReturn Future.successful(100)
-      given(dataMigrationService.migratedCaseCount(any[HeaderCarrier]))
-        .willReturn(Future.successful(50), Future.successful(0))
+      given(dataMigrationService.migratedCaseCount(any[HeaderCarrier])) willReturn Future.successful(50)
 
       val result: Result =
         await(
           controller.resetMigrationConfirm()(newFakeGETRequestWithCSRF.withFormUrlEncodedBody("confirm" -> "true"))
         )
       status(result) shouldBe OK
-      bodyOf(result) should include("Successfully deleted 50 cases.")
-      bodyOf(result) should include("There are now 100 cases remaining.")
-      verify(resetService).resetMigratedCases()(any[HeaderCarrier])
-    }
-
-    "return 200 when permitted and not all cases were deleted" in {
-      given(appConfig.resetMigrationPermitted) willReturn true
-      given(resetService.resetMigratedCases()(any[HeaderCarrier])) willReturn Future.successful(25)
-      given(dataMigrationService.totalCaseCount(any[HeaderCarrier])) willReturn Future.successful(125)
-      given(dataMigrationService.migratedCaseCount(any[HeaderCarrier]))
-        .willReturn(Future.successful(50), Future.successful(25))
-
-      val result: Result =
-        await(
-          controller.resetMigrationConfirm()(newFakeGETRequestWithCSRF.withFormUrlEncodedBody("confirm" -> "true"))
-        )
-      status(result) shouldBe OK
-      bodyOf(result) should include("Successfully deleted 25 cases.")
-      bodyOf(result) should include("Failed to delete 25 cases.")
-      bodyOf(result) should include("There are now 125 cases remaining.")
-      verify(resetService).resetMigratedCases()(any[HeaderCarrier])
+      bodyOf(result) should include("Reset migrated cases")
+      verify(resetService).initiateResetMigratedCases()(any[HeaderCarrier])
     }
 
     "return 303 when not permitted" in {

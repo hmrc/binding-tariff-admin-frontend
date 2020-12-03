@@ -18,12 +18,13 @@ package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
 import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.forms.{ResetFormProvider, ResetMigrationFormProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store
 import uk.gov.hmrc.bindingtariffadminfrontend.service.{DataMigrationService, ResetService}
-import uk.gov.hmrc.bindingtariffadminfrontend.views.html.{reset_confirm, reset_migration_confirm, reset_migration_results}
+import uk.gov.hmrc.bindingtariffadminfrontend.views.html.{reset_confirm, reset_migration_confirm, reset_migration_progress}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -84,16 +85,24 @@ class ResetController @Inject() (
           } yield Ok(reset_migration_confirm(errors, migrationCounts, migratedCaseCount)), {
           case true =>
             for {
-              migratedBefore <- dataMigrationService.migratedCaseCount
-              _              <- resetService.resetMigratedCases
-              migratedAfter  <- dataMigrationService.migratedCaseCount
-              totalCaseCount <- dataMigrationService.totalCaseCount
-            } yield Ok(reset_migration_results(migratedBefore, migratedAfter, totalCaseCount))
+              casesToDelete     <- dataMigrationService.migratedCaseCount
+              originalCaseCount <- dataMigrationService.totalCaseCount
+              running           <- resetService.initiateResetMigratedCases()
+            } yield
+              if (running) Ok(reset_migration_progress(casesToDelete, originalCaseCount))
+              else BadRequest("Already running")
           case false => successful(Redirect(routes.IndexController.get()))
         }
       )
     } else {
       successful(Redirect(routes.IndexController.get()))
     }
+  }
+
+  def migratedCaseInfo(): Action[AnyContent] = authenticatedAction.async { implicit request =>
+    for {
+      migratedCaseCount <- dataMigrationService.migratedCaseCount
+      result = Json.obj("migratedCaseCount" -> migratedCaseCount)
+    } yield Ok(result).as("application/json")
   }
 }

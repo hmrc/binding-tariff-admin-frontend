@@ -22,6 +22,7 @@ import akka.stream.{ActorMaterializer, Materializer}
 import javax.inject.Inject
 import play.api.Logger
 import uk.gov.hmrc.bindingtariffadminfrontend.connector._
+import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationDeletionLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch}
@@ -38,6 +39,7 @@ class ResetService @Inject() (
   caseConnector: BindingTariffClassificationConnector,
   dataMigrationConnector: DataMigrationJsonConnector,
   dataMigrationService: DataMigrationService,
+  migrationDeletionLock: MigrationDeletionLock,
   actorSystem: ActorSystem
 ) {
   implicit val materializer: Materializer = ActorMaterializer.create(actorSystem)
@@ -63,6 +65,16 @@ class ResetService @Inject() (
       _ <- resetIfPresent(Store.MIGRATION, dataMigrationService.clear(None))
     } yield ()
   }
+
+  def initiateResetMigratedCases()(implicit hc: HeaderCarrier): Future[Boolean] =
+    migrationDeletionLock.isLocked.map { alreadyLocked =>
+      // Run in the background
+      migrationDeletionLock.tryLock {
+        resetMigratedCases()
+      }
+
+      !alreadyLocked
+    }
 
   def resetMigratedCases()(implicit hc: HeaderCarrier): Future[Int] =
     for {

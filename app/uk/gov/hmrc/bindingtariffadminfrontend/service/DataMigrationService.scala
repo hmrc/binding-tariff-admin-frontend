@@ -60,11 +60,15 @@ class DataMigrationService @Inject() (
 
   private lazy val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC)
 
-  def getUploadedBatch(batchId: String)(implicit hc: HeaderCarrier): Future[List[FileUploaded]] =
-    for {
+  def getUploadedBatch(batchId: String)(implicit hc: HeaderCarrier): Future[List[FileUploaded]] = {
+    val uploads = for {
       uploads <- uploadRepository.getByBatch(batchId)
-      results <- Future.sequence(uploads.map(_.id).map(fileConnector.find))
-    } yield results.flatten
+      if uploads.nonEmpty
+      search <- fileConnector.find(FileSearch(ids = Some(uploads.map(_.id).toSet)), Pagination.max)
+    } yield search.results.toList
+
+    uploads recover withResponse(Nil)
+  }
 
   def getState(status: Seq[MigrationStatus], pagination: Pagination): Future[Paged[Migration]] =
     migrationRepository.get(status, pagination)
@@ -319,7 +323,8 @@ class DataMigrationService @Inject() (
     if (attachmentFileNames.nonEmpty) {
       val uploadedAttachments = for {
         uploadedRequests <- uploadRepository.getByFileNames(attachmentFileNames)
-        fileSearch       <- fileConnector.find(FileSearch(ids = Some(uploadedRequests.map(_.id).toSet)), Pagination.max)
+        if uploadedRequests.nonEmpty
+        fileSearch <- fileConnector.find(FileSearch(ids = Some(uploadedRequests.map(_.id).toSet)), Pagination.max)
       } yield fileSearch.results
 
       uploadedAttachments recover withResponse(Seq.empty)

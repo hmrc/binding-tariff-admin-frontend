@@ -115,15 +115,28 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       result shouldBe batch1
     }
 
+    "return Nil when there are no uploads" in withService { service =>
+      given(uploadRepository.getByBatch("batch1")) willReturn Future.successful(Nil)
+
+      val result = await(service.getUploadedBatch("batch1"))
+
+      result shouldBe Nil
+
+      verify(fileConnector, never()).find(any[FileSearch], any[Pagination])(any[HeaderCarrier])
+    }
+
     def givenBatchUploaded(batchId: String, files: List[FileUploaded]) = {
       given(uploadRepository.getByBatch(batchId)) willReturn Future.successful(
         files.map(file =>
           AttachmentUpload(fileName = file.fileName, mimeType = file.mimeType, id = file.id, batchId = batchId)
         )
       )
-      files.map(file =>
-        given(fileConnector.find(refEq(file.id))(any[HeaderCarrier])) willReturn Future.successful(Some(file))
-      )
+      val paged = mock[Paged[FileUploaded]]
+      given(paged.results) willReturn files
+      given(
+        fileConnector
+          .find(refEq(FileSearch(ids = Some(files.map(_.id).toSet))), refEq(Pagination.max))(any[HeaderCarrier])
+      ) willReturn Future.successful(paged)
     }
   }
 
@@ -614,6 +627,71 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       verify(fileConnector).initiate(request)
       verify(upscanS3Connector).upload(template, file, request)
 
+    }
+  }
+
+  "Service findUploadedAttachments" should {
+
+    "return Nil when there are no case attachments" in withService { service =>
+      val mockMigration = mock[Migration]
+      val mockCase      = mock[MigratableCase]
+
+      given(mockMigration.`case`) willReturn mockCase
+      given(mockCase.attachments) willReturn Nil
+
+      await(service.findUploadedAttachments(mockMigration)) shouldBe Nil
+
+      verify(uploadRepository, never()).getByFileNames(any[List[String]])
+      verify(fileConnector, never()).find(any[FileSearch], any[Pagination])(any[HeaderCarrier])
+    }
+
+    "return Nil when there are no uploaded attachments" in withService { service =>
+      val mockMigration   = mock[Migration]
+      val mockCase        = mock[MigratableCase]
+      val att1            = mock[MigratedAttachment]
+      val att2            = mock[MigratedAttachment]
+      val mockAttachments = Seq(att1, att2)
+
+      given(mockMigration.`case`) willReturn mockCase
+      given(mockCase.attachments) willReturn mockAttachments
+      given(att1.name) willReturn "att1"
+      given(att2.name) willReturn "att2"
+
+      given(uploadRepository.getByFileNames(refEq(List("att1", "att2")))) willReturn Future.successful(Nil)
+
+      await(service.findUploadedAttachments(mockMigration)) shouldBe Nil
+
+      verify(fileConnector, never()).find(any[FileSearch], any[Pagination])(any[HeaderCarrier])
+    }
+
+    "return uploaded files" in withService { service =>
+      val mockMigration   = mock[Migration]
+      val mockCase        = mock[MigratableCase]
+      val att1            = mock[MigratedAttachment]
+      val att2            = mock[MigratedAttachment]
+      val mockAttachments = Seq(att1, att2)
+      val up1             = mock[AttachmentUpload]
+      val mockUploads     = List(up1)
+      val mockFiles       = mock[Paged[FileUploaded]]
+      val mockFileResults = mock[Seq[FileUploaded]]
+
+      given(mockMigration.`case`) willReturn mockCase
+      given(mockCase.attachments) willReturn mockAttachments
+      given(att1.name) willReturn "att-name-1"
+      given(att2.name) willReturn "att-name-2"
+      given(up1.id) willReturn "up-id-1"
+      given(mockFiles.results) willReturn mockFileResults
+
+      given(uploadRepository.getByFileNames(refEq(List("att-name-1", "att-name-2")))) willReturn Future.successful(
+        mockUploads
+      )
+      given(fileConnector.find(refEq(FileSearch(ids = Some(Set("up-id-1")))), any[Pagination])(any[HeaderCarrier])) willReturn Future
+        .successful(mockFiles)
+
+      await(service.findUploadedAttachments(mockMigration)) shouldBe mockFileResults
+
+      verify(uploadRepository).getByFileNames(refEq(List("att-name-1", "att-name-2")))
+      verify(fileConnector).find(refEq(FileSearch(ids = Some(Set("up-id-1")))), any[Pagination])(any[HeaderCarrier])
     }
   }
 

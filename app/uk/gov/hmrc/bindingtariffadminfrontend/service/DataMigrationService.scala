@@ -31,8 +31,7 @@ import play.api.libs.Files.TemporaryFile
 import uk.gov.hmrc.bindingtariffadminfrontend.connector._
 import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Store.Store
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Case, Sample}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Case, CaseSearch, Sample}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.{MigrationRepository, UploadRepository}
@@ -72,6 +71,12 @@ class DataMigrationService @Inject() (
 
   def counts: Future[MigrationCounts] =
     migrationRepository.countByStatus
+
+  def migratedCaseCount(implicit hc: HeaderCarrier): Future[Int] =
+    caseConnector.getCases(CaseSearch(migrated = Some(true)), Pagination(1, 1)).map(_.resultCount)
+
+  def totalCaseCount(implicit hc: HeaderCarrier): Future[Int] =
+    caseConnector.getCases(CaseSearch(), Pagination(1, 1)).map(_.resultCount)
 
   def prepareMigrationGroup(migrations: Seq[Migration], priority: Boolean)(
     implicit hc: HeaderCarrier
@@ -129,28 +134,6 @@ class DataMigrationService @Inject() (
 
   def clear(status: Option[MigrationStatus] = None): Future[Boolean] =
     migrationRepository.delete(status)
-
-  def resetEnvironment(stores: Set[Store])(implicit hc: HeaderCarrier): Future[Unit] = {
-
-    def resetIfPresent(store: Store, expression: => Future[Any]): Future[Unit] =
-      if (stores.contains(store)) {
-        expression.map(_ => ()) recover loggingAWarning
-      } else Future.successful(())
-
-    def loggingAWarning: PartialFunction[Throwable, Unit] = {
-      case t: Throwable => Logger.warn("Failed to clear Service", t)
-    }
-
-    for {
-      _ <- resetIfPresent(Store.FILES, fileConnector.delete())
-      _ <- resetIfPresent(Store.FILES, uploadRepository.deleteAll())
-      _ <- resetIfPresent(Store.CASES, caseConnector.deleteCases())
-      _ <- resetIfPresent(Store.EVENTS, caseConnector.deleteEvents())
-      _ <- resetIfPresent(Store.RULINGS, rulingConnector.delete())
-      _ <- resetIfPresent(Store.HISTORIC_DATA, dataMigrationConnector.deleteHistoricData())
-      _ <- resetIfPresent(Store.MIGRATION, clear())
-    } yield ()
-  }
 
   def upload(upload: Upload, file: TemporaryFile)(implicit hc: HeaderCarrier): Future[Unit] =
     for {

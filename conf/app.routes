@@ -38,7 +38,10 @@ POST       /scheduler/:job              @uk.gov.hmrc.bindingtariffadminfrontend.
 GET        /state                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.get(page: Int ?= 1, status: Seq[String] ?= Seq.empty)
 POST       /state                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.delete(status: Option[String])
 
-GET        /reset                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.reset()
-POST       /reset                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.resetConfirm()
+GET        /reset                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.reset()
+POST       /reset                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.resetConfirm()
 
+GET        /reset-info                  @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.migratedCaseInfo()
+GET        /reset-migration             @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.resetMigration()
+POST       /reset-migration             @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.resetMigrationConfirm()
 

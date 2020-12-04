@@ -43,10 +43,11 @@ class AppConfig @Inject() (val configuration: Configuration) extends ServicesCon
     .asInstanceOf[FiniteDuration]
   lazy val dataMigrationInterval: FiniteDuration = getDuration("scheduler.data-migration.interval")
     .asInstanceOf[FiniteDuration]
-  lazy val resetPermitted: Boolean = getBoolean("reset-permitted")
-  lazy val pageSize: Int           = getInt("page-size")
-  lazy val apiToken: String        = loadConfig("auth.api-token")
-  lazy val clock: Clock            = Clock.systemUTC()
+  lazy val resetPermitted: Boolean          = getBoolean("reset-permitted")
+  lazy val resetMigrationPermitted: Boolean = getBoolean("reset-migration-permitted")
+  lazy val pageSize: Int                    = getInt("page-size")
+  lazy val apiToken: String                 = loadConfig("auth.api-token")
+  lazy val clock: Clock                     = Clock.systemUTC()
   lazy val credentials: Seq[Credentials] = getString("auth.credentials")
     .split(",")
     .map(_.split(":") match {

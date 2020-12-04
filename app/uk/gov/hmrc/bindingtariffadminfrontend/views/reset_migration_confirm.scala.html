@@ -1,0 +1,81 @@
+@*
+ * Copyright 2020 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+@import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, MigrationCounts}
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.components.CheckOption
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.input_checkbox
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
+@import uk.gov.hmrc.play.views.html.helpers
+
+@(form: Form[Boolean], migrationCounts: MigrationCounts, migratedCaseCount: Int)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+
+@main_template(title = "Binding Tariff Admin", bodyClasses = None) {
+
+ <a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
+
+ @if(migrationCounts.hasUnprocessed) {
+  <h3 class="heading-xlarge">Migration in progress</h3>
+  <p><a id="index-migration_state" href="@routes.DataMigrationStateController.get()">View the current state of migrations</a></p>
+ } else if(migratedCaseCount == 0) {
+  <h3 class="heading-xlarge">No migrated cases found</h3>
+  <p><a id="index-migration_start" href="@routes.FileMigrationUploadController.get()">Start a File & Case migration</a></p>
+ } else {
+  <h3 class="heading-xlarge">Are You Sure?</h3>
+
+  <div class="notice mb-30">
+   <i class="icon icon-important">
+    <span class="visually-hidden">Warning</span>
+   </i>
+   <strong class="bold">
+    This will delete all @{migratedCaseCount} migrated cases and their associated data.
+   </strong>
+  </div>
+
+  <p><i>Note that this can take some time to complete.</i></p>
+
+  @helpers.form(action = routes.ResetController.resetMigrationConfirm()) {
+
+   @input_checkbox(
+    field = form("confirm"),
+    label = "Yes, delete them all!",
+    value = "true",
+    checked = !form.hasErrors && form("confirm").value.contains("true")
+   )
+
+   <div>
+    <div class="inline-block">
+     <button id="reset-submit_button" type="submit" class="button button-warn" @if(!form("confirm").value.contains("true")){disabled="disabled"}>I'm Sure, Reset</button>
+    </div>
+    <div class="inline-block">
+     <a class="secondary-link" href="@routes.IndexController.get()">Back to safety</a>
+    </div>
+   </div>
+  }
+ }
+
+}
+
+<script type="text/javascript">
+ document.getElementById("confirm").addEventListener("click", function(event) {
+    if (document.getElementById("confirm").checked == true) {
+       document.getElementById("reset-submit_button").removeAttribute("disabled");
+    } else {
+       document.getElementById("reset-submit_button").setAttribute("disabled", "disabled");
+    }
+ });
+</script>

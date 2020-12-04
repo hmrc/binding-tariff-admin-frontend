@@ -335,6 +335,44 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
     }
   }
 
+  "Connector Delete Case by Reference" should {
+    "DELETE from the Case Store" in {
+      stubFor(
+        delete("/case/ref")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.NO_CONTENT)
+          )
+      )
+
+      await(connector.deleteCase("ref"))
+
+      verify(
+        deleteRequestedFor(urlEqualTo("/case/ref"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
+  }
+
+  "Connector Delete Event" should {
+    "DELETE from the Case Store" in {
+      stubFor(
+        delete("/events/ref")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.NO_CONTENT)
+          )
+      )
+
+      await(connector.deleteCaseEvents("ref"))
+
+      verify(
+        deleteRequestedFor(urlEqualTo("/events/ref"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
+  }
+
   "Connector Run Days Elapsed" should {
     "PUT to the Case Store" in {
       stubFor(

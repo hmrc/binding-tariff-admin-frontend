@@ -169,6 +169,22 @@ class UploadRepositorySpec
     }
   }
 
+  "delete by id" should {
+    "remove specified documents from the collection" in {
+      await(repository.bulkInsert(Seq(upload1, upload2, upload3, upload4, upload5)))
+      collectionSize shouldBe 5
+
+      await(repository.deleteById(upload2.id))
+      collectionSize shouldBe 4
+
+      await(repository.collection.find(byId(upload1.id)).one[Upload]) shouldBe Some(upload1)
+      await(repository.collection.find(byId(upload2.id)).one[Upload]) shouldBe None
+      await(repository.collection.find(byId(upload3.id)).one[Upload]) shouldBe Some(upload3)
+      await(repository.collection.find(byId(upload4.id)).one[Upload]) shouldBe Some(upload4)
+      await(repository.collection.find(byId(upload5.id)).one[Upload]) shouldBe Some(upload5)
+    }
+  }
+
   "The 'uploads' collection" should {
     "have a unique index based on the field 'fileName'" in {
       await(repository.insert(upload1))
@@ -197,4 +213,7 @@ class UploadRepositorySpec
 
   private def byFileName(fileName: String): JsObject =
     Json.obj("fileName" -> fileName)
+
+  private def byId(id: String): JsObject =
+    Json.obj("id" -> id)
 }

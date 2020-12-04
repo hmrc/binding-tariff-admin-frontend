@@ -21,7 +21,7 @@
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.FileUploaded
 @import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, Paged, Pagination}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.components.SelectOption
-@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{input_select, input_text, json, pagination}
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{input_select, input_text, input_radio, json, pagination}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
 @import uk.gov.hmrc.play.views.html.helpers
 @(
@@ -134,6 +134,38 @@
     inputClass = Some("w-100"),
     options = SortDirection.values.map(v => SelectOption(v.toString, v.toString))
    )
+   </div>
+  </div>
+
+  <div class="grid-row">
+   <div class="column-one-third">
+    @input_radio(
+     field = form(CaseSearch.migratedKey),
+     label = "All cases",
+     value = "",
+     id = s"${form(CaseSearch.migratedKey)}-all",
+     checked = !form(CaseSearch.migratedKey).value.contains("true") && !form(CaseSearch.migratedKey).value.contains("false")
+    )
+   </div>
+
+   <div class="column-one-third">
+    @input_radio(
+     field = form(CaseSearch.migratedKey),
+     label = "Migrated cases only",
+     value = "true",
+     id = s"${form(CaseSearch.migratedKey)}-migrated",
+     checked = form(CaseSearch.migratedKey).value.contains("true")
+    )
+   </div>
+
+   <div class="column-one-third">
+    @input_radio(
+     field = form(CaseSearch.migratedKey),
+     label = "Non-Migrated cases only",
+     value = "false",
+     id = s"${form(CaseSearch.migratedKey)}-not-migrated",
+     checked = form(CaseSearch.migratedKey).value.contains("false")
+    )
    </div>
   </div>
 

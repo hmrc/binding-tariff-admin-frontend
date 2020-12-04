@@ -23,13 +23,27 @@
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
  <h1 id="index-heading" class="heading-xlarge">Binding Tariff Admin UI.</h1>
 
- <h3 class="heading-small">What do you want to do?</h3>
+ <h2 class="heading-medium">What do you want to do?</h2>
+
+ <h3 class="heading-small">View</h3>
 
  <ul class="list list-bullet">
   <li>
    <a id="index-migration_state" href="@routes.DataMigrationStateController.get()">View the current state of migrations</a>
   </li>
 
+  <li>
+   <a id="index-dashboard" href="@routes.MonitorController.get()">View the Digital Tariffs Dashboard</a>
+  </li>
+
+  <li>
+   <a id="index-search" href="@routes.SearchController.get()">Search Cases & Files</a>
+  </li>
+ </ul>
+
+<h3 class="heading-small">Migrate</h3>
+
+<ul class="list list-bullet">
   <li>
    <a id="index-anonymise_init" href="@routes.DataMigrationJsonController.getAnonymiseData()">Start data anonymisation</a>
   </li>
@@ -45,25 +59,27 @@
   <li>
    <a id="index-migration_start" href="@routes.FileMigrationUploadController.get()">Start a File & Case migration</a>
   </li>
+</ul>
 
-  <li>
-   <a id="index-dashboard" href="@routes.MonitorController.get()">View the Digital Tariffs Dashboard</a>
-  </li>
+<h3 class="heading-small">Manage</h3>
 
-  <li>
-   <a id="index-search" href="@routes.SearchController.get()">Search Cases & Files</a>
-  </li>
+<ul class="list list-bullet">
 
   <li>
    <a id="index-scheduler" href="@routes.SchedulerController.get()">Run a Scheduled Job</a>
   </li>
 
+  @if(appConfig.resetMigrationPermitted){
+   <li>
+    <a id="index-reset_migration" href="@routes.ResetController.resetMigration()">Reset Migrated Cases</a>
+   </li>
+  }
+
   @if(appConfig.resetPermitted){
    <li>
-    <a id="index-reset" href="@routes.DataMigrationStateController.reset()">Reset Binding Tariff services</a>
+    <a id="index-reset" href="@routes.ResetController.reset()">Reset Binding Tariff services</a>
    </li>
   }
  </ul>
-
 
 }

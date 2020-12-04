@@ -34,6 +34,7 @@ class CaseSearchTest extends UnitSpec {
     statuses        = Some(Set(NEW, OPEN)),
     minDecisionEnd  = Some(Instant.EPOCH),
     keywords        = Some(Set("BIKE", "MTB")),
+    migrated        = Some(true),
     decisionDetails = Some("decision-details"),
     sortDirection   = Some(SortDirection.DESCENDING),
     sortField       = Some(SortField.CREATED_DATE)
@@ -50,6 +51,7 @@ class CaseSearchTest extends UnitSpec {
     "min_decision_end" -> Seq("1970-01-01T00:00:00Z"),
     "decision_details" -> Seq("decision-details"),
     "keyword"          -> Seq("BIKE", "MTB"),
+    "migrated"         -> Seq("true"),
     "sort_by"          -> Seq("created-date"),
     "sort_direction"   -> Seq("desc")
   )
@@ -75,6 +77,7 @@ class CaseSearchTest extends UnitSpec {
           "&decision_details=decision-details" +
           "&keyword=BIKE" +
           "&keyword=MTB" +
+          "&migrated=true" +
           "&sort_by=created-date" +
           "&sort_direction=desc"
       URLDecoder.decode(CaseSearch.bindable.unbind("", search), "UTF-8") shouldBe populatedQueryParam

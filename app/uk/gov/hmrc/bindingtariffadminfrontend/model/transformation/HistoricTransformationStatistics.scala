@@ -18,7 +18,7 @@ package uk.gov.hmrc.bindingtariffadminfrontend.model.transformation
 
 import play.api.libs.json.{Format, Json}
 
-case class HistoricTransformationStatistics(unprocessedAppl: Int, unprocessedBti: Int)
+case class HistoricTransformationStatistics(applCount: Int, btiCount: Int)
 
 object HistoricTransformationStatistics {
   implicit val formats: Format[HistoricTransformationStatistics] = Json.format[HistoricTransformationStatistics]

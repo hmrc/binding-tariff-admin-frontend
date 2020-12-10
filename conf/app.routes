@@ -1,51 +1,53 @@
 # microservice specific routes
 
-GET        /assets/*file                controllers.Assets.at(path="/public", file)
+GET        /assets/*file                         controllers.Assets.at(path="/public", file)
 
-GET        /                            @uk.gov.hmrc.bindingtariffadminfrontend.controllers.IndexController.get
+GET        /                                     @uk.gov.hmrc.bindingtariffadminfrontend.controllers.IndexController.get
 
-GET        /case-migration              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.CaseMigrationUploadController.get
-POST       /case-migration              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.CaseMigrationUploadController.post
+GET        /case-migration                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.CaseMigrationUploadController.get
+POST       /case-migration                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.CaseMigrationUploadController.post
 
-GET        /anonymise-data              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.getAnonymiseData
-POST       /anonymise-data              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.anonymiseData
-GET        /check-status                @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.checkStatus
-GET        /get-status                  @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.getStatusOfJsonProcessing
-GET        /download-bti-json           @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadBTIJson
-GET        /download-liabilities-json   @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadLiabilitiesJson
-GET        /download-migration-reports  @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadMigrationReports
+GET        /anonymise-data                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.getAnonymiseData
+POST       /anonymise-data                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.anonymiseData
+GET        /check-status                         @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.checkStatus
+GET        /get-status                           @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.getStatusOfJsonProcessing
+GET        /download-bti-json                    @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadBTIJson
+GET        /download-liabilities-json            @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadLiabilitiesJson
+GET        /download-migration-reports           @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadMigrationReports
 
-GET        /historic-data               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.get
-POST       /historic-data               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.post
-POST       /historic-data-initiate      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.initiateProcessing
-GET        /check-historic-status       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.checkHistoricStatus
-GET        /get-historic-status         @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.getStatusOfHistoricDataProcessing
-GET        /download-historic-json      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.downloadHistoricJson
+GET        /historic-data                        @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.get
+POST       /historic-data                        @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.post
+POST       /historic-data-initiate               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.initiateProcessing
+GET        /check-historic-status                @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.checkHistoricStatus
+GET        /get-historic-status                  @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.getStatusOfHistoricDataProcessing
+GET        /download-historic-json               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.downloadHistoricJson
 
-GET        /historic-transform          @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataTransformationController.get
-POST       /historic-transform-initiate @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataTransformationController.initiate
-GET        /historic-transform-status   @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataTransformationController.status
+GET        /historic-transform                   @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataTransformationController.get
+POST       /historic-transform-initiate          @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataTransformationController.initiate
+GET        /historic-transform-status            @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataTransformationController.status
+GET        /historic-transformation-status       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataTransformationController.getStatusOfHistoricDataTransformation
+GET        /download-transformed-hisotric-data   @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataTransformationController.downloadTransformedJson
 
-GET        /data-migration              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.get
-POST       /data-migration              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.post
-POST       /data-migration-initiate     @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.initiateProcessing
+GET        /data-migration                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.get
+POST       /data-migration                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.post
+POST       /data-migration-initiate              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationUploadController.initiateProcessing
 
-GET        /file-migration              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.FileMigrationUploadController.get
-POST       /file-migration              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.FileMigrationUploadController.post
+GET        /file-migration                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.FileMigrationUploadController.get
+POST       /file-migration                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.FileMigrationUploadController.post
 
-GET        /monitor                     @uk.gov.hmrc.bindingtariffadminfrontend.controllers.MonitorController.get()
-GET        /search                      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.SearchController.get(search: uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseSearch ?= uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseSearch(), pagination: uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination ?= uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination())
+GET        /monitor                              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.MonitorController.get()
+GET        /search                               @uk.gov.hmrc.bindingtariffadminfrontend.controllers.SearchController.get(search: uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseSearch ?= uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseSearch(), pagination: uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination ?= uk.gov.hmrc.bindingtariffadminfrontend.model.Pagination())
 
-GET        /scheduler                   @uk.gov.hmrc.bindingtariffadminfrontend.controllers.SchedulerController.get()
-POST       /scheduler/:job              @uk.gov.hmrc.bindingtariffadminfrontend.controllers.SchedulerController.post(job: uk.gov.hmrc.bindingtariffadminfrontend.model.ScheduledJob.ScheduledJob)
+GET        /scheduler                            @uk.gov.hmrc.bindingtariffadminfrontend.controllers.SchedulerController.get()
+POST       /scheduler/:job                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.SchedulerController.post(job: uk.gov.hmrc.bindingtariffadminfrontend.model.ScheduledJob.ScheduledJob)
 
-GET        /state                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.get(page: Int ?= 1, status: Seq[String] ?= Seq.empty)
-POST       /state                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.delete(status: Option[String])
+GET        /state                                @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.get(page: Int ?= 1, status: Seq[String] ?= Seq.empty)
+POST       /state                                @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.delete(status: Option[String])
 
-GET        /reset                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.reset()
-POST       /reset                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.resetConfirm()
+GET        /reset                                @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.reset()
+POST       /reset                                @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.resetConfirm()
 
-GET        /reset-info                  @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.migratedCaseInfo()
-GET        /reset-migration             @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.resetMigration()
-POST       /reset-migration             @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.resetMigrationConfirm()
+GET        /reset-info                           @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.migratedCaseInfo()
+GET        /reset-migration                      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.resetMigration()
+POST       /reset-migration                      @uk.gov.hmrc.bindingtariffadminfrontend.controllers.ResetController.resetMigrationConfirm()
 

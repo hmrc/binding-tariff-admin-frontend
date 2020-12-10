@@ -17,11 +17,14 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
 import javax.inject.{Inject, Singleton}
+import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.libs.ws.WSResponse
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataTransformationConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.views
+import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -57,4 +60,34 @@ class HistoricDataTransformationController @Inject() (
       }
     }
   }
+
+  def getStatusOfHistoricDataTransformation: Action[AnyContent] = authenticatedAction.async { implicit request =>
+    connector.getStatusOfHistoricDataTransformation.map {
+      case response if response.status == OK => Ok(response.body).as("application/json")
+      case response                          => Status(response.status)(response.body).as("application/json")
+    }
+  }
+
+  def downloadTransformedJson: Action[AnyContent] = authenticatedAction.async { implicit request =>
+    downloadData(connector.downloadTransformedHistoricData)
+  }
+
+  private def downloadData(download: Future[WSResponse]): Future[Result] =
+    download
+      .map { res =>
+        res.status match {
+          case OK => res.bodyAsSource
+          case _ =>
+            throw new BadRequestException(
+              s"Failed to get transformed historic data from data migration api " + res.status
+            )
+        }
+      }
+      .map { dataContent =>
+        Ok.chunked(dataContent)
+          .withHeaders(
+            "Content-Type"        -> "application/zip",
+            "Content-Disposition" -> s"attachment; filename=Transformed-Historic-Data-${DateTime.now().toString("ddMMyyyyHHmmss")}.zip"
+          )
+      }
 }

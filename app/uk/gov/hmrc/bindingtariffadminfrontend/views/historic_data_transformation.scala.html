@@ -28,10 +28,25 @@
 
  <h1 id="historic_data_migration_transform-heading" class="heading-xlarge">Transform historic data</h1>
 
- <p>APPL: @{stats.unprocessedAppl}</p>
- <p>BTI: @{stats.unprocessedBti}</p>
+ <h3 class="heading-medium">Historic cases available</h3>
+
+ <table>
+  <tr>
+   <td></td>
+   <td></td>
+  </tr>
+  <tr>
+   <td>Applications Uploaded</td>
+   <td>@{stats.applCount}</td>
+  </tr>
+  <tr>
+   <td>BTIs uploaded</td>
+   <td>@{stats.btiCount}</td>
+  </tr>
+ </table>
 
  @components.form_button(
   call = routes.HistoricDataTransformationController.initiate(),
-  label = "Transform")
+  label = "Transform",
+  css = "mt-30")
 }

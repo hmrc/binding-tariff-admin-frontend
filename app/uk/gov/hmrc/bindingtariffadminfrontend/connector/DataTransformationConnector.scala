@@ -71,6 +71,11 @@ class DataTransformationConnector @Inject() (
       s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-processing-status"
     )
 
+  def getStatusOfHistoricDataTransformation(implicit hc: HeaderCarrier): Future[HttpResponse] =
+    http.GET[HttpResponse](
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-transformation-status"
+    )
+
   def getHistoricTransformationStatistics(implicit hc: HeaderCarrier): Future[HistoricTransformationStatistics] =
     http.GET[HistoricTransformationStatistics](
       s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-transformation-statistics"
@@ -84,6 +89,12 @@ class DataTransformationConnector @Inject() (
   def downloadHistoricJson: Future[WSResponse] =
     wsClient
       .url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-data")
+      .withMethod("GET")
+      .stream()
+
+  def downloadTransformedHistoricData: Future[WSResponse] =
+    wsClient
+      .url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/transformed-historic-data")
       .withMethod("GET")
       .stream()
 

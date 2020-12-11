@@ -27,7 +27,8 @@ import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 @Singleton
 class HistoricDataTransformationController @Inject() (
@@ -35,8 +36,7 @@ class HistoricDataTransformationController @Inject() (
   connector: DataTransformationConnector,
   mcc: MessagesControllerComponents,
   override val messagesApi: MessagesApi,
-  implicit val appConfig: AppConfig,
-  implicit val ec: ExecutionContext
+  implicit val appConfig: AppConfig
 ) extends FrontendController(mcc)
     with I18nSupport {
 

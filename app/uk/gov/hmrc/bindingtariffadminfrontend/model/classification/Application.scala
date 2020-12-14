@@ -39,12 +39,20 @@ object Application {
     .from[Application]("type")
     .and[BTIApplication](ApplicationType.BTI.toString)
     .and[LiabilityOrder](ApplicationType.LIABILITY_ORDER.toString)
+    .and[LiabilityOrder](ApplicationType.CORRESPONDENCE.toString)
+    .and[LiabilityOrder](ApplicationType.MISCELLANEOUS.toString)
     .format
 }
 
-case class Message(name: String, date: Instant, message: String)
+case class Message(name: String, date: Instant, message: String){
+  def anonymize: Message = this.copy(
+    name = anonymized,
+    message = anonymized
+  )
+}
 
 object Message {
+
   implicit val outboundFormat: OFormat[Message] = Json.format[Message]
 }
 
@@ -122,9 +130,9 @@ case class CorrespondenceApplication(correspondenceStarter: Option[String],
       extends Application {
     override val `type`: ApplicationType.Value = ApplicationType.CORRESPONDENCE
   override def anonymize: Application = this.copy(
-    agentName =Some(Anonymize.anonymized),
+    agentName =Some(anonymized),
     contact = contact.anonymize,
-    detailedDescription = Anonymize.anonymized
+    detailedDescription = anonymized
   )
 }
 
@@ -145,9 +153,9 @@ case class MiscApplication(contact: Contact,
   override val `type`: ApplicationType.Value = ApplicationType.MISCELLANEOUS
   override def anonymize: Application = this.copy(
     contact = contact.anonymize,
-    name = Anonymize.anonymized,
-    contactName = Some(Anonymize.anonymized),
-    detailedDescription = Some(Anonymize.anonymized)
+    name = anonymized,
+    contactName = Some(anonymized),
+    detailedDescription = Some(anonymized)
   )
 }
 

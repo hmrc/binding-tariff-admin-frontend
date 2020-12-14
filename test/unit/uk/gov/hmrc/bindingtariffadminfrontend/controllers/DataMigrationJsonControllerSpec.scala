@@ -36,7 +36,7 @@ import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc.{AnyContentAsEmpty, AnyContentAsJson, MultipartFormData, Result}
 import play.api.test.CSRFTokenHelper._
 import play.api.test.{FakeHeaders, FakeRequest}
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataTransformationConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploadSubmission, FileUploaded}
 import uk.gov.hmrc.http._
@@ -47,7 +47,7 @@ import scala.concurrent.duration._
 
 class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
-  private val migrationConnector = mock[DataMigrationJsonConnector]
+  private val migrationConnector = mock[DataTransformationConnector]
   private val actorSystem        = mock[ActorSystem]
 
   override implicit val mat: Materializer              = fakeApplication.materializer

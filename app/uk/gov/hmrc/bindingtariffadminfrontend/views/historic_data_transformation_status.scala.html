@@ -1,0 +1,105 @@
+@*
+ * Copyright 2020 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+@import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
+@import uk.gov.hmrc.play.views.html.helpers
+
+@()(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+
+@main_template(title = "Binding Tariff Admin", bodyClasses = None) {
+ <a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
+
+ <h1 id="historic_data_migration_transform-heading" class="heading-xlarge">Historic data transformation progress</h1>
+
+ <div id="transformation-status-container" class="mt-30">
+
+  <h3 class="heading-medium">Status</h3>
+
+  <table id="success-table">
+   <tr>
+    <td></td>
+    <td></td>
+    <td></td>
+   </tr>
+   <tr>
+   <tr>
+    <td>Transformation status</td>
+    <td><span class="processing" id="transformation-status">Initiated</span></td>
+    <td class="align-right"><button id="download-transformed-historic-data-button" class="button button-info" disabled="disabled">Download transformed data</button></td>
+   </tr>
+   <tr>
+  </table>
+ </div>
+
+ <div id="summary-container" class="mt-30" aria-hidden="true" hidden="true">
+
+  <div class="grid-row">
+   <div class="column-one-half">
+    <h3 class="heading-medium">Summary</h3>
+   </div>
+  </div>
+
+  <table id="summary-table">
+   <tr>
+    <td></td>
+    <td></td>
+   </tr>
+   <tr id="transformed-applications-row">
+    <td>Applications transformed</td>
+    <td class="align-right"><span class="processing" id="transformed-appl-count">0</span></td>
+   </tr>
+   <tr id="transformed-bti-row">
+    <td>BTIs transformed</td>
+    <td class="align-right"><span class="processing" id="transformed-bti-count">0</span></td>
+   </tr>
+   <tr id="error-row" aria-hidden="true" hidden="true">
+    <td><span class="error-message">Error count</span></td>
+    <td class="align-right"><span class="processing error-message" id="error-count">0</span></td>
+   </tr>
+  </table>
+ </div>
+
+ <div id="error-container" class="mt-30" aria-hidden="true" hidden="true">
+
+  <h3 class="heading-small">Errors</h3>
+
+  <ul id="error-list">
+  </ul>
+ </div>
+
+ <script src="@controllers.routes.Assets.at("javascripts/historic-data-transformation.js")" type="text/javascript"></script>
+ <script type="text/javascript">
+  function fetchData() {
+    var status = document.getElementById("transformation-status");
+    if(status.innerHTML !== "done" && status.innerHTML !== "failed"){
+      historicDataTransformation.updateStatus("@routes.HistoricDataTransformationController.getStatusOfHistoricDataTransformation.url")
+    }
+  }
+  document.addEventListener("DOMContentLoaded", function(event) {
+    fetchData();
+    setInterval(fetchData,5000);
+  });
+  document.getElementById("download-transformed-historic-data-button").addEventListener("click", function(event) {
+     var link = document.createElement("a");
+     link.href = "@routes.HistoricDataTransformationController.downloadTransformedJson().url";
+     link.click();
+  });
+ </script>
+
+}

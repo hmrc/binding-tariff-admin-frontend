@@ -20,13 +20,14 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.ws._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploadSubmission, FileUploaded}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.transformation.HistoricTransformationStatistics
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class DataMigrationJsonConnector @Inject() (
+class DataTransformationConnector @Inject() (
   configuration: AppConfig,
   http: AuthenticatedHttpClient,
   wsClient: WSClient
@@ -70,9 +71,30 @@ class DataMigrationJsonConnector @Inject() (
       s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-processing-status"
     )
 
+  def getStatusOfHistoricDataTransformation(implicit hc: HeaderCarrier): Future[HttpResponse] =
+    http.GET[HttpResponse](
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-transformation-status"
+    )
+
+  def getHistoricTransformationStatistics(implicit hc: HeaderCarrier): Future[HistoricTransformationStatistics] =
+    http.GET[HistoricTransformationStatistics](
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-transformation-statistics"
+    )
+
+  def initiateHistoricTransformation(implicit hc: HeaderCarrier): Future[HttpResponse] =
+    http.POSTEmpty[HttpResponse](
+      s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/initiate-historic-transformation"
+    )
+
   def downloadHistoricJson: Future[WSResponse] =
     wsClient
       .url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/historic-data")
+      .withMethod("GET")
+      .stream()
+
+  def downloadTransformedHistoricData: Future[WSResponse] =
+    wsClient
+      .url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/transformed-historic-data")
       .withMethod("GET")
       .stream()
 

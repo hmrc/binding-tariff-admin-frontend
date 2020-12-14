@@ -23,6 +23,7 @@ import org.mockito.Mockito.{never, verify}
 import org.scalatest.BeforeAndAfterEach
 import play.api.http.HeaderNames.LOCATION
 import play.api.http.Status.{OK, SEE_OTHER}
+import play.api.libs.json.Json
 import play.api.mvc.Result
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.forms.{ResetFormProvider, ResetMigrationFormProvider}
@@ -179,6 +180,20 @@ class ResetControllerSpec extends ControllerSpec with BeforeAndAfterEach {
       status(result)     shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin")
       verify(resetService, never()).resetMigratedCases()(any[HeaderCarrier])
+    }
+  }
+
+  "GET /migratedCaseInfo" should {
+    "return 200" in {
+      given(dataMigrationService.migratedCaseCount(any[HeaderCarrier]))
+        .willReturn(
+          Future.successful(2)
+        )
+
+      val result: Result = await(controller.migratedCaseInfo()(newFakeRequestWithCSRF))
+
+      status(result)     shouldBe OK
+      jsonBodyOf(result) shouldBe Json.obj("migratedCaseCount" -> 2)
     }
   }
 

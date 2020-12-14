@@ -51,7 +51,7 @@ class DataMigrationService @Inject() (
   upscanS3Connector: UpscanS3Connector,
   rulingConnector: RulingConnector,
   caseConnector: BindingTariffClassificationConnector,
-  dataMigrationConnector: DataMigrationJsonConnector,
+  dataTransformationConnector: DataTransformationConnector,
   actorSystem: ActorSystem
 ) {
 

@@ -22,9 +22,10 @@ import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch, Event, EventSearch}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination, ScheduledJob}
+import uk.gov.hmrc.bindingtariffadminfrontend.model._
+import uk.gov.hmrc.bindingtariffadminfrontend.repository.UploadRepository
 import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -35,29 +36,26 @@ class AdminMonitorServiceTest extends UnitSpec with MockitoSugar with BeforeAndA
   private implicit val hc: HeaderCarrier = HeaderCarrier()
   private val btcConnector               = mock[BindingTariffClassificationConnector]
   private val fileConnector              = mock[FileStoreConnector]
-  private val service                    = new AdminMonitorService(btcConnector, fileConnector)
+  private val uploadRepository           = mock[UploadRepository]
+  private val service                    = new AdminMonitorService(btcConnector, fileConnector, uploadRepository)
 
-  "Count Cases" should {
-    "Delegate to connector" in {
-      given(btcConnector.getCases(refEq(CaseSearch()), refEq(Pagination(1, 1)))(any[HeaderCarrier])) willReturn Future
-        .successful(Paged(Seq.empty[Case], 0, 0, 1))
-      await(service.countCases) shouldBe 1
-    }
-  }
+  "getStatistics" should {
+    "delegate to connectors" in {
+      givenMigratedBtis(1)
+      givenMigratedLiabilities(2)
+      givenSubmittedAtars(101)
+      givenSubmittedLiabilities(102)
+      givenPublishedFiles(1001)
+      givenUnpublishedFiles(2002)
+      givenUploadedAttachments(505)
 
-  "Count Published Files" should {
-    "Delegate to connector" in {
-      given(fileConnector.find(refEq(FileSearch(published = Some(true))), refEq(Pagination(1, 1)))(any[HeaderCarrier])) willReturn Future
-        .successful(Paged(Seq.empty[FileUploaded], 0, 0, 1))
-      await(service.countPublishedFiles) shouldBe 1
-    }
-  }
-
-  "Count Unpublished Files" should {
-    "Delegate to connector" in {
-      given(fileConnector.find(refEq(FileSearch(published = Some(false))), refEq(Pagination(1, 1)))(any[HeaderCarrier])) willReturn Future
-        .successful(Paged(Seq.empty[FileUploaded], 0, 0, 1))
-      await(service.countUnpublishedFiles) shouldBe 1
+      await(service.getStatistics) shouldBe MonitorStatistics(
+        submittedCases          = Map(ApplicationType.BTI -> 101, ApplicationType.LIABILITY_ORDER -> 102),
+        migratedCases           = Map(ApplicationType.BTI -> 1, ApplicationType.LIABILITY_ORDER -> 2),
+        publishedFileCount      = 1001,
+        unpublishedFileCount    = 2002,
+        migratedAttachmentCount = 505
+      )
     }
   }
 
@@ -101,6 +99,51 @@ class AdminMonitorServiceTest extends UnitSpec with MockitoSugar with BeforeAndA
 
   override protected def afterEach(): Unit = {
     super.afterEach()
-    reset(btcConnector, fileConnector)
+    reset(btcConnector, fileConnector, uploadRepository)
   }
+
+  private def givenMigratedBtis(count: Int): Unit =
+    given(
+      btcConnector.getCases(
+        refEq(CaseSearch(migrated = Some(true), applicationType = Some(ApplicationType.BTI))),
+        refEq(Pagination(1, 1))
+      )(any[HeaderCarrier])
+    ) willReturn Future.successful(Paged(Seq.empty[Case], 0, 0, count))
+
+  private def givenMigratedLiabilities(count: Int): Unit =
+    given(
+      btcConnector.getCases(
+        refEq(CaseSearch(migrated = Some(true), applicationType = Some(ApplicationType.LIABILITY_ORDER))),
+        refEq(Pagination(1, 1))
+      )(any[HeaderCarrier])
+    ) willReturn Future.successful(Paged(Seq.empty[Case], 0, 0, count))
+
+  private def givenSubmittedAtars(count: Int): Unit =
+    given(
+      btcConnector.getCases(
+        refEq(CaseSearch(migrated = Some(false), applicationType = Some(ApplicationType.BTI))),
+        refEq(Pagination(1, 1))
+      )(any[HeaderCarrier])
+    ) willReturn Future.successful(Paged(Seq.empty[Case], 0, 0, count))
+
+  private def givenSubmittedLiabilities(count: Int): Unit =
+    given(
+      btcConnector.getCases(
+        refEq(CaseSearch(migrated = Some(false), applicationType = Some(ApplicationType.LIABILITY_ORDER))),
+        refEq(Pagination(1, 1))
+      )(any[HeaderCarrier])
+    ) willReturn Future.successful(Paged(Seq.empty[Case], 0, 0, count))
+
+  private def givenPublishedFiles(count: Int): Unit =
+    given(
+      fileConnector.find(refEq(FileSearch(published = Some(true))), refEq(Pagination(1, 1)))(any[HeaderCarrier])
+    ) willReturn Future.successful(Paged(Seq.empty[FileUploaded], 0, 0, count))
+
+  private def givenUnpublishedFiles(count: Int): Unit =
+    given(
+      fileConnector.find(refEq(FileSearch(published = Some(false))), refEq(Pagination(1, 1)))(any[HeaderCarrier])
+    ) willReturn Future.successful(Paged(Seq.empty[FileUploaded], 0, 0, count))
+
+  private def givenUploadedAttachments(count: Int): Unit =
+    given(uploadRepository.countType[AttachmentUpload]) willReturn Future.successful(count)
 }

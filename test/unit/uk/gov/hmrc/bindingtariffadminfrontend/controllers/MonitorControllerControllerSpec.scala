@@ -16,18 +16,15 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
-import akka.stream.Materializer
 import org.mockito.ArgumentMatchers._
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito
-import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterEach
 import play.api.http.Status.OK
-import play.api.i18n.{DefaultLangs, DefaultMessagesApi}
 import play.api.mvc.Result
 import play.api.test.FakeRequest
-import play.api.{Configuration, Environment}
-import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+import uk.gov.hmrc.bindingtariffadminfrontend.model.MonitorStatistics
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ApplicationType
 import uk.gov.hmrc.bindingtariffadminfrontend.service.AdminMonitorService
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -50,13 +47,20 @@ class MonitorControllerControllerSpec extends ControllerSpec with BeforeAndAfter
     Mockito.reset(mockAppConfig)
   }
 
+  private val statistics = MonitorStatistics(
+    submittedCases          = Map(ApplicationType.BTI -> 2, ApplicationType.LIABILITY_ORDER -> 3),
+    migratedCases           = Map(ApplicationType.BTI -> 12, ApplicationType.LIABILITY_ORDER -> 13),
+    publishedFileCount      = 105,
+    unpublishedFileCount    = 95,
+    migratedAttachmentCount = 66
+  )
+
   "GET /" should {
     "return 200" in {
-      given(service.countCases(any[HeaderCarrier])).willReturn(Future.successful(1))
-      given(service.countUnpublishedFiles(any[HeaderCarrier])).willReturn(Future.successful(1))
-      given(service.countPublishedFiles(any[HeaderCarrier])).willReturn(Future.successful(1))
+      given(service.getStatistics(any[HeaderCarrier])).willReturn(Future.successful(statistics))
 
       val result: Result = await(controller.get()(FakeRequest()))
+
       status(result) shouldBe OK
       bodyOf(result) should include("monitor-heading")
     }

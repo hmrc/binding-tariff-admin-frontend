@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
-import javax.inject.{Inject, Singleton}
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
@@ -24,6 +23,7 @@ import uk.gov.hmrc.bindingtariffadminfrontend.service.AdminMonitorService
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.monitor
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @Singleton
@@ -38,10 +38,8 @@ class MonitorController @Inject() (
 
   def get: Action[AnyContent] = authenticatedAction.async { implicit request =>
     for {
-      cases            <- monitorService.countCases
-      publishedFiles   <- monitorService.countPublishedFiles
-      unpublishedFiles <- monitorService.countUnpublishedFiles
-    } yield Ok(monitor(cases, publishedFiles, unpublishedFiles))
+      monitorStatistics <- monitorService.getStatistics
+    } yield Ok(monitor(monitorStatistics))
   }
 
 }

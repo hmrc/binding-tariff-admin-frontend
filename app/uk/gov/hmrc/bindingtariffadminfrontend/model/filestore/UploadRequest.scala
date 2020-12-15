@@ -22,14 +22,16 @@ abstract class UploadRequest {
   def id: String
   def fileName: String
   def mimeType: String
+  def publishable: Boolean
 }
 
 object UploadRequest {
   implicit val writes: Writes[UploadRequest] = Writes(upload =>
     Json.obj(
-      "id"       -> upload.id,
-      "fileName" -> upload.fileName,
-      "mimeType" -> upload.mimeType
+      "id"          -> upload.id,
+      "fileName"    -> upload.fileName,
+      "mimeType"    -> upload.mimeType,
+      "publishable" -> upload.publishable
     )
   )
 }

@@ -16,32 +16,74 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.service
 
-import javax.inject.Inject
 import uk.gov.hmrc.bindingtariffadminfrontend.connector.{BindingTariffClassificationConnector, FileStoreConnector}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.ScheduledJob.ScheduledJob
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch, Event, EventSearch}
+import uk.gov.hmrc.bindingtariffadminfrontend.model._
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ApplicationType.ApplicationType
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination, ScheduledJob}
+import uk.gov.hmrc.bindingtariffadminfrontend.repository.UploadRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
+import javax.inject.Inject
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class AdminMonitorService @Inject() (
   bindingTariffClassificationConnector: BindingTariffClassificationConnector,
-  fileStoreConnector: FileStoreConnector
+  fileStoreConnector: FileStoreConnector,
+  uploadRepository: UploadRepository
 ) {
 
   private val countPagination = Pagination(1, 1)
 
-  def countCases(implicit hc: HeaderCarrier): Future[Int] =
-    bindingTariffClassificationConnector.getCases(CaseSearch(), countPagination).map(_.resultCount)
+  def getStatistics(implicit hc: HeaderCarrier): Future[MonitorStatistics] =
+    for {
+      submittedCases      <- countSubmittedCases
+      migratedCases       <- countMigratedCases
+      publishedFiles      <- countPublishedFiles
+      unpublishedFiles    <- countUnpublishedFiles
+      uploadedAttachments <- countUploadedAttachments
+    } yield MonitorStatistics(
+      submittedCases          = submittedCases,
+      migratedCases           = migratedCases,
+      publishedFileCount      = publishedFiles,
+      unpublishedFileCount    = unpublishedFiles,
+      migratedAttachmentCount = uploadedAttachments
+    )
 
-  def countUnpublishedFiles(implicit hc: HeaderCarrier): Future[Int] =
-    fileStoreConnector.find(FileSearch(published = Some(false)), countPagination).map(_.resultCount)
+  private def countSubmittedCases(implicit hc: HeaderCarrier): Future[Map[ApplicationType, Int]] =
+    ApplicationType.values
+      .foldLeft(Future.successful(Map.empty[ApplicationType, Int])) {
+        case (m, applicationType) =>
+          m.flatMap(map => caseCount(applicationType, migrated = false).map(count => map + (applicationType -> count)))
+      }
 
-  def countPublishedFiles(implicit hc: HeaderCarrier): Future[Int] =
-    fileStoreConnector.find(FileSearch(published = Some(true)), countPagination).map(_.resultCount)
+  private def countMigratedCases(implicit hc: HeaderCarrier): Future[Map[ApplicationType, Int]] =
+    ApplicationType.values
+      .foldLeft(Future.successful(Map.empty[ApplicationType, Int])) {
+        case (m, applicationType) =>
+          m.flatMap(map => caseCount(applicationType, migrated = true).map(count => map + (applicationType -> count)))
+      }
+
+  private def caseCount(applicationType: ApplicationType, migrated: Boolean)(implicit hc: HeaderCarrier): Future[Int] =
+    bindingTariffClassificationConnector
+      .getCases(CaseSearch(migrated = Some(migrated), applicationType = Some(applicationType)), countPagination)
+      .map(_.resultCount)
+
+  private def countUploadedAttachments(implicit hc: HeaderCarrier): Future[Int] =
+    uploadRepository
+      .countType[AttachmentUpload]
+
+  private def countPublishedFiles(implicit hc: HeaderCarrier): Future[Int] =
+    fileStoreConnector
+      .find(FileSearch(published = Some(true)), countPagination)
+      .map(_.resultCount)
+
+  private def countUnpublishedFiles(implicit hc: HeaderCarrier): Future[Int] =
+    fileStoreConnector
+      .find(FileSearch(published = Some(false)), countPagination)
+      .map(_.resultCount)
 
   def getCases(search: CaseSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[Case]] =
     bindingTariffClassificationConnector.getCases(search, pagination)

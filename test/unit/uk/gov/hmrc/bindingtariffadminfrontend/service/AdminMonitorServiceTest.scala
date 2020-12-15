@@ -43,15 +43,29 @@ class AdminMonitorServiceTest extends UnitSpec with MockitoSugar with BeforeAndA
     "delegate to connectors" in {
       givenMigratedBtis(1)
       givenMigratedLiabilities(2)
+      givenMigratedCorrespondenceCases(3)
+      givenMigratedMiscCases(4)
       givenSubmittedAtars(101)
       givenSubmittedLiabilities(102)
+      givenSubmittedCorrespondenceCases(103)
+      givenSubmittedMiscCases(104)
       givenPublishedFiles(1001)
       givenUnpublishedFiles(2002)
       givenUploadedAttachments(505)
 
       await(service.getStatistics) shouldBe MonitorStatistics(
-        submittedCases          = Map(ApplicationType.BTI -> 101, ApplicationType.LIABILITY_ORDER -> 102),
-        migratedCases           = Map(ApplicationType.BTI -> 1, ApplicationType.LIABILITY_ORDER -> 2),
+        submittedCases = Map(
+          ApplicationType.BTI             -> 101,
+          ApplicationType.LIABILITY_ORDER -> 102,
+          ApplicationType.CORRESPONDENCE  -> 103,
+          ApplicationType.MISCELLANEOUS   -> 104
+        ),
+        migratedCases = Map(
+          ApplicationType.BTI             -> 1,
+          ApplicationType.LIABILITY_ORDER -> 2,
+          ApplicationType.CORRESPONDENCE  -> 3,
+          ApplicationType.MISCELLANEOUS   -> 4
+        ),
         publishedFileCount      = 1001,
         unpublishedFileCount    = 2002,
         migratedAttachmentCount = 505
@@ -118,6 +132,22 @@ class AdminMonitorServiceTest extends UnitSpec with MockitoSugar with BeforeAndA
       )(any[HeaderCarrier])
     ) willReturn Future.successful(Paged(Seq.empty[Case], 0, 0, count))
 
+  private def givenMigratedCorrespondenceCases(count: Int): Unit =
+    given(
+      btcConnector.getCases(
+        refEq(CaseSearch(migrated = Some(true), applicationType = Some(ApplicationType.CORRESPONDENCE))),
+        refEq(Pagination(1, 1))
+      )(any[HeaderCarrier])
+    ) willReturn Future.successful(Paged(Seq.empty[Case], 0, 0, count))
+
+  private def givenMigratedMiscCases(count: Int): Unit =
+    given(
+      btcConnector.getCases(
+        refEq(CaseSearch(migrated = Some(true), applicationType = Some(ApplicationType.MISCELLANEOUS))),
+        refEq(Pagination(1, 1))
+      )(any[HeaderCarrier])
+    ) willReturn Future.successful(Paged(Seq.empty[Case], 0, 0, count))
+
   private def givenSubmittedAtars(count: Int): Unit =
     given(
       btcConnector.getCases(
@@ -130,6 +160,22 @@ class AdminMonitorServiceTest extends UnitSpec with MockitoSugar with BeforeAndA
     given(
       btcConnector.getCases(
         refEq(CaseSearch(migrated = Some(false), applicationType = Some(ApplicationType.LIABILITY_ORDER))),
+        refEq(Pagination(1, 1))
+      )(any[HeaderCarrier])
+    ) willReturn Future.successful(Paged(Seq.empty[Case], 0, 0, count))
+
+  private def givenSubmittedCorrespondenceCases(count: Int): Unit =
+    given(
+      btcConnector.getCases(
+        refEq(CaseSearch(migrated = Some(false), applicationType = Some(ApplicationType.CORRESPONDENCE))),
+        refEq(Pagination(1, 1))
+      )(any[HeaderCarrier])
+    ) willReturn Future.successful(Paged(Seq.empty[Case], 0, 0, count))
+
+  private def givenSubmittedMiscCases(count: Int): Unit =
+    given(
+      btcConnector.getCases(
+        refEq(CaseSearch(migrated = Some(false), applicationType = Some(ApplicationType.MISCELLANEOUS))),
         refEq(Pagination(1, 1))
       )(any[HeaderCarrier])
     ) willReturn Future.successful(Paged(Seq.empty[Case], 0, 0, count))

@@ -14,24 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.bindingtariffadminfrontend.model.filestore
+package uk.gov.hmrc.bindingtariffadminfrontend.model.transformation
 
-import play.api.libs.json.{Json, Writes}
+import play.api.libs.json.{Format, Json}
 
-abstract class UploadRequest {
-  def id: String
-  def fileName: String
-  def mimeType: String
-  def publishable: Boolean
-}
+case class HistoricTransformationStatistics(applCount: Int, btiCount: Int)
 
-object UploadRequest {
-  implicit val writes: Writes[UploadRequest] = Writes(upload =>
-    Json.obj(
-      "id"          -> upload.id,
-      "fileName"    -> upload.fileName,
-      "mimeType"    -> upload.mimeType,
-      "publishable" -> upload.publishable
-    )
-  )
+object HistoricTransformationStatistics {
+  implicit val formats: Format[HistoricTransformationStatistics] = Json.format[HistoricTransformationStatistics]
 }

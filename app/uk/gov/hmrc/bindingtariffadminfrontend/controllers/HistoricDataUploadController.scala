@@ -25,7 +25,7 @@ import play.api.libs.Files.TemporaryFile
 import play.api.libs.ws.WSResponse
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataTransformationConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.forms.{InitiateHistoricDataFormProvider, UploadHistoricDataFormProvider}
 import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views
@@ -40,7 +40,7 @@ import scala.concurrent.Future.successful
 class HistoricDataUploadController @Inject() (
   authenticatedAction: AuthenticatedAction,
   service: DataMigrationService,
-  connector: DataMigrationJsonConnector,
+  connector: DataTransformationConnector,
   uploadHistoricDataFormProvider: UploadHistoricDataFormProvider,
   initiateHistoricDataFormProvider: InitiateHistoricDataFormProvider,
   mcc: MessagesControllerComponents,

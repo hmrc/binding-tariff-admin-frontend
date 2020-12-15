@@ -29,21 +29,27 @@ sealed case class AttachmentUpload(
   override val mimeType: String,
   override val id: String,
   override val batchId: String
-) extends Upload
+) extends Upload {
+  override val publishable: Boolean = true
+}
 
 sealed case class MigrationDataUpload(
   override val fileName: String,
   override val mimeType: String,
   override val id: String,
   override val batchId: String
-) extends Upload
+) extends Upload {
+  override val publishable: Boolean = false
+}
 
 sealed case class HistoricDataUpload(
   override val fileName: String,
   override val mimeType: String,
   override val id: String,
   override val batchId: String
-) extends Upload
+) extends Upload {
+  override val publishable: Boolean = false
+}
 
 object Upload {
   implicit val attachmentFormat: Format[AttachmentUpload]   = Json.format[AttachmentUpload]

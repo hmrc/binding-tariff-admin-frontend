@@ -23,11 +23,12 @@ import play.api.http.Status
 import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileUploadSubmission, FileUploaded}
-import uk.gov.hmrc.http.{NotFoundException, Upstream5xxResponse}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.transformation.HistoricTransformationStatistics
+import uk.gov.hmrc.http.{BadRequestException, NotFoundException, Upstream5xxResponse}
 
-class DataMigrationJsonConnectorSpec extends ConnectorTest {
+class DataTransformationConnectorSpec extends ConnectorTest {
 
-  private val connector = new DataMigrationJsonConnector(mockAppConfig, authenticatedHttpClient, inject[WSClient])
+  private val connector = new DataTransformationConnector(mockAppConfig, authenticatedHttpClient, inject[WSClient])
 
   private val file = FileUploaded("name", "published", "text/plain", None, None)
 
@@ -298,6 +299,138 @@ class DataMigrationJsonConnectorSpec extends ConnectorTest {
       verify(
         deleteRequestedFor(urlEqualTo("/binding-tariff-data-transformation/historic-data"))
           .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
+  }
+
+  "Connector getStatusOfHistoricDataTransformation" should {
+    "return the json for the status" in {
+      stubFor(
+        get("/binding-tariff-data-transformation/historic-transformation-status")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+              .withBody(Json.obj("status" -> "transforming").toString())
+          )
+      )
+      val response = await(connector.getStatusOfHistoricDataTransformation)
+
+      response.status shouldBe Status.OK
+      response.json   shouldBe Json.obj("status" -> "transforming")
+
+      verify(
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/historic-transformation-status"))
+      )
+    }
+
+    "propagate errors" in {
+      stubFor(
+        get("/binding-tariff-data-transformation/historic-transformation-status")
+          .willReturn(
+            notFound()
+              .withBody(Json.obj("status" -> "error").toString())
+          )
+      )
+
+      intercept[NotFoundException] {
+        await(connector.getStatusOfHistoricDataTransformation)
+      }
+
+      verify(
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/historic-transformation-status"))
+      )
+    }
+  }
+
+  "Connector getHistoricTransformationStatistics" should {
+    "return the json for the status" in {
+      stubFor(
+        get("/binding-tariff-data-transformation/historic-transformation-statistics")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+              .withBody(Json.obj("applCount" -> 1, "btiCount" -> 2).toString())
+          )
+      )
+      val response = await(connector.getHistoricTransformationStatistics)
+
+      response shouldBe HistoricTransformationStatistics(applCount = 1, btiCount = 2)
+
+      verify(
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/historic-transformation-statistics"))
+      )
+    }
+
+    "propagate errors" in {
+      stubFor(
+        get("/binding-tariff-data-transformation/historic-transformation-statistics")
+          .willReturn(badRequest())
+      )
+
+      intercept[BadRequestException] {
+        await(connector.getHistoricTransformationStatistics)
+      }
+
+      verify(
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/historic-transformation-statistics"))
+      )
+    }
+  }
+
+  "Connector initiateHistoricTransformation" should {
+    "return accepted status" in {
+      stubFor(
+        post("/binding-tariff-data-transformation/initiate-historic-transformation")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.ACCEPTED)
+          )
+      )
+      val response = await(connector.initiateHistoricTransformation)
+
+      response.status shouldBe Status.ACCEPTED
+
+      verify(
+        postRequestedFor(urlEqualTo("/binding-tariff-data-transformation/initiate-historic-transformation"))
+      )
+    }
+
+    "propagate errors" in {
+      stubFor(
+        post("/binding-tariff-data-transformation/initiate-historic-transformation")
+          .willReturn(serverError())
+      )
+
+      intercept[Upstream5xxResponse] {
+        await(connector.initiateHistoricTransformation)
+      }
+
+      verify(
+        postRequestedFor(urlEqualTo("/binding-tariff-data-transformation/initiate-historic-transformation"))
+      )
+    }
+  }
+
+  "Connector downloadTransformedHistoricData" should {
+    "return the json for the multiple files" in {
+      val expected     = fromResource("filestore-initiate_response.json")
+      val expectedJson = Json.prettyPrint(Json.parse(expected))
+
+      stubFor(
+        get("/binding-tariff-data-transformation/transformed-historic-data")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+              .withBody(expectedJson)
+          )
+      )
+      val response = await(connector.downloadTransformedHistoricData)
+
+      response.status                             shouldBe Status.OK
+      Json.prettyPrint(Json.parse(response.body)) shouldBe expectedJson
+
+      verify(
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/transformed-historic-data"))
       )
     }
   }

@@ -17,27 +17,61 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.model.filestore
 
 import java.util.UUID
-
 import play.api.libs.json.Json
-import uk.gov.hmrc.bindingtariffadminfrontend.model.AttachmentUpload
+import uk.gov.hmrc.bindingtariffadminfrontend.model.{AttachmentUpload, HistoricDataUpload, MigrationDataUpload}
 import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 
 class UploadRequestSpec extends UnitSpec {
-  private val uploadRequest: UploadRequest = AttachmentUpload(
+  private val attachmentUpload: UploadRequest = AttachmentUpload(
     fileName = "1234-01.jpg",
     mimeType = "image/jpg",
     id       = "id",
     batchId  = UUID.randomUUID().toString
   )
 
+  private val migrationDataUpload: UploadRequest = MigrationDataUpload(
+    fileName = "tblImages.csv",
+    mimeType = "text/csv",
+    id       = "id",
+    batchId  = UUID.randomUUID().toString
+  )
+
+  private val historicDataUpload: UploadRequest = HistoricDataUpload(
+    fileName = "ALLAPPLDATA-2004.txt",
+    mimeType = "text/plain",
+    id       = "id",
+    batchId  = UUID.randomUUID().toString
+  )
+
   "writes" should {
-    "return valid json" in {
-      Json.toJson(uploadRequest)(UploadRequest.writes) shouldBe
+    "return valid json for attachments" in {
+      Json.toJson(attachmentUpload)(UploadRequest.writes) shouldBe
         Json.parse("""{
                |        "id": "id",
                |        "fileName": "1234-01.jpg",
-               |        "mimeType": "image/jpg"
+               |        "mimeType": "image/jpg",
+               |        "publishable": true
                |      }""".stripMargin)
+    }
+
+    "return valid json for migration files" in {
+      Json.toJson(migrationDataUpload)(UploadRequest.writes) shouldBe
+        Json.parse("""{
+                |       "id": "id",
+                |       "fileName": "tblImages.csv",
+                |       "mimeType": "text/csv",
+                |       "publishable": false
+                |     }""".stripMargin)
+    }
+
+    "return valid json for historic data files" in {
+      Json.toJson(historicDataUpload)(UploadRequest.writes) shouldBe
+        Json.parse("""{
+                 |      "id": "id",
+                 |      "fileName": "ALLAPPLDATA-2004.txt",
+                 |      "mimeType": "text/plain",
+                 |      "publishable": false
+                 |    }""".stripMargin)
     }
   }
 }

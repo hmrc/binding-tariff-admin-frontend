@@ -48,6 +48,8 @@ trait UploadRepository {
   def deleteAll(): Future[Unit]
 
   def deleteById(id: String): Future[Unit]
+
+  def countType[T <: Upload: ClassTag]: Future[Int]
 }
 
 @Singleton
@@ -107,6 +109,10 @@ class UploadMongoRepository @Inject() (config: AppConfig, mongoDbProvider: Mongo
     collection
       .findAndRemove(selector = byId(id))
       .map(_ => ())
+
+  override def countType[T <: Upload: ClassTag]: Future[Int] =
+    collection
+      .count(selector = Some(byType[T]))
 
   private def byId(id: String): JsObject =
     Json.obj("id" -> id)

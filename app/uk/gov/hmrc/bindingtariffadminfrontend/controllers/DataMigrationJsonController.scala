@@ -31,7 +31,7 @@ import play.api.libs.Files.TemporaryFile
 import play.api.libs.ws.WSResponse
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataMigrationJsonConnector
+import uk.gov.hmrc.bindingtariffadminfrontend.connector.DataTransformationConnector
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
 import uk.gov.hmrc.bindingtariffadminfrontend.views
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.csv_processing_status
@@ -46,7 +46,7 @@ import scala.concurrent.Future.successful
 @Singleton
 class DataMigrationJsonController @Inject() (
   authenticatedAction: AuthenticatedAction,
-  connector: DataMigrationJsonConnector,
+  connector: DataTransformationConnector,
   implicit val system: ActorSystem,
   implicit val materializer: Materializer,
   mcc: MessagesControllerComponents,

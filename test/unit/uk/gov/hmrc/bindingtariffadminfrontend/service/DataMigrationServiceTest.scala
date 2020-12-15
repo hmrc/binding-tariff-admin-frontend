@@ -48,15 +48,15 @@ import scala.concurrent.duration.FiniteDuration
 
 class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEach {
 
-  private val migrationRepository    = mock[MigrationRepository]
-  private val uploadRepository       = mock[UploadRepository]
-  private val caseConnector          = mock[BindingTariffClassificationConnector]
-  private val fileConnector          = mock[FileStoreConnector]
-  private val rulingConnector        = mock[RulingConnector]
-  private val upscanS3Connector      = mock[UpscanS3Connector]
-  private val dataMigrationConnector = mock[DataMigrationJsonConnector]
-  private val appConfig              = mock[AppConfig]
-  private val lockRepository         = mock[LockRepository]
+  private val migrationRepository         = mock[MigrationRepository]
+  private val uploadRepository            = mock[UploadRepository]
+  private val caseConnector               = mock[BindingTariffClassificationConnector]
+  private val fileConnector               = mock[FileStoreConnector]
+  private val rulingConnector             = mock[RulingConnector]
+  private val upscanS3Connector           = mock[UpscanS3Connector]
+  private val dataTransformationConnector = mock[DataTransformationConnector]
+  private val appConfig                   = mock[AppConfig]
+  private val lockRepository              = mock[LockRepository]
 
   private def migrationLock = new MigrationLock(lockRepository, appConfig)
   private def actorSystem   = ActorSystem.create("testActorSystem")
@@ -64,15 +64,15 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   private def withService(test: DataMigrationService => Any) =
     test(
       new DataMigrationService(
-        migrationRepository    = migrationRepository,
-        uploadRepository       = uploadRepository,
-        migrationLock          = migrationLock,
-        fileConnector          = fileConnector,
-        upscanS3Connector      = upscanS3Connector,
-        rulingConnector        = rulingConnector,
-        caseConnector          = caseConnector,
-        dataMigrationConnector = dataMigrationConnector,
-        actorSystem            = actorSystem
+        migrationRepository         = migrationRepository,
+        uploadRepository            = uploadRepository,
+        migrationLock               = migrationLock,
+        fileConnector               = fileConnector,
+        upscanS3Connector           = upscanS3Connector,
+        rulingConnector             = rulingConnector,
+        caseConnector               = caseConnector,
+        dataTransformationConnector = dataTransformationConnector,
+        actorSystem                 = actorSystem
       )
     )
 
@@ -87,7 +87,7 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       fileConnector,
       rulingConnector,
       upscanS3Connector,
-      dataMigrationConnector,
+      dataTransformationConnector,
       appConfig,
       lockRepository
     )

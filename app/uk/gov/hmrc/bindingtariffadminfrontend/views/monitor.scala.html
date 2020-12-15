@@ -16,11 +16,12 @@
 
 @import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 @import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
-@import uk.gov.hmrc.bindingtariffadminfrontend.model.AuthenticatedRequest
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, MonitorStatistics}
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ApplicationType
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{error_summary, input_file, submit_button}
 @import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
 @import uk.gov.hmrc.play.views.html.helpers
-@(cases: Int, publishedFiles: Int, unpublishedFiles: Int)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+@(monitorStatistics: MonitorStatistics)(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
 
 @main_template(title = "Binding Tariff Admin", bodyClasses = None) {
 
@@ -28,23 +29,68 @@
 
  <h1 id="monitor-heading" class="heading-xlarge">Digital Tariffs Monitor</h1>
 
- <h2 class="heading-medium">There is currently:</h2>
+ <h2 class="heading-medium">There are currently:</h2>
 
  <div class="grid-row">
 
   <div class="column-one-third data">
-   <span class="data-item bold-xxlarge">@cases</span>
-   <span class="data-item bold-xsmall">Cases</span>
+   <div class="data-item">
+    <span class="bold-xxlarge">@monitorStatistics.totalCaseCount</span>
+    <span class="bold-large">Cases</span>
+   </div>
   </div>
 
   <div class="column-one-third data">
-   <span class="data-item bold-xxlarge">@publishedFiles</span>
-   <span class="data-item bold-xsmall">Published Files</span>
+   <div class="data-item">
+    <span class="bold-large">@monitorStatistics.migratedCases.getOrElse(ApplicationType.BTI, 0)</span>
+    <span class="bold-xsmall">Migrated BTIs</span>
+   </div>
+   <div class="data-item">
+    <span class="bold-large">@monitorStatistics.migratedCases.getOrElse(ApplicationType.LIABILITY_ORDER, 0)</span>
+    <span class="bold-xsmall">Migrated Liabilities</span>
+   </div>
   </div>
 
   <div class="column-one-third data">
-   <span class="data-item bold-xxlarge">@unpublishedFiles</span>
-   <span class="data-item bold-xsmall">Unpublished Files</span>
+   <div class="data-item">
+    <span class="bold-large">@monitorStatistics.submittedCases.getOrElse(ApplicationType.BTI, 0)</span>
+    <span class="bold-xsmall">Submitted ATARs</span>
+   </div>
+   <div class="data-item">
+    <span class="bold-large">@monitorStatistics.submittedCases.getOrElse(ApplicationType.LIABILITY_ORDER, 0)</span>
+    <span class="bold-xsmall">Submitted Liabilities</span>
+   </div>
+  </div>
+
+ </div>
+
+ <hr/>
+
+ <div class="grid-row">
+
+  <div class="column-one-third data">
+   <div class="data-item">
+    <span class="bold-xxlarge">@monitorStatistics.totalFileCount</span>
+    <span class="bold-large">Files</span>
+   </div>
+  </div>
+
+  <div class="column-one-third data">
+   <div class="data-item">
+    <span class="bold-large">@monitorStatistics.publishedFileCount</span>
+    <span class="bold-xsmall">Published Files</span>
+   </div>
+   <div class="data-item">
+    <span class="bold-large">@monitorStatistics.unpublishedFileCount</span>
+    <span class="bold-xsmall">Unpublished Files</span>
+   </div>
+  </div>
+
+  <div class="column-one-third data">
+   <div class="data-item">
+    <span class="bold-large">@monitorStatistics.migratedAttachmentCount</span>
+    <span class="bold-xsmall">Migrated attachments</span>
+   </div>
   </div>
 
  </div>

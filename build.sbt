@@ -67,7 +67,7 @@ lazy val TemplateTest   = config("tt") extend Test
 lazy val TemplateItTest = config("tit") extend IntegrationTest
 
 // Coverage configuration
-coverageMinimum := 90
+coverageMinimum := 89
 coverageFailOnMinimum := true
 coverageExcludedPackages := "<empty>;Reverse.*;com.kenshoo.play.metrics.*;prod.*;testOnlyDoNotUseInAppConf.*;app.*;uk.gov.hmrc.BuildInfo;.*Routes.*"
 coverageExcludedFiles := "<empty>;Reverse.*;.*components.*;.*repositories.*;" +

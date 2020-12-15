@@ -29,36 +29,50 @@
 
  <h1 id="monitor-heading" class="heading-xlarge">Digital Tariffs Monitor</h1>
 
- <h2 class="heading-medium">There are currently:</h2>
+ <div class="grid-row fixed-height-200">
 
- <div class="grid-row">
-
-  <div class="column-one-third data">
+  <div class="column-one-half data vertical-center">
    <div class="data-item">
-    <span class="bold-xxlarge">@monitorStatistics.totalCaseCount</span>
-    <span class="bold-large">Cases</span>
+    <span class="bold-xxlarge valign-middle">@{"%,d".format(monitorStatistics.totalCaseCount)}</span>
+    <span class="bold-medium valign-middle">Cases</span>
    </div>
   </div>
 
-  <div class="column-one-third data">
+  <div class="column-one-quarter data vertical-center">
    <div class="data-item">
-    <span class="bold-large">@monitorStatistics.migratedCases.getOrElse(ApplicationType.BTI, 0)</span>
-    <span class="bold-xsmall">Migrated BTIs</span>
+    <span class="bold-medium valign-middle">@{"%,d".format(monitorStatistics.migratedCases.getOrElse(ApplicationType.BTI, 0))}</span>
+    <span class="bold-xxsmall valign-middle">Migrated BTIs</span>
    </div>
    <div class="data-item">
-    <span class="bold-large">@monitorStatistics.migratedCases.getOrElse(ApplicationType.LIABILITY_ORDER, 0)</span>
-    <span class="bold-xsmall">Migrated Liabilities</span>
+    <span class="bold-medium valign-middle">@{"%,d".format(monitorStatistics.migratedCases.getOrElse(ApplicationType.LIABILITY_ORDER, 0))}</span>
+    <span class="bold-xxsmall valign-middle">Migrated Liabilities</span>
+   </div>
+   <div class="data-item">
+    <span class="bold-medium valign-middle">@{"%,d".format(monitorStatistics.migratedCases.getOrElse(ApplicationType.CORRESPONDENCE, 0))}</span>
+    <span class="bold-xxsmall valign-middle">Migrated Corrs</span>
+   </div>
+   <div class="data-item">
+    <span class="bold-medium valign-middle">@{"%,d".format(monitorStatistics.migratedCases.getOrElse(ApplicationType.MISCELLANEOUS, 0))}</span>
+    <span class="bold-xxsmall valign-middle">Migrated Misc</span>
    </div>
   </div>
 
-  <div class="column-one-third data">
+  <div class="column-one-quarter data vertical-center">
    <div class="data-item">
-    <span class="bold-large">@monitorStatistics.submittedCases.getOrElse(ApplicationType.BTI, 0)</span>
-    <span class="bold-xsmall">Submitted ATARs</span>
+    <span class="bold-medium valign-middle">@{"%,d".format(monitorStatistics.submittedCases.getOrElse(ApplicationType.BTI, 0))}</span>
+    <span class="bold-xxsmall valign-middle">Submitted ATARs</span>
    </div>
    <div class="data-item">
-    <span class="bold-large">@monitorStatistics.submittedCases.getOrElse(ApplicationType.LIABILITY_ORDER, 0)</span>
-    <span class="bold-xsmall">Submitted Liabilities</span>
+    <span class="bold-medium valign-middle">@{"%,d".format(monitorStatistics.submittedCases.getOrElse(ApplicationType.LIABILITY_ORDER, 0))}</span>
+    <span class="bold-xxsmall valign-middle">Submitted Liabilities</span>
+   </div>
+   <div class="data-item">
+    <span class="bold-medium valign-middle">@{"%,d".format(monitorStatistics.submittedCases.getOrElse(ApplicationType.CORRESPONDENCE, 0))}</span>
+    <span class="bold-xxsmall valign-middle">Submitted Corrs</span>
+   </div>
+   <div class="data-item">
+    <span class="bold-medium valign-middle">@{"%,d".format(monitorStatistics.submittedCases.getOrElse(ApplicationType.MISCELLANEOUS, 0))}</span>
+    <span class="bold-xxsmall valign-middle">Submitted Misc</span>
    </div>
   </div>
 
@@ -66,30 +80,30 @@
 
  <hr/>
 
- <div class="grid-row">
+ <div class="grid-row fixed-height-200">
 
-  <div class="column-one-third data">
+  <div class="column-one-half data vertical-center">
    <div class="data-item">
-    <span class="bold-xxlarge">@monitorStatistics.totalFileCount</span>
-    <span class="bold-large">Files</span>
+    <span class="bold-xxlarge valign-middle">@{"%,d".format(monitorStatistics.totalFileCount)}</span>
+    <span class="bold-medium valign-middle">Files</span>
    </div>
   </div>
 
-  <div class="column-one-third data">
+  <div class="column-one-quarter data vertical-center">
    <div class="data-item">
-    <span class="bold-large">@monitorStatistics.publishedFileCount</span>
-    <span class="bold-xsmall">Published Files</span>
+    <span class="bold-medium valign-middle">@{"%,d".format(monitorStatistics.publishedFileCount)}</span>
+    <span class="bold-xxsmall valign-middle">Published Files</span>
    </div>
    <div class="data-item">
-    <span class="bold-large">@monitorStatistics.unpublishedFileCount</span>
-    <span class="bold-xsmall">Unpublished Files</span>
+    <span class="bold-medium valign-middle">@{"%,d".format(monitorStatistics.unpublishedFileCount)}</span>
+    <span class="bold-xxsmall valign-middle">Unpublished Files</span>
    </div>
   </div>
 
-  <div class="column-one-third data">
+  <div class="column-one-quarter data vertical-center">
    <div class="data-item">
-    <span class="bold-large">@monitorStatistics.migratedAttachmentCount</span>
-    <span class="bold-xsmall">Migrated attachments</span>
+    <span class="bold-medium valign-middle">@{"%,d".format(monitorStatistics.migratedAttachmentCount)}</span>
+    <span class="bold-xxsmall valign-middle">Migrated attachments</span>
    </div>
   </div>
 

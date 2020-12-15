@@ -48,8 +48,18 @@ class MonitorControllerControllerSpec extends ControllerSpec with BeforeAndAfter
   }
 
   private val statistics = MonitorStatistics(
-    submittedCases          = Map(ApplicationType.BTI -> 2, ApplicationType.LIABILITY_ORDER -> 3),
-    migratedCases           = Map(ApplicationType.BTI -> 12, ApplicationType.LIABILITY_ORDER -> 13),
+    submittedCases = Map(
+      ApplicationType.BTI             -> 2,
+      ApplicationType.LIABILITY_ORDER -> 3,
+      ApplicationType.CORRESPONDENCE  -> 4,
+      ApplicationType.MISCELLANEOUS   -> 5
+    ),
+    migratedCases = Map(
+      ApplicationType.BTI             -> 12,
+      ApplicationType.LIABILITY_ORDER -> 13,
+      ApplicationType.CORRESPONDENCE  -> 14,
+      ApplicationType.MISCELLANEOUS   -> 15
+    ),
     publishedFileCount      = 105,
     unpublishedFileCount    = 95,
     migratedAttachmentCount = 66

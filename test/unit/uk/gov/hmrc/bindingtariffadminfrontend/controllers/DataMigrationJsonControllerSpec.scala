@@ -358,6 +358,92 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
     }
   }
 
+  "downloadCorrespondenceJson /" should {
+
+    "return 200" in {
+      val json = Json.parse("""{
+                              |  "href": "url",
+                              |  "fields": {
+                              |    "field": "value"
+                              |  }
+                              |}""".stripMargin)
+
+      val jsonData = Source.single(ByteString.fromString(json.toString()))
+
+      val response: WSResponse = mock[WSResponse]
+      when(response.status).thenReturn(200)
+      when(response.bodyAsSource: Source[ByteString, Any]).thenReturn(jsonData)
+      given(migrationConnector.downloadCorrespondenceJson).willReturn(Future.successful(response))
+
+      val result = await(controller.downloadCorrespondenceJson()(newFakeRequestWithCSRF))
+
+      status(result)     shouldBe OK
+      jsonBodyOf(result) shouldBe Json.parse("""{
+                                               |  "href": "url",
+                                               |  "fields": {
+                                               |    "field": "value"
+                                               |  }
+                                               |}""".stripMargin)
+
+    }
+
+    "return 400" in {
+      val json                 = Json.obj("error" -> "error while building josn")
+      val response: WSResponse = mock[WSResponse]
+      when(response.status).thenReturn(400)
+      when(response.body).thenReturn(json.toString())
+
+      given(migrationConnector.downloadCorrespondenceJson).willReturn(Future.successful(response))
+
+      intercept[BadRequestException](
+        await(controller.downloadCorrespondenceJson()(newFakeRequestWithCSRF))
+      )
+    }
+  }
+
+  "downloadMiscellaneousJson /" should {
+
+    "return 200" in {
+      val json = Json.parse("""{
+                              |  "href": "url",
+                              |  "fields": {
+                              |    "field": "value"
+                              |  }
+                              |}""".stripMargin)
+
+      val jsonData = Source.single(ByteString.fromString(json.toString()))
+
+      val response: WSResponse = mock[WSResponse]
+      when(response.status).thenReturn(200)
+      when(response.bodyAsSource: Source[ByteString, Any]).thenReturn(jsonData)
+      given(migrationConnector.downloadMiscellaneousJson).willReturn(Future.successful(response))
+
+      val result = await(controller.downloadMiscellaneousJson()(newFakeRequestWithCSRF))
+
+      status(result)     shouldBe OK
+      jsonBodyOf(result) shouldBe Json.parse("""{
+                                               |  "href": "url",
+                                               |  "fields": {
+                                               |    "field": "value"
+                                               |  }
+                                               |}""".stripMargin)
+
+    }
+
+    "return 400" in {
+      val json                 = Json.obj("error" -> "error while building josn")
+      val response: WSResponse = mock[WSResponse]
+      when(response.status).thenReturn(400)
+      when(response.body).thenReturn(json.toString())
+
+      given(migrationConnector.downloadMiscellaneousJson).willReturn(Future.successful(response))
+
+      intercept[BadRequestException](
+        await(controller.downloadMiscellaneousJson()(newFakeRequestWithCSRF))
+      )
+    }
+  }
+
   "downloadMigrationReports /" should {
     "return 200" in {
       val data = Source.single(ByteString.fromString("~~archive~~"))

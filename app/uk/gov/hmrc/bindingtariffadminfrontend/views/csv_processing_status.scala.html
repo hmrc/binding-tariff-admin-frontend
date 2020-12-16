@@ -47,6 +47,16 @@
    <td><span class="processing" id="liabilities-processing-status">Initiated</span></td>
    <td class="align-right"><button id="data_migration_liabilities_processing_status" class="button button-info" disabled="disabled">Download json</button></td>
  </tr>
+  <tr>
+   <td>Correspondence Processing status</td>
+   <td><span class="processing" id="correspondence-processing-status">Initiated</span></td>
+   <td class="align-right"><button id="data_migration_correspondence_processing_status" class="button button-info" disabled="disabled">Download json</button></td>
+  </tr>
+  <tr>
+   <td>Miscellaneous Processing status</td>
+   <td><span class="processing" id="miscellaneous-processing-status">Initiated</span></td>
+   <td class="align-right"><button id="data_migration_miscellaneous_processing_status" class="button button-info" disabled="disabled">Download json</button></td>
+  </tr>
  </table>
 </div>
 
@@ -74,6 +84,14 @@
    <td>Liabilities migrated</td>
    <td class="align-right"><span class="processing" id="migrated-liability-count">0</span></td>
   </tr>
+  <tr id="migrated-correspondence-row">
+   <td>Correspondence migrated</td>
+   <td class="align-right"><span class="processing" id="migrated-correspondence-count">0</span></td>
+  </tr>
+  <tr id="migrated-miscellaneous-row">
+   <td>Miscellaneous migrated</td>
+   <td class="align-right"><span class="processing" id="migrated-miscellaneous-count">0</span></td>
+  </tr>
   <tr id="discarded-bti-row">
    <td><span class="error-message">BTIs discarded</span></td>
    <td class="align-right"><span class="processing error-message" id="discarded-bti-count">0</span></td>
@@ -81,6 +99,14 @@
   <tr id="discarded-liability-row">
    <td><span class="error-message">Liabilities discarded</span></td>
    <td class="align-right"><span class="processing error-message" id="discarded-liability-count">0</span></td>
+  </tr>
+  <tr id="discarded-correspondence-row">
+   <td><span class="error-message">Correspondence discarded</span></td>
+   <td class="align-right"><span class="processing error-message" id="discarded-correspondence-count">0</span></td>
+  </tr>
+  <tr id="discarded-miscellaneous-row">
+   <td><span class="error-message">Miscellaneous discarded</span></td>
+   <td class="align-right"><span class="processing error-message" id="discarded-miscellaneous-count">0</span></td>
   </tr>
   <tr id="error-row" aria-hidden="true" hidden="true">
    <td><span class="error-message">Error count</span></td>
@@ -161,6 +187,38 @@
   <tr id="liability-no-class-meth-record-row" aria-hidden="true" hidden="true">
    <td class="font-xsmall">Missing tblCaseClassMeth record</td>
    <td class="align-right"><span class="font-xsmall processing" id="liability-no-class-meth-record-count"></span></td>
+  </tr>
+ </table>
+</div>
+
+<div id="correspondence-discarded-container" class="mt-30" aria-hidden="true" hidden="true">
+
+ <h3 class="heading-small">Discarded Correspondence Reasons</h3>
+
+ <table id="correspondence-discarded-reasons-table">
+  <tr>
+   <td></td>
+   <td></td>
+  </tr>
+  <tr id="discarded-correspondence-not-implemented-row" aria-hidden="true" hidden="true">
+   <td class="font-xsmall">Not implemented</td>
+   <td class="align-right"><span class="font-xsmall processing" id="discarded-correspondence-not-implemented-count"></span></td>
+  </tr>
+ </table>
+</div>
+
+<div id="miscellaneous-discarded-container" class="mt-30" aria-hidden="true" hidden="true">
+
+ <h3 class="heading-small">Discarded Miscellaneous Reasons</h3>
+
+ <table id="miscellaneous-discarded-reasons-table">
+  <tr>
+   <td></td>
+   <td></td>
+  </tr>
+  <tr id="discarded-miscellaneous-not-implemented-row" aria-hidden="true" hidden="true">
+   <td class="font-xsmall">Not implemented</td>
+   <td class="align-right"><span class="font-xsmall processing" id="discarded-miscellaneous-not-implemented-count"></span></td>
   </tr>
  </table>
 </div>
@@ -285,6 +343,36 @@
  </div>
 </div>
 
+<div id="detailed-correspondence-discarded-cases-container" class="mt-30" aria-hidden="true" hidden="true">
+
+ <h3 class="heading-small">Discarded Correspondence Case Numbers</h3>
+
+ <div id="discarded-correspondence-not-implemented-details" aria-hidden="true" hidden="true">
+  <details>
+   <summary><span class="summary">Correspondence - Not implemented</span></summary>
+   <div class="panel panel-border-narrow">
+    <ul id="discarded-correspondence-not-implemented-list">
+    </ul>
+   </div>
+  </details>
+ </div>
+</div>
+
+<div id="detailed-miscellaneous-discarded-cases-container" class="mt-30" aria-hidden="true" hidden="true">
+
+ <h3 class="heading-small">Discarded Miscellaneous Case Numbers</h3>
+
+ <div id="discarded-miscellaneous-not-implemented-details" aria-hidden="true" hidden="true">
+  <details>
+   <summary><span class="summary">Miscellaneous - Not implemented</span></summary>
+   <div class="panel panel-border-narrow">
+    <ul id="discarded-miscellaneous-not-implemented-list">
+    </ul>
+   </div>
+  </details>
+ </div>
+</div>
+
 <script src="@controllers.routes.Assets.at("javascripts/data-processing.js")" type="text/javascript"></script>
 <script type="text/javascript">
  function fetchData(){
@@ -305,6 +393,16 @@
  document.getElementById("data_migration_liabilities_processing_status").addEventListener("click", function(event) {
     var link = document.createElement("a");
     link.href = "@routes.DataMigrationJsonController.downloadLiabilitiesJson().url";
+    link.click();
+ });
+ document.getElementById("data_migration_correspondence_processing_status").addEventListener("click", function(event) {
+    var link = document.createElement("a");
+    link.href = "@routes.DataMigrationJsonController.downloadCorrespondenceJson().url";
+    link.click();
+ });
+ document.getElementById("data_migration_miscellaneous_processing_status").addEventListener("click", function(event) {
+    var link = document.createElement("a");
+    link.href = "@routes.DataMigrationJsonController.downloadMiscellaneousJson().url";
     link.click();
  });
  document.getElementById("data_migration_migration-reports").addEventListener("click", function(event) {

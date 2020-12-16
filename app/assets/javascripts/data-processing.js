@@ -14,9 +14,13 @@ var dataProcessing = {
                         status: response.status.value,
                         migratedBtiCount: response.status.migratedBtiCount,
                         migratedLiabilityCount: response.status.migratedLiabilityCount,
+                        migratedCorrespondenceCount: response.status.migratedCorrespondenceCount,
+                        migratedMiscellaneousCount: response.status.migratedMiscellaneousCount,
                         errorCount: response.status.errorCount,
                         discardedBtiCount: response.status.discardedBtiCount,
                         discardedLiabilityCount: response.status.discardedLiabilityCount,
+                        discardedCorrespondenceCount: response.status.discardedCorrespondenceCount,
+                        discardedMiscellaneousCount: response.status.discardedMiscellaneousCount,
                         discardReasons: response.status.discardReasons,
                         errors: response.status.errors
                     });
@@ -42,14 +46,21 @@ var dataProcessing = {
 
                             updateMigratedBtiCount(response.migratedBtiCount);
                             updateMigratedLiabilityCount(response.migratedLiabilityCount);
+                            updateMigratedCorrespondenceCount(response.migratedCorrespondenceCount);
+                            updateMigratedMiscellaneousCount(response.migratedMiscellaneousCount);
+
                             updateDiscardedBtiCount(response.discardedBtiCount);
                             updateDiscardedLiabilityCount(response.discardedLiabilityCount);
+                            updateDiscardedCorrespondenceCount(response.discardedCorrespondenceCount);
+                            updateDiscardedMiscellaneousCount(response.discardedMiscellaneousCount);
 
                             updateErrorCount(response.errorCount);
                             updateErrors(response.errors);
 
                             updateDiscardedBtiReasons(response.discardReasons);
                             updateDiscardedLiabilityReasons(response.discardReasons);
+                            updateDiscardedCorrespondenceReasons(response.discardReasons);
+                            updateDiscardedMiscellaneousReasons(response.discardReasons);
                         })
                         .catch(function (response) {
                             updateError(response.error);
@@ -61,6 +72,8 @@ var dataProcessing = {
                     if (status !== undefined) {
                         document.getElementById("bti-processing-status").innerHTML = status;
                         document.getElementById("liabilities-processing-status").innerHTML = status;
+                        document.getElementById("correspondence-processing-status").innerHTML = status;
+                        document.getElementById("miscellaneous-processing-status").innerHTML = status;
                     }
                 }
 
@@ -106,9 +119,24 @@ var dataProcessing = {
                     }
                 }
 
+                function updateMigratedCorrespondenceCount(migratedCorrespondenceCount) {
+                    if(migratedCorrespondenceCount > 0) {
+                        document.getElementById("migrated-correspondence-count").innerHTML = migratedCorrespondenceCount;
+                        document.getElementById("summary-container").removeAttribute("aria-hidden");
+                        document.getElementById("summary-container").removeAttribute("hidden");
+                    }
+                }
+
+                function updateMigratedMiscellaneousCount(migratedMiscellaneousCount) {
+                    if(migratedMiscellaneousCount > 0) {
+                        document.getElementById("migrated-miscellaneous-count").innerHTML = migratedMiscellaneousCount;
+                        document.getElementById("summary-container").removeAttribute("aria-hidden");
+                        document.getElementById("summary-container").removeAttribute("hidden");
+                    }
+                }
+
                 function updateDiscardedBtiCount(discardedBtiCount) {
                     if(discardedBtiCount > 0) {
-
                         document.getElementById("discarded-bti-count").innerHTML = discardedBtiCount;
                         document.getElementById("summary-container").removeAttribute("aria-hidden");
                         document.getElementById("summary-container").removeAttribute("hidden");
@@ -117,8 +145,23 @@ var dataProcessing = {
 
                 function updateDiscardedLiabilityCount(discardedLiabilityCount) {
                     if(discardedLiabilityCount > 0) {
-
                         document.getElementById("discarded-liability-count").innerHTML = discardedLiabilityCount;
+                        document.getElementById("summary-container").removeAttribute("aria-hidden");
+                        document.getElementById("summary-container").removeAttribute("hidden");
+                    }
+                }
+
+                function updateDiscardedCorrespondenceCount(discardedCorrespondenceCount) {
+                    if(discardedCorrespondenceCount > 0) {
+                        document.getElementById("discarded-correspondence-count").innerHTML = discardedCorrespondenceCount;
+                        document.getElementById("summary-container").removeAttribute("aria-hidden");
+                        document.getElementById("summary-container").removeAttribute("hidden");
+                    }
+                }
+
+                function updateDiscardedMiscellaneousCount(discardedMiscellaneousCount) {
+                    if(discardedMiscellaneousCount > 0) {
+                        document.getElementById("discarded-miscellaneous-count").innerHTML = discardedMiscellaneousCount;
                         document.getElementById("summary-container").removeAttribute("aria-hidden");
                         document.getElementById("summary-container").removeAttribute("hidden");
                     }
@@ -185,6 +228,40 @@ var dataProcessing = {
                     }
                 }
 
+                function updateDiscardedCorrespondenceReasons(discardReasons) {
+                    if (discardReasons === undefined) {
+                        return;
+                    }
+
+                    var correspondenceNotImplemented = discardReasons.filter(function (reason) { return reason.type == "CORRESPONDENCE_NOT_IMPLEMENTED"; });
+
+                    updateDiscardedCase(correspondenceNotImplemented, "discarded-correspondence-not-implemented");
+
+                    if (correspondenceNotImplemented.length > 0) {
+                        document.getElementById("correspondence-discarded-container").removeAttribute("aria-hidden");
+                        document.getElementById("correspondence-discarded-container").removeAttribute("hidden");
+                        document.getElementById("detailed-correspondence-discarded-cases-container").removeAttribute("aria-hidden");
+                        document.getElementById("detailed-correspondence-discarded-cases-container").removeAttribute("hidden");
+                    }
+                }
+
+                function updateDiscardedMiscellaneousReasons(discardReasons) {
+                    if (discardReasons === undefined) {
+                        return;
+                    }
+
+                    var miscellaneousNotImplemented = discardReasons.filter(function (reason) { return reason.type == "MISCELLANEOUS_NOT_IMPLEMENTED"; });
+
+                    updateDiscardedCase(miscellaneousNotImplemented, "discarded-miscellaneous-not-implemented");
+
+                    if (miscellaneousNotImplemented.length > 0) {
+                        document.getElementById("miscellaneous-discarded-container").removeAttribute("aria-hidden");
+                        document.getElementById("miscellaneous-discarded-container").removeAttribute("hidden");
+                        document.getElementById("detailed-miscellaneous-discarded-cases-container").removeAttribute("aria-hidden");
+                        document.getElementById("detailed-miscellaneous-discarded-cases-container").removeAttribute("hidden");
+                    }
+                }
+
                 function updateDiscardedCase(discardReasons, prefix) {
                     if (discardReasons.length == 0) {
                         return;
@@ -209,9 +286,13 @@ var dataProcessing = {
                     if (error !== undefined) {
                         document.getElementById("bti-processing-status").innerHTML = error;
                         document.getElementById("liabilities-processing-status").innerHTML = error;
+                        document.getElementById("correspondence-processing-status").innerHTML = error;
+                        document.getElementById("miscellaneous-processing-status").innerHTML = error;
                     } else {
                         document.getElementById("bti-processing-status").innerHTML = "Unknown error";
                         document.getElementById("liabilities-processing-status").innerHTML = "Unknown error";
+                        document.getElementById("correspondence-processing-status").innerHTML = "Unknown error";
+                        document.getElementById("miscellaneous-processing-status").innerHTML = "Unknown error";
                     }
                 }
 
@@ -220,6 +301,8 @@ var dataProcessing = {
                     if(status.innerHTML == "done"){
                         document.getElementById("data_migration_bti_processing_status").removeAttribute("disabled");
                         document.getElementById("data_migration_liabilities_processing_status").removeAttribute("disabled");
+                        document.getElementById("data_migration_correspondence_processing_status").removeAttribute("disabled");
+                        document.getElementById("data_migration_miscellaneous_processing_status").removeAttribute("disabled");
                         document.getElementById("data_migration_migration-reports").removeAttribute("disabled");
                     }
                 }

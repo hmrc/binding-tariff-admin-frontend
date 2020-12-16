@@ -16,12 +16,11 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model
 
+import com.github.javafaker._
+
 import java.text.SimpleDateFormat
 import java.util.concurrent.TimeUnit
-
-import com.github.javafaker._
 import java.{util => ju}
-import java.util.UUID.randomUUID
 
 object Anonymize {
   private val faker = new Faker(ju.Locale.UK)
@@ -41,6 +40,7 @@ object Anonymize {
     case _ if tblName.contains("tblMovement")       => anonymizeTblMovement(data)
     case _ if tblName.contains("tblCaseLMComments") => anonymizeTblCaseLMComments(data)
     case _ if tblName.contains("Legal_Proceedings") => anonymizeLegalProceedings(data)
+    case _ if tblName.contains("TblCaseMiscCorres") => anonymizeTblCaseMiscCorres(data)
     case _                                          => throw new AnonymizationFailedException(s"The file name $tblName was not recognised")
   }
 
@@ -242,5 +242,12 @@ object Anonymize {
     case (k @ "Country", _)         => (k, faker.space().galaxy())
     case (k @ "CourtCaseRefNo", _)  => (k, faker.lorem().characters(8))
     case other                      => other
+  }
+
+  private def anonymizeTblCaseMiscCorres(data: Map[String, String]): Map[String, String] = data.map {
+    case (k, "")             => (k, "")
+    case (k, "NULL")         => (k, "NULL")
+    case (k @ "Comments", _) => (k, faker.lorem().paragraph(5))
+    case other               => other
   }
 }

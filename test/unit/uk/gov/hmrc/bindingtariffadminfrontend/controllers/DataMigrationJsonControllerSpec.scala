@@ -88,7 +88,8 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
     "tblImages_csv",
     "tblCaseLMComments_csv",
     "tblMovement_csv",
-    "Legal_Proceedings_csv"
+    "Legal_Proceedings_csv",
+    "TblCaseMiscCorres_csv"
   )
 
   private val anonymizedCsvList = csvList.filterNot(_ == "historicCases_csv")
@@ -166,6 +167,8 @@ class DataMigrationJsonControllerSpec extends ControllerSpec with BeforeAndAfter
             "CaseNo,Band7DateChecked,Band7TimeChecked,Band7Name,Band7User,Band7Satisfied,Band7Comments,Band9DateChecked,Band9TimeChecked,Band9Name,Band9User,Band9Satisfied,Band9Comments,Band11DateChecked,Band11TimeChecked,Band11Name,Band11User,Band11Satisfied,Band11Comments"
           case _ if filename.contains("Legal_Proceedings") =>
             "CaseNo,CourtName,StreetAndNumber,City,Postcode,Country,CourtCaseRefNo"
+          case _ if filename.contains("TblCaseMiscCorres") =>
+            "CaseNo,Comments"
           case _ => throw new Exception("Incomplete test")
         }).split(",").toList
         val mimeType: String = "application/csv"

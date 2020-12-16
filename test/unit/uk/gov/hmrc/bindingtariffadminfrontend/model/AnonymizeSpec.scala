@@ -35,6 +35,7 @@ class AnonymizeSpec extends FlatSpec with Matchers {
     Anonymize.anonymize("tblImages", Map("CaseName"         -> "")) shouldBe Map("CaseName" -> "")
     Anonymize.anonymize("tblMovement", Map("CaseName"       -> "")) shouldBe Map("CaseName" -> "")
     Anonymize.anonymize("Legal_Proceedings", Map("CaseName" -> "")) shouldBe Map("CaseName" -> "")
+    Anonymize.anonymize("TblCaseMiscCorres", Map("CaseName" -> "")) shouldBe Map("CaseName" -> "")
   }
 
   it should "ignore NULL fields" in {
@@ -47,6 +48,7 @@ class AnonymizeSpec extends FlatSpec with Matchers {
     Anonymize.anonymize("tblImages", Map("CaseName"         -> "NULL")) shouldBe Map("CaseName" -> "NULL")
     Anonymize.anonymize("tblMovement", Map("CaseName"       -> "NULL")) shouldBe Map("CaseName" -> "NULL")
     Anonymize.anonymize("Legal_Proceedings", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
+    Anonymize.anonymize("TblCaseMiscCorres", Map("CaseName" -> "NULL")) shouldBe Map("CaseName" -> "NULL")
   }
 
   it should "anonymize eBTI_Application" in {
@@ -356,15 +358,27 @@ class AnonymizeSpec extends FlatSpec with Matchers {
   }
 
   it should "anonymize Legal_Proceeding" in {
-    Anonymize.anonymize("Legal_Proceedings", Map("CourtName"       -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
-    Anonymize.anonymize("Legal_Proceedings", Map("StreetAndNumber" -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
-    Anonymize.anonymize("Legal_Proceedings", Map("City"            -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
-    Anonymize.anonymize("Legal_Proceedings", Map("Postcode"        -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
-    Anonymize.anonymize("Legal_Proceedings", Map("Country"         -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
-    Anonymize.anonymize("Legal_Proceedings", Map("CourtCaseRefNo"  -> "Yoda")) shouldNot contain("CaseNo" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceedings", Map("CourtName"       -> "Yoda")) shouldNot contain("CourtName" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceedings", Map("StreetAndNumber" -> "Yoda")) shouldNot contain(
+      "StreetAndNumber" -> "Yoda"
+    )
+    Anonymize.anonymize("Legal_Proceedings", Map("City"           -> "Yoda")) shouldNot contain("City" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceedings", Map("Postcode"       -> "Yoda")) shouldNot contain("Postcode" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceedings", Map("Country"        -> "Yoda")) shouldNot contain("Country" -> "Yoda")
+    Anonymize.anonymize("Legal_Proceedings", Map("CourtCaseRefNo" -> "Yoda")) shouldNot contain(
+      "CourtCaseRefNo" -> "Yoda"
+    )
   }
 
   it should "not anonymize Legal_Proceeding fields that contain no PII" in {
     Anonymize.anonymize("Legal_Proceedings", Map("CaseNo" -> "123456")) should contain("CaseNo" -> "123456")
+  }
+
+  it should "anonymize TblCaseMiscCorres" in {
+    Anonymize.anonymize("TblCaseMiscCorres", Map("Comments" -> "Yoda")) shouldNot contain("Comments" -> "Yoda")
+  }
+
+  it should "not anonymize TblCaseMiscCorres fields that contain no PII" in {
+    Anonymize.anonymize("TblCaseMiscCorres", Map("CaseNo" -> "123456")) should contain("CaseNo" -> "123456")
   }
 }

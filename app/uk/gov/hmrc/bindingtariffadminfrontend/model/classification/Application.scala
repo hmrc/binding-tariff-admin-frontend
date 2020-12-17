@@ -39,8 +39,8 @@ object Application {
     .from[Application]("type")
     .and[BTIApplication](ApplicationType.BTI.toString)
     .and[LiabilityOrder](ApplicationType.LIABILITY_ORDER.toString)
-    .and[LiabilityOrder](ApplicationType.CORRESPONDENCE.toString)
-    .and[LiabilityOrder](ApplicationType.MISCELLANEOUS.toString)
+    .and[CorrespondenceApplication](ApplicationType.CORRESPONDENCE.toString)
+    .and[MiscApplication](ApplicationType.MISCELLANEOUS.toString)
     .format
 }
 

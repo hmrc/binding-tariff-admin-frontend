@@ -149,13 +149,19 @@ class DataMigrationJsonController @Inject() (
   }
 
   def downloadBTIJson: Action[AnyContent] = authenticatedAction.async {
-
     downloadJson(connector.downloadBTIJson, "BTI")
   }
 
   def downloadLiabilitiesJson: Action[AnyContent] = authenticatedAction.async {
-
     downloadJson(connector.downloadLiabilitiesJson, "Liabilities")
+  }
+
+  def downloadCorrespondenceJson: Action[AnyContent] = authenticatedAction.async {
+    downloadJson(connector.downloadCorrespondenceJson, "Correspondence")
+  }
+
+  def downloadMiscellaneousJson: Action[AnyContent] = authenticatedAction.async {
+    downloadJson(connector.downloadMiscellaneousJson, "Miscellaneous")
   }
 
   def downloadMigrationReports: Action[AnyContent] = authenticatedAction.async {

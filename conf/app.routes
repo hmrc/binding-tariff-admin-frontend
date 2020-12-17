@@ -13,6 +13,8 @@ GET        /check-status                         @uk.gov.hmrc.bindingtariffadmin
 GET        /get-status                           @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.getStatusOfJsonProcessing
 GET        /download-bti-json                    @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadBTIJson
 GET        /download-liabilities-json            @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadLiabilitiesJson
+GET        /download-correspondence-json         @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadCorrespondenceJson
+GET        /download-miscellaneous-json          @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadMiscellaneousJson
 GET        /download-migration-reports           @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.downloadMigrationReports
 
 GET        /historic-data                        @uk.gov.hmrc.bindingtariffadminfrontend.controllers.HistoricDataUploadController.get

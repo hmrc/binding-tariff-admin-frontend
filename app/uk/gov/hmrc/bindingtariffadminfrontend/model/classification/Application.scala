@@ -16,10 +16,7 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.model.classification
 
-import java.time.Instant
-
 import play.api.libs.json.{Format, Json, OFormat}
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize
 import uk.gov.hmrc.bindingtariffadminfrontend.model.Anonymize._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ApplicationType.ApplicationType
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.ImportExport.ImportExport
@@ -27,6 +24,8 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.LiabilityStat
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.MiscCaseType.MiscCaseType
 import uk.gov.hmrc.bindingtariffadminfrontend.util.JsonUtil
 import uk.gov.hmrc.play.json.Union
+
+import java.time.Instant
 
 sealed trait Application {
   val `type`: ApplicationType
@@ -39,14 +38,14 @@ object Application {
     .from[Application]("type")
     .and[BTIApplication](ApplicationType.BTI.toString)
     .and[LiabilityOrder](ApplicationType.LIABILITY_ORDER.toString)
-    .and[LiabilityOrder](ApplicationType.CORRESPONDENCE.toString)
-    .and[LiabilityOrder](ApplicationType.MISCELLANEOUS.toString)
+    .and[CorrespondenceApplication](ApplicationType.CORRESPONDENCE.toString)
+    .and[MiscApplication](ApplicationType.MISCELLANEOUS.toString)
     .format
 }
 
-case class Message(name: String, date: Instant, message: String){
+case class Message(name: String, date: Instant, message: String) {
   def anonymize: Message = this.copy(
-    name = anonymized,
+    name    = anonymized,
     message = anonymized
   )
 }
@@ -114,24 +113,25 @@ object LiabilityOrder {
   implicit val outboundFormat: OFormat[LiabilityOrder] = Json.format[LiabilityOrder]
 }
 
-case class CorrespondenceApplication(correspondenceStarter: Option[String],
-                                       agentName: Option[String],
-                                       address: Address,
-                                       contact: Contact,
-                                       fax: Option[String] = None,
-                                       offline: Boolean,
-                                       summary: String,
-                                       detailedDescription: String,
-                                       relatedBTIReference: Option[String] = None,
-                                       relatedBTIReferences: List[String] = Nil,
-                                       sampleToBeProvided: Boolean,
-                                       sampleToBeReturned: Boolean,
-                                       messagesLogged: List[Message] = Nil)
-      extends Application {
-    override val `type`: ApplicationType.Value = ApplicationType.CORRESPONDENCE
+case class CorrespondenceApplication(
+  correspondenceStarter: Option[String],
+  agentName: Option[String],
+  address: Address,
+  contact: Contact,
+  fax: Option[String] = None,
+  offline: Boolean,
+  summary: String,
+  detailedDescription: String,
+  relatedBTIReference: Option[String] = None,
+  relatedBTIReferences: List[String]  = Nil,
+  sampleToBeProvided: Boolean,
+  sampleToBeReturned: Boolean,
+  messagesLogged: List[Message] = Nil
+) extends Application {
+  override val `type`: ApplicationType.Value = ApplicationType.CORRESPONDENCE
   override def anonymize: Application = this.copy(
-    agentName =Some(anonymized),
-    contact = contact.anonymize,
+    agentName           = Some(anonymized),
+    contact             = contact.anonymize,
     detailedDescription = anonymized
   )
 }
@@ -140,21 +140,22 @@ object CorrespondenceApplication {
   implicit val outboundFormat: OFormat[CorrespondenceApplication] = Json.format[CorrespondenceApplication]
 }
 
-case class MiscApplication(contact: Contact,
-                           offline: Boolean,
-                           name: String,
-                           contactName: Option[String],
-                           caseType: MiscCaseType,
-                           detailedDescription: Option[String],
-                           sampleToBeProvided: Boolean,
-                           sampleToBeReturned: Boolean,
-                           messagesLogged: List[Message] = Nil)
-  extends Application {
+case class MiscApplication(
+  contact: Contact,
+  offline: Boolean,
+  name: String,
+  contactName: Option[String],
+  caseType: MiscCaseType,
+  detailedDescription: Option[String],
+  sampleToBeProvided: Boolean,
+  sampleToBeReturned: Boolean,
+  messagesLogged: List[Message] = Nil
+) extends Application {
   override val `type`: ApplicationType.Value = ApplicationType.MISCELLANEOUS
   override def anonymize: Application = this.copy(
-    contact = contact.anonymize,
-    name = anonymized,
-    contactName = Some(anonymized),
+    contact             = contact.anonymize,
+    name                = anonymized,
+    contactName         = Some(anonymized),
     detailedDescription = Some(anonymized)
   )
 }
@@ -172,7 +173,7 @@ object LiabilityStatus extends Enumeration {
 object ApplicationType extends Enumeration {
   type ApplicationType = Value
   val BTI, LIABILITY_ORDER, CORRESPONDENCE, MISCELLANEOUS = Value
-  implicit val format: Format[ApplicationType.Value] = JsonUtil.format(ApplicationType)
+  implicit val format: Format[ApplicationType.Value]      = JsonUtil.format(ApplicationType)
 }
 
 object ImportExport extends Enumeration {

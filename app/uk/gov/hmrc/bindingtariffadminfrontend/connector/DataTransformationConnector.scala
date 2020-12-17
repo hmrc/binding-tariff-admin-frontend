@@ -54,6 +54,18 @@ class DataTransformationConnector @Inject() (
       .withMethod("GET")
       .stream()
 
+  def downloadCorrespondenceJson: Future[WSResponse] =
+    wsClient
+      .url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/transformed-correspondence-records")
+      .withMethod("GET")
+      .stream()
+
+  def downloadMiscellaneousJson: Future[WSResponse] =
+    wsClient
+      .url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/transformed-miscellaneous-records")
+      .withMethod("GET")
+      .stream()
+
   def downloadMigrationReports: Future[WSResponse] =
     wsClient
       .url(s"${configuration.dataMigrationUrl}/binding-tariff-data-transformation/migration-reports")

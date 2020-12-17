@@ -161,6 +161,58 @@ class DataTransformationConnectorSpec extends ConnectorTest {
     }
   }
 
+  "Connector downloadCorrespondenceJson" should {
+
+    "return the json for the multiple files" in {
+      val expected     = fromResource("filestore-initiate_response.json")
+      val expectedJson = Json.prettyPrint(Json.parse(expected))
+
+      stubFor(
+        get("/binding-tariff-data-transformation/transformed-correspondence-records")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+              .withBody(expected)
+          )
+      )
+
+      val response = await(connector.downloadCorrespondenceJson)
+
+      response.status                             shouldBe Status.OK
+      Json.prettyPrint(Json.parse(response.body)) shouldBe expectedJson
+
+      verify(
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/transformed-correspondence-records"))
+      )
+    }
+  }
+
+  "Connector downloadMiscellaneousJson" should {
+
+    "return the json for the multiple files" in {
+      val expected     = fromResource("filestore-initiate_response.json")
+      val expectedJson = Json.prettyPrint(Json.parse(expected))
+
+      stubFor(
+        get("/binding-tariff-data-transformation/transformed-miscellaneous-records")
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+              .withBody(expected)
+          )
+      )
+
+      val response = await(connector.downloadMiscellaneousJson)
+
+      response.status                             shouldBe Status.OK
+      Json.prettyPrint(Json.parse(response.body)) shouldBe expectedJson
+
+      verify(
+        getRequestedFor(urlEqualTo("/binding-tariff-data-transformation/transformed-miscellaneous-records"))
+      )
+    }
+  }
+
   "Connector downloadMigrationReports" should {
     "return the json for the multiple files" in {
       val expected     = fromResource("filestore-initiate_response.json")

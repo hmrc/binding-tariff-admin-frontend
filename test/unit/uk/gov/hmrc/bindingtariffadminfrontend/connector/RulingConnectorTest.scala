@@ -27,7 +27,7 @@ class RulingConnectorTest extends ConnectorTest {
 
     "POST to the Ruling Store" in {
       stubFor(
-        post("/binding-tariff-rulings/ruling/id")
+        post("/search-for-advance-tariff-rulings/ruling/id")
           .willReturn(
             aResponse()
               .withStatus(Status.ACCEPTED)
@@ -37,7 +37,7 @@ class RulingConnectorTest extends ConnectorTest {
       await(connector.notify("id"))
 
       verify(
-        postRequestedFor(urlEqualTo("/binding-tariff-rulings/ruling/id"))
+        postRequestedFor(urlEqualTo("/search-for-advance-tariff-rulings/ruling/id"))
           .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }
@@ -47,7 +47,7 @@ class RulingConnectorTest extends ConnectorTest {
 
     "POST to the Ruling Store" in {
       stubFor(
-        delete("/binding-tariff-rulings/ruling")
+        delete("/search-for-advance-tariff-rulings/ruling")
           .willReturn(
             aResponse()
               .withStatus(Status.NO_CONTENT)
@@ -57,7 +57,7 @@ class RulingConnectorTest extends ConnectorTest {
       await(connector.delete())
 
       verify(
-        deleteRequestedFor(urlEqualTo("/binding-tariff-rulings/ruling"))
+        deleteRequestedFor(urlEqualTo("/search-for-advance-tariff-rulings/ruling"))
           .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }
@@ -67,7 +67,7 @@ class RulingConnectorTest extends ConnectorTest {
 
     "POST to the Ruling Store" in {
       stubFor(
-        delete("/binding-tariff-rulings/ruling/ref")
+        delete("/search-for-advance-tariff-rulings/ruling/ref")
           .willReturn(
             aResponse()
               .withStatus(Status.NO_CONTENT)
@@ -77,7 +77,7 @@ class RulingConnectorTest extends ConnectorTest {
       await(connector.delete("ref"))
 
       verify(
-        deleteRequestedFor(urlEqualTo("/binding-tariff-rulings/ruling/ref"))
+        deleteRequestedFor(urlEqualTo("/search-for-advance-tariff-rulings/ruling/ref"))
           .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }

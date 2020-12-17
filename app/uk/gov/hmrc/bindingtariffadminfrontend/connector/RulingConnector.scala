@@ -27,12 +27,12 @@ import scala.concurrent.Future
 class RulingConnector @Inject() (configuration: AppConfig, http: AuthenticatedHttpClient) {
 
   def notify(id: String)(implicit hc: HeaderCarrier): Future[Unit] =
-    http.POSTEmpty[HttpResponse](s"${configuration.rulingUrl}/binding-tariff-rulings/ruling/$id").map(_ => ())
+    http.POSTEmpty[HttpResponse](s"${configuration.rulingUrl}/search-for-advance-tariff-rulings/ruling/$id").map(_ => ())
 
   def delete()(implicit hc: HeaderCarrier): Future[Unit] =
-    http.DELETE[HttpResponse](s"${configuration.rulingUrl}/binding-tariff-rulings/ruling").map(_ => ())
+    http.DELETE[HttpResponse](s"${configuration.rulingUrl}/search-for-advance-tariff-rulings/ruling").map(_ => ())
 
   def delete(id: String)(implicit hc: HeaderCarrier): Future[Unit] =
-    http.DELETE[HttpResponse](s"${configuration.rulingUrl}/binding-tariff-rulings/ruling/$id").map(_ => ())
+    http.DELETE[HttpResponse](s"${configuration.rulingUrl}/search-for-advance-tariff-rulings/ruling/$id").map(_ => ())
 
 }

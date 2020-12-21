@@ -171,9 +171,6 @@ class DataMigrationService @Inject() (
       // Create the events
       updated: Migration <- createEvents(updated)
 
-      // Notify The Ruling Store
-      updated: Migration <- notifyRulingStore(updated)
-
       status = if (updated.status == MigrationStatus.UNPROCESSED) MigrationStatus.SUCCESS else updated.status
 
     } yield updated.copy(status = status)
@@ -240,20 +237,6 @@ class DataMigrationService @Inject() (
 
     Seq(info, warning, statusChange).flatten
   }
-
-  private def notifyRulingStore(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] =
-    rulingConnector
-      .notify(migration.`case`.reference)
-      .map(Success(_))
-      .recover(withFailure(()))
-      .map {
-        case MigrationFailure(_, t: Throwable) =>
-          migration
-            .copy(status = MigrationStatus.PARTIAL_SUCCESS)
-            .appendMessage(s"Failed to notify the ruling store [${t.getMessage}]")
-        case _ =>
-          migration
-      }
 
   private def createEvents(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] =
     sequence(

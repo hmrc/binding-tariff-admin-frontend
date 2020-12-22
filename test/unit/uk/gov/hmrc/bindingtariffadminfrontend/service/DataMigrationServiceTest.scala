@@ -341,7 +341,6 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     "Migrate new Case" in withService { service =>
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturnsItself()
-      givenNotifyingTheRulingStoreSucceeds()
 
       val migrated = await(service.process(anUnprocessedMigration))
       migrated.status  shouldBe MigrationStatus.SUCCESS
@@ -350,23 +349,10 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       theCaseCreated shouldBe aCase
     }
 
-    "Migrate new Case - with Ruling Store failure" in withService { service =>
-      givenTheCaseDoesNotAlreadyExist()
-      givenUpsertingTheCaseReturnsItself()
-      givenNotifyingTheRulingStoreFails()
-
-      val migrated = await(service.process(anUnprocessedMigration))
-      migrated.status  shouldBe MigrationStatus.PARTIAL_SUCCESS
-      migrated.message shouldBe Seq("Failed to notify the ruling store [Notify Error]")
-
-      theCaseCreated shouldBe aCase
-    }
-
     "Migrate new Case with Attachments - with no migrated files found" in withService { service =>
       givenTheCaseDoesNotAlreadyExist()
       givenRetrievingTheUploadedFilesReturnsNone()
       givenUpsertingTheCaseReturnsItself()
-      givenNotifyingTheRulingStoreSucceeds()
 
       val migrated = await(service.process(anUnprocessedMigrationWithAttachments))
       migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
@@ -385,7 +371,6 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       givenRetrievingTheUploadedFilesReturns(aSuccessfullyUploadedFile)
       givenUpsertingTheCaseReturnsItself()
       givenPublishingTheFileFails()
-      givenNotifyingTheRulingStoreSucceeds()
 
       val migrated = await(service.process(anUnprocessedMigrationWithAttachments))
       migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
@@ -410,7 +395,6 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       givenTheCaseDoesNotAlreadyExist()
       givenRetrievingTheUploadedFilesReturns(aSuccessfullyUploadedFile)
       givenUpsertingTheCaseReturnsItself()
-      givenNotifyingTheRulingStoreSucceeds()
 
       val migrated = await(service.process(anUnprocessedMigrationWithAttachments))
       migrated.status  shouldBe MigrationStatus.SUCCESS
@@ -425,14 +409,12 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturnsItself()
       givenRetrievingTheUploadedFilesFails()
-      givenNotifyingTheRulingStoreFails()
 
       val migrated = await(service.process(anUnprocessedMigrationWithAttachments))
       migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
       migrated.message shouldBe Seq(
         "Failed to migrate 1/1 attachments",
-        "Failed to migrate file [name] because [Not Found]",
-        "Failed to notify the ruling store [Notify Error]"
+        "Failed to migrate file [name] because [Not Found]"
       )
 
       theCaseCreated shouldBe aCase
@@ -442,15 +424,13 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       givenTheCaseDoesNotAlreadyExist()
       givenUpsertingTheCaseReturnsItself()
       givenCreatingAnEventFails()
-      givenNotifyingTheRulingStoreFails()
 
       val migrated = await(service.process(anUnprocessedMigrationWithEvents))
       migrated.status shouldBe MigrationStatus.PARTIAL_SUCCESS
       migrated.message shouldBe Seq(
         "Failed to migrate 2/2 events",
         "Failed to migrate event [NOTE] because [Create Event Failure]",
-        "Failed to migrate event [NOTE] because [Create Event Failure]",
-        "Failed to notify the ruling store [Notify Error]"
+        "Failed to migrate event [NOTE] because [Create Event Failure]"
       )
 
       theCaseCreated shouldBe aCase
@@ -557,14 +537,6 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       given(fileConnector.publish(anyString())(any[HeaderCarrier])) willReturn Future.failed(
         new RuntimeException("Publish Error")
       )
-
-    def givenNotifyingTheRulingStoreFails() =
-      given(rulingConnector.notify(anyString())(any[HeaderCarrier])) willReturn Future.failed(
-        new RuntimeException("Notify Error")
-      )
-
-    def givenNotifyingTheRulingStoreSucceeds() =
-      given(rulingConnector.notify(anyString())(any[HeaderCarrier])) willReturn Future.successful(())
 
     def givenUpsertingTheCaseReturnsItself(): Unit =
       given(caseConnector.upsertCase(any[Case])(any[HeaderCarrier])) willAnswer new Answer[Future[Case]] {

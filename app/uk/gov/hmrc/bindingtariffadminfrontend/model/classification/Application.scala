@@ -119,7 +119,6 @@ case class CorrespondenceApplication(
   address: Address,
   contact: Contact,
   fax: Option[String] = None,
-  offline: Boolean,
   summary: String,
   detailedDescription: String,
   relatedBTIReference: Option[String] = None,
@@ -142,7 +141,6 @@ object CorrespondenceApplication {
 
 case class MiscApplication(
   contact: Contact,
-  offline: Boolean,
   name: String,
   contactName: Option[String],
   caseType: MiscCaseType,

@@ -87,7 +87,7 @@ class ResetController @Inject() (
             for {
               casesToDelete     <- dataMigrationService.migratedCaseCount
               originalCaseCount <- dataMigrationService.totalCaseCount
-              running           <- resetService.initiateResetMigratedCases()
+              running           <- resetService.initiateResetMigratedCases(deleteAttachments = false)
             } yield
               if (running) Ok(reset_migration_progress(casesToDelete, originalCaseCount))
               else BadRequest("Already running")

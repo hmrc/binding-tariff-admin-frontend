@@ -330,19 +330,33 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
     }
   }
 
-  "initiateResetMigratedCases" should {
-    "return false" in withService { service =>
-      given(migrationDeletionLock.isLocked) willReturn Future.successful(true)
-      await(service.initiateResetMigratedCases()) shouldBe false
+  "initiateResetMigratedCases" when {
+    "attachments are to be deleted" should {
+      "return false" in withService { service =>
+        given(migrationDeletionLock.isLocked) willReturn Future.successful(true)
+        await(service.initiateResetMigratedCases(deleteAttachments = true)) shouldBe false
+      }
+
+      "return true" in withService { service =>
+        given(migrationDeletionLock.isLocked) willReturn Future.successful(false)
+        await(service.initiateResetMigratedCases(deleteAttachments = true)) shouldBe true
+      }
     }
 
-    "return true" in withService { service =>
-      given(migrationDeletionLock.isLocked) willReturn Future.successful(false)
-      await(service.initiateResetMigratedCases()) shouldBe true
+    "attachments are not to be deleted" should {
+      "return false" in withService { service =>
+        given(migrationDeletionLock.isLocked) willReturn Future.successful(true)
+        await(service.initiateResetMigratedCases(deleteAttachments = false)) shouldBe false
+      }
+
+      "return true" in withService { service =>
+        given(migrationDeletionLock.isLocked) willReturn Future.successful(false)
+        await(service.initiateResetMigratedCases(deleteAttachments = false)) shouldBe true
+      }
     }
   }
 
-  "resetMigratedCases" should {
+  "resetMigratedCases" when {
     val extractDate = Instant.ofEpochSecond(1609416000)
     val attachment1 = Attachment(id = "attachment_id_1", public = true, timestamp = Instant.EPOCH)
     val attachment2 = Attachment(id = "attachment_id_2", public = true, timestamp = Instant.EPOCH)
@@ -385,158 +399,298 @@ class ResetServiceTest extends UnitSpec with MockitoSugar with BeforeAndAfterEac
     val success: Future[Unit] = Future.successful((): Unit)
     val failure: Future[Unit] = Future.failed(new RuntimeException("simulated error"))
 
-    "clear migrations" in withService { service =>
-      val cases = Future.successful(
-        Paged[Case](results = Seq.empty[Case], pageIndex = 1, pageSize = 1, resultCount = 0)
-      )
+    "attachments are to be deleted" should {
+      "clear migrations" in withService { service =>
+        val cases = Future.successful(
+          Paged[Case](results = Seq.empty[Case], pageIndex = 1, pageSize = 1, resultCount = 0)
+        )
 
-      given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn cases
+        given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn cases
 
-      givenMigrationsClearSuccessfully()
-      val result = await(service.resetMigratedCases())
-      verifyMigrationsCleared()
+        givenMigrationsClearSuccessfully()
+        val result = await(service.resetMigratedCases(deleteAttachments = true))
+        verifyMigrationsCleared()
 
-      result shouldBe 0
+        result shouldBe 0
 
-      verify(rulingConnector, never()).delete(any[String])(any[HeaderCarrier])
-      verify(fileConnector, never()).delete(any[String])(any[HeaderCarrier])
-      verify(uploadRepository, never()).deleteById(any[String])
-      verify(caseConnector, never()).deleteCaseEvents(any[String])(any[HeaderCarrier])
-      verify(caseConnector, never()).deleteCase(any[String])(any[HeaderCarrier])
+        verify(rulingConnector, never()).delete(any[String])(any[HeaderCarrier])
+        verify(fileConnector, never()).delete(any[String])(any[HeaderCarrier])
+        verify(uploadRepository, never()).deleteById(any[String])
+        verify(caseConnector, never()).deleteCaseEvents(any[String])(any[HeaderCarrier])
+        verify(caseConnector, never()).deleteCase(any[String])(any[HeaderCarrier])
+      }
+
+      "delete a case without attachments" in withService { service =>
+        val cases = Future.successful(
+          Paged[Case](results = Seq(aCase), pageIndex = 1, pageSize = 1, resultCount = 1)
+        )
+
+        given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn cases
+        given(rulingConnector.delete(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCaseEvents(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCase(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
+
+        givenMigrationsClearSuccessfully()
+        val result = await(service.resetMigratedCases(deleteAttachments = true))
+        verifyMigrationsCleared()
+
+        result shouldBe 1
+
+        verify(rulingConnector).delete(refEq(aCase.reference))(any[HeaderCarrier])
+        verify(fileConnector, never()).delete(any[String])(any[HeaderCarrier])
+        verify(uploadRepository, never()).deleteById(any[String])
+        verify(caseConnector).deleteCaseEvents(refEq(aCase.reference))(any[HeaderCarrier])
+        verify(caseConnector).deleteCase(refEq(aCase.reference))(any[HeaderCarrier])
+      }
+
+      "delete a case with attachments" in withService { service =>
+        val cases = Future.successful(
+          Paged[Case](results = Seq(aCaseWithAttachments), pageIndex = 1, pageSize = 1, resultCount = 1)
+        )
+
+        given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn cases
+        given(rulingConnector.delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
+        given(fileConnector.delete(refEq(attachment1.id))(any[HeaderCarrier])) willReturn success
+        given(fileConnector.delete(refEq(attachment2.id))(any[HeaderCarrier])) willReturn success
+        given(uploadRepository.deleteById(refEq(attachment1.id))) willReturn success
+        given(uploadRepository.deleteById(refEq(attachment2.id))) willReturn success
+        given(caseConnector.deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
+
+        givenMigrationsClearSuccessfully()
+        val result = await(service.resetMigratedCases(deleteAttachments = true))
+        verifyMigrationsCleared()
+
+        result shouldBe 1
+
+        verify(rulingConnector).delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+        verify(fileConnector).delete(refEq(attachment1.id))(any[HeaderCarrier])
+        verify(fileConnector).delete(refEq(attachment2.id))(any[HeaderCarrier])
+        verify(uploadRepository).deleteById(refEq(attachment1.id))
+        verify(uploadRepository).deleteById(refEq(attachment2.id))
+        verify(caseConnector).deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+        verify(caseConnector).deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+      }
+
+      "delete cases from multiple pages" in withService { service =>
+        val page1 = Future.successful(
+          Paged[Case](results = Seq(aCase), pageIndex = 1, pageSize = 1, resultCount = 2)
+        )
+        val page2 = Future.successful(
+          Paged[Case](results = Seq(aCaseWithAttachments), pageIndex = 2, pageSize = 1, resultCount = 2)
+        )
+
+        given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn page1
+        given(caseConnector.getCases(refEq(caseSearch), refEq(pagination.copy(page = 2)))(any[HeaderCarrier])) willReturn page2
+
+        given(rulingConnector.delete(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
+        given(rulingConnector.delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
+        given(fileConnector.delete(refEq(attachment1.id))(any[HeaderCarrier])) willReturn success
+        given(fileConnector.delete(refEq(attachment2.id))(any[HeaderCarrier])) willReturn success
+        given(uploadRepository.deleteById(refEq(attachment1.id))) willReturn success
+        given(uploadRepository.deleteById(refEq(attachment2.id))) willReturn success
+        given(caseConnector.deleteCaseEvents(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCase(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
+
+        givenMigrationsClearSuccessfully()
+        val result = await(service.resetMigratedCases(deleteAttachments = true))
+        verifyMigrationsCleared()
+
+        result shouldBe 2
+
+        verify(rulingConnector).delete(refEq(aCase.reference))(any[HeaderCarrier])
+        verify(rulingConnector).delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+        verify(fileConnector).delete(refEq(attachment1.id))(any[HeaderCarrier])
+        verify(fileConnector).delete(refEq(attachment2.id))(any[HeaderCarrier])
+        verify(uploadRepository).deleteById(refEq(attachment1.id))
+        verify(uploadRepository).deleteById(refEq(attachment2.id))
+        verify(caseConnector).deleteCaseEvents(refEq(aCase.reference))(any[HeaderCarrier])
+        verify(caseConnector).deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+        verify(caseConnector).deleteCase(refEq(aCase.reference))(any[HeaderCarrier])
+        verify(caseConnector).deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+      }
+
+      "delete a case with attachments and ignore errors" in withService { service =>
+        val cases = Future.successful(
+          Paged[Case](results = Seq(aCaseWithAttachments), pageIndex = 1, pageSize = 1, resultCount = 1)
+        )
+
+        given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn cases
+        given(rulingConnector.delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn failure
+        given(fileConnector.delete(refEq(attachment1.id))(any[HeaderCarrier])) willReturn failure
+        given(fileConnector.delete(refEq(attachment2.id))(any[HeaderCarrier])) willReturn failure
+        given(uploadRepository.deleteById(refEq(attachment1.id))) willReturn failure
+        given(uploadRepository.deleteById(refEq(attachment2.id))) willReturn failure
+        given(caseConnector.deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn failure
+        given(caseConnector.deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn failure
+
+        givenMigrationsClearSuccessfully()
+        val result = await(service.resetMigratedCases(deleteAttachments = true))
+        verifyMigrationsCleared()
+
+        result shouldBe 1
+
+        verify(rulingConnector).delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+        verify(fileConnector).delete(refEq(attachment1.id))(any[HeaderCarrier])
+        verify(fileConnector).delete(refEq(attachment2.id))(any[HeaderCarrier])
+        verify(uploadRepository).deleteById(refEq(attachment1.id))
+        verify(uploadRepository).deleteById(refEq(attachment2.id))
+        verify(caseConnector).deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+        verify(caseConnector).deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+      }
+
+      def givenMigrationsClearSuccessfully(): Unit =
+        given(dataMigrationService.clear(refEq(None))) willReturn Future.successful(true)
+
+      def verifyMigrationsCleared(): Unit = {
+        verify(uploadRepository, never()).deleteAll()
+        verify(fileConnector, never()).delete()(any[HeaderCarrier])
+        verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
+        verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
+        verify(rulingConnector, never()).delete()(any[HeaderCarrier])
+        verify(dataTransformationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
+        verify(dataMigrationService).clear(refEq(None))
+      }
     }
 
-    "delete a case without attachments" in withService { service =>
-      val cases = Future.successful(
-        Paged[Case](results = Seq(aCase), pageIndex = 1, pageSize = 1, resultCount = 1)
-      )
+    "attachments are not to be deleted" should {
+      "clear migrations" in withService { service =>
+        val cases = Future.successful(
+          Paged[Case](results = Seq.empty[Case], pageIndex = 1, pageSize = 1, resultCount = 0)
+        )
 
-      given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn cases
-      given(rulingConnector.delete(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
-      given(caseConnector.deleteCaseEvents(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
-      given(caseConnector.deleteCase(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn cases
 
-      givenMigrationsClearSuccessfully()
-      val result = await(service.resetMigratedCases())
-      verifyMigrationsCleared()
+        givenMigrationsClearSuccessfully()
+        val result = await(service.resetMigratedCases(deleteAttachments = false))
+        verifyMigrationsCleared()
 
-      result shouldBe 1
+        result shouldBe 0
 
-      verify(rulingConnector).delete(refEq(aCase.reference))(any[HeaderCarrier])
-      verify(fileConnector, never()).delete(any[String])(any[HeaderCarrier])
-      verify(uploadRepository, never()).deleteById(any[String])
-      verify(caseConnector).deleteCaseEvents(refEq(aCase.reference))(any[HeaderCarrier])
-      verify(caseConnector).deleteCase(refEq(aCase.reference))(any[HeaderCarrier])
-    }
+        verify(rulingConnector, never()).delete(any[String])(any[HeaderCarrier])
+        verify(fileConnector, never()).delete(any[String])(any[HeaderCarrier])
+        verify(uploadRepository, never()).deleteById(any[String])
+        verify(caseConnector, never()).deleteCaseEvents(any[String])(any[HeaderCarrier])
+        verify(caseConnector, never()).deleteCase(any[String])(any[HeaderCarrier])
+      }
 
-    "delete a case with attachments" in withService { service =>
-      val cases = Future.successful(
-        Paged[Case](results = Seq(aCaseWithAttachments), pageIndex = 1, pageSize = 1, resultCount = 1)
-      )
+      "delete a case without attachments" in withService { service =>
+        val cases = Future.successful(
+          Paged[Case](results = Seq(aCase), pageIndex = 1, pageSize = 1, resultCount = 1)
+        )
 
-      given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn cases
-      given(rulingConnector.delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
-      given(fileConnector.delete(refEq(attachment1.id))(any[HeaderCarrier])) willReturn success
-      given(fileConnector.delete(refEq(attachment2.id))(any[HeaderCarrier])) willReturn success
-      given(uploadRepository.deleteById(refEq(attachment1.id))) willReturn success
-      given(uploadRepository.deleteById(refEq(attachment2.id))) willReturn success
-      given(caseConnector.deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
-      given(caseConnector.deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn cases
+        given(rulingConnector.delete(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCaseEvents(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCase(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
 
-      givenMigrationsClearSuccessfully()
-      val result = await(service.resetMigratedCases())
-      verifyMigrationsCleared()
+        givenMigrationsClearSuccessfully()
+        val result = await(service.resetMigratedCases(deleteAttachments = false))
+        verifyMigrationsCleared()
 
-      result shouldBe 1
+        result shouldBe 1
 
-      verify(rulingConnector).delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
-      verify(fileConnector).delete(refEq(attachment1.id))(any[HeaderCarrier])
-      verify(fileConnector).delete(refEq(attachment2.id))(any[HeaderCarrier])
-      verify(uploadRepository).deleteById(refEq(attachment1.id))
-      verify(uploadRepository).deleteById(refEq(attachment2.id))
-      verify(caseConnector).deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
-      verify(caseConnector).deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
-    }
+        verify(rulingConnector).delete(refEq(aCase.reference))(any[HeaderCarrier])
+        verify(fileConnector, never()).delete(any[String])(any[HeaderCarrier])
+        verify(uploadRepository, never()).deleteById(any[String])
+        verify(caseConnector).deleteCaseEvents(refEq(aCase.reference))(any[HeaderCarrier])
+        verify(caseConnector).deleteCase(refEq(aCase.reference))(any[HeaderCarrier])
+      }
 
-    "delete cases from multiple pages" in withService { service =>
-      val page1 = Future.successful(
-        Paged[Case](results = Seq(aCase), pageIndex = 1, pageSize = 1, resultCount = 2)
-      )
-      val page2 = Future.successful(
-        Paged[Case](results = Seq(aCaseWithAttachments), pageIndex = 2, pageSize = 1, resultCount = 2)
-      )
+      "delete a case with attachments" in withService { service =>
+        val cases = Future.successful(
+          Paged[Case](results = Seq(aCaseWithAttachments), pageIndex = 1, pageSize = 1, resultCount = 1)
+        )
 
-      given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn page1
-      given(caseConnector.getCases(refEq(caseSearch), refEq(pagination.copy(page = 2)))(any[HeaderCarrier])) willReturn page2
+        given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn cases
+        given(rulingConnector.delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
 
-      given(rulingConnector.delete(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
-      given(rulingConnector.delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
-      given(fileConnector.delete(refEq(attachment1.id))(any[HeaderCarrier])) willReturn success
-      given(fileConnector.delete(refEq(attachment2.id))(any[HeaderCarrier])) willReturn success
-      given(uploadRepository.deleteById(refEq(attachment1.id))) willReturn success
-      given(uploadRepository.deleteById(refEq(attachment2.id))) willReturn success
-      given(caseConnector.deleteCaseEvents(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
-      given(caseConnector.deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
-      given(caseConnector.deleteCase(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
-      given(caseConnector.deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
+        givenMigrationsClearSuccessfully()
+        val result = await(service.resetMigratedCases(deleteAttachments = false))
+        verifyMigrationsCleared()
 
-      givenMigrationsClearSuccessfully()
-      val result = await(service.resetMigratedCases())
-      verifyMigrationsCleared()
+        result shouldBe 1
 
-      result shouldBe 2
+        verify(rulingConnector).delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+        verify(fileConnector, never()).delete(any[String])(any[HeaderCarrier])
+        verify(uploadRepository, never()).deleteById(any[String])
+        verify(caseConnector).deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+        verify(caseConnector).deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+      }
 
-      verify(rulingConnector).delete(refEq(aCase.reference))(any[HeaderCarrier])
-      verify(rulingConnector).delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
-      verify(fileConnector).delete(refEq(attachment1.id))(any[HeaderCarrier])
-      verify(fileConnector).delete(refEq(attachment2.id))(any[HeaderCarrier])
-      verify(uploadRepository).deleteById(refEq(attachment1.id))
-      verify(uploadRepository).deleteById(refEq(attachment2.id))
-      verify(caseConnector).deleteCaseEvents(refEq(aCase.reference))(any[HeaderCarrier])
-      verify(caseConnector).deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
-      verify(caseConnector).deleteCase(refEq(aCase.reference))(any[HeaderCarrier])
-      verify(caseConnector).deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
-    }
+      "delete cases from multiple pages" in withService { service =>
+        val page1 = Future.successful(
+          Paged[Case](results = Seq(aCase), pageIndex = 1, pageSize = 1, resultCount = 2)
+        )
+        val page2 = Future.successful(
+          Paged[Case](results = Seq(aCaseWithAttachments), pageIndex = 2, pageSize = 1, resultCount = 2)
+        )
 
-    "delete a case with attachments and ignore errors" in withService { service =>
-      val cases = Future.successful(
-        Paged[Case](results = Seq(aCaseWithAttachments), pageIndex = 1, pageSize = 1, resultCount = 1)
-      )
+        given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn page1
+        given(caseConnector.getCases(refEq(caseSearch), refEq(pagination.copy(page = 2)))(any[HeaderCarrier])) willReturn page2
 
-      given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn cases
-      given(rulingConnector.delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn failure
-      given(fileConnector.delete(refEq(attachment1.id))(any[HeaderCarrier])) willReturn failure
-      given(fileConnector.delete(refEq(attachment2.id))(any[HeaderCarrier])) willReturn failure
-      given(uploadRepository.deleteById(refEq(attachment1.id))) willReturn failure
-      given(uploadRepository.deleteById(refEq(attachment2.id))) willReturn failure
-      given(caseConnector.deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn failure
-      given(caseConnector.deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn failure
+        given(rulingConnector.delete(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
+        given(rulingConnector.delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCaseEvents(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCase(refEq(aCase.reference))(any[HeaderCarrier])) willReturn success
+        given(caseConnector.deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn success
 
-      givenMigrationsClearSuccessfully()
-      val result = await(service.resetMigratedCases())
-      verifyMigrationsCleared()
+        givenMigrationsClearSuccessfully()
+        val result = await(service.resetMigratedCases(deleteAttachments = false))
+        verifyMigrationsCleared()
 
-      result shouldBe 1
+        result shouldBe 2
 
-      verify(rulingConnector).delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
-      verify(fileConnector).delete(refEq(attachment1.id))(any[HeaderCarrier])
-      verify(fileConnector).delete(refEq(attachment2.id))(any[HeaderCarrier])
-      verify(uploadRepository).deleteById(refEq(attachment1.id))
-      verify(uploadRepository).deleteById(refEq(attachment2.id))
-      verify(caseConnector).deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
-      verify(caseConnector).deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
-    }
+        verify(rulingConnector).delete(refEq(aCase.reference))(any[HeaderCarrier])
+        verify(rulingConnector).delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+        verify(fileConnector, never()).delete(any[String])(any[HeaderCarrier])
+        verify(uploadRepository, never()).deleteById(any[String])
+        verify(caseConnector).deleteCaseEvents(refEq(aCase.reference))(any[HeaderCarrier])
+        verify(caseConnector).deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+        verify(caseConnector).deleteCase(refEq(aCase.reference))(any[HeaderCarrier])
+        verify(caseConnector).deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+      }
 
-    def givenMigrationsClearSuccessfully(): Unit =
-      given(dataMigrationService.clear(refEq(None))) willReturn Future.successful(true)
+      "delete a case with attachments and ignore errors" in withService { service =>
+        val cases = Future.successful(
+          Paged[Case](results = Seq(aCaseWithAttachments), pageIndex = 1, pageSize = 1, resultCount = 1)
+        )
 
-    def verifyMigrationsCleared(): Unit = {
-      verify(uploadRepository, never()).deleteAll()
-      verify(fileConnector, never()).delete()(any[HeaderCarrier])
-      verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
-      verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
-      verify(rulingConnector, never()).delete()(any[HeaderCarrier])
-      verify(dataTransformationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
-      verify(dataMigrationService).clear(refEq(None))
+        given(caseConnector.getCases(refEq(caseSearch), refEq(pagination))(any[HeaderCarrier])) willReturn cases
+        given(rulingConnector.delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn failure
+        given(caseConnector.deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn failure
+        given(caseConnector.deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])) willReturn failure
+
+        givenMigrationsClearSuccessfully()
+        val result = await(service.resetMigratedCases(deleteAttachments = false))
+        verifyMigrationsCleared()
+
+        result shouldBe 1
+
+        verify(rulingConnector).delete(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+        verify(fileConnector, never()).delete(any[String])(any[HeaderCarrier])
+        verify(uploadRepository, never()).deleteById(any[String])
+        verify(caseConnector).deleteCaseEvents(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+        verify(caseConnector).deleteCase(refEq(aCaseWithAttachments.reference))(any[HeaderCarrier])
+      }
+
+      def givenMigrationsClearSuccessfully(): Unit =
+        given(dataMigrationService.clear(refEq(None))) willReturn Future.successful(true)
+
+      def verifyMigrationsCleared(): Unit = {
+        verify(uploadRepository, never()).deleteAll()
+        verify(fileConnector, never()).delete()(any[HeaderCarrier])
+        verify(caseConnector, never()).deleteCases()(any[HeaderCarrier])
+        verify(caseConnector, never()).deleteEvents()(any[HeaderCarrier])
+        verify(rulingConnector, never()).delete()(any[HeaderCarrier])
+        verify(dataTransformationConnector, never()).deleteHistoricData()(any[HeaderCarrier])
+        verify(dataMigrationService).clear(refEq(None))
+      }
     }
   }
 }

@@ -66,23 +66,27 @@ class ResetService @Inject() (
     } yield ()
   }
 
-  def initiateResetMigratedCases()(implicit hc: HeaderCarrier): Future[Boolean] =
+  def initiateResetMigratedCases(deleteAttachments: Boolean)(implicit hc: HeaderCarrier): Future[Boolean] =
     migrationDeletionLock.isLocked.map { alreadyLocked =>
       // Run in the background
       migrationDeletionLock.tryLock {
-        resetMigratedCases()
+        resetMigratedCases(deleteAttachments = deleteAttachments)
       }
 
       !alreadyLocked
     }
 
-  def resetMigratedCases()(implicit hc: HeaderCarrier): Future[Int] =
+  def resetMigratedCases(deleteAttachments: Boolean)(implicit hc: HeaderCarrier): Future[Int] =
     for {
-      _     <- resetEnvironment(Set(Store.MIGRATION))
-      count <- deleteCases(search = CaseSearch(migrated = Some(true)), pageSize = 512)
+      _ <- resetEnvironment(Set(Store.MIGRATION))
+      count <- deleteCases(
+                search            = CaseSearch(migrated = Some(true)),
+                pageSize          = 512,
+                deleteAttachments = deleteAttachments
+              )
     } yield count
 
-  private def deleteCases(search: CaseSearch, pageSize: Int)(
+  private def deleteCases(search: CaseSearch, pageSize: Int, deleteAttachments: Boolean)(
     implicit hc: HeaderCarrier
   ): Future[Int] =
     caseConnector
@@ -95,24 +99,30 @@ class ResetService @Inject() (
               .map(_.results)
           )
           .flatMapMerge(1, cases => Source(cases.toList))
-          .mapAsync(1)(c => deleteCase(c))
+          .mapAsync(1)(c => deleteCase(c, deleteAttachments = deleteAttachments))
           .runWith(Sink.ignore)
           .map(_ => info.resultCount)
       }
 
-  private def deleteCase(`case`: Case)(implicit hc: HeaderCarrier): Future[Unit] = {
+  private def deleteCase(`case`: Case, deleteAttachments: Boolean)(implicit hc: HeaderCarrier): Future[Unit] = {
     def warning(message: String): PartialFunction[Throwable, Unit] = {
       case t: Throwable => Logger.warn(message, t)
     }
 
     for {
       _ <- rulingConnector.delete(`case`.reference) recover warning(s"Failed to delete ruling [${`case`.reference}]")
-      _ <- Source(`case`.attachments.toList)
-            .mapAsync(1) { attachment =>
-              fileConnector.delete(attachment.id) recover warning(s"Failed to delete attachment [${attachment.id}]")
-              uploadRepository.deleteById(attachment.id) recover warning(s"Failed to delete upload [${attachment.id}]")
-            }
-            .runWith(Sink.ignore)
+      _ <- if (deleteAttachments) {
+            Source(`case`.attachments.toList)
+              .mapAsync(1) { attachment =>
+                fileConnector.delete(attachment.id) recover warning(s"Failed to delete attachment [${attachment.id}]")
+                uploadRepository.deleteById(attachment.id) recover warning(
+                  s"Failed to delete upload [${attachment.id}]"
+                )
+              }
+              .runWith(Sink.ignore)
+          } else {
+            Future.successful(())
+          }
       _ <- caseConnector.deleteCaseEvents(`case`.reference) recover warning(
             s"Failed to delete case [${`case`.reference}] events"
           )

@@ -160,7 +160,9 @@ class ResetControllerSpec extends ControllerSpec with BeforeAndAfterEach {
   "POST /resetMigration" should {
     "return 303 when permitted" in {
       given(appConfig.resetMigrationPermitted) willReturn true
-      given(resetService.initiateResetMigratedCases()(any[HeaderCarrier])) willReturn Future.successful(true)
+      given(resetService.initiateResetMigratedCases(refEq(false))(any[HeaderCarrier])) willReturn Future.successful(
+        true
+      )
       given(dataMigrationService.totalCaseCount(any[HeaderCarrier])) willReturn Future.successful(100)
       given(dataMigrationService.migratedCaseCount(any[HeaderCarrier])) willReturn Future.successful(50)
 
@@ -170,7 +172,7 @@ class ResetControllerSpec extends ControllerSpec with BeforeAndAfterEach {
         )
       status(result) shouldBe OK
       bodyOf(result) should include("Reset migrated cases")
-      verify(resetService).initiateResetMigratedCases()(any[HeaderCarrier])
+      verify(resetService).initiateResetMigratedCases(refEq(false))(any[HeaderCarrier])
     }
 
     "return 303 when not permitted" in {
@@ -179,7 +181,7 @@ class ResetControllerSpec extends ControllerSpec with BeforeAndAfterEach {
 
       status(result)     shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin")
-      verify(resetService, never()).resetMigratedCases()(any[HeaderCarrier])
+      verify(resetService, never()).resetMigratedCases(any[Boolean])(any[HeaderCarrier])
     }
   }
 

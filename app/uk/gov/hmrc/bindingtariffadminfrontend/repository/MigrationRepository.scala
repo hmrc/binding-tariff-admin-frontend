@@ -15,12 +15,16 @@
  */
 
 package uk.gov.hmrc.bindingtariffadminfrontend.repository
-
+import reactivemongo.akkastream.{State, cursorProducer}
+import akka.NotUsed
+import akka.stream.Materializer
+import akka.stream.scaladsl.Source
 import com.google.inject.ImplementedBy
+
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.{JsObject, Json}
 import reactivemongo.api.indexes.Index
-import reactivemongo.api.{Cursor, QueryOpts}
+import reactivemongo.api.{Cursor, QueryOpts, ReadPreference}
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
@@ -55,16 +59,20 @@ trait MigrationRepository {
 
   def delete(status: Option[MigrationStatus]): Future[Boolean]
 
+  def getMigrationCaseReports(statuses: Seq[MigrationStatus]): Source[MigrationCaseReport, NotUsed]
+
 }
 
 @Singleton
-class MigrationMongoRepository @Inject() (config: AppConfig, mongoDbProvider: MongoDbProvider)
-    extends ReactiveRepository[Migration, BSONObjectID](
+class MigrationMongoRepository @Inject() (config: AppConfig, mongoDbProvider: MongoDbProvider)(
+  implicit val materializer: Materializer
+) extends ReactiveRepository[Migration, BSONObjectID](
       collectionName = "CaseMigration",
       mongo          = mongoDbProvider.mongo,
       domainFormat   = Migration.Mongo.format
     )
     with MigrationRepository {
+
   import Migration.Mongo.format
 
   override lazy val indexes: Seq[Index] = Seq(
@@ -144,10 +152,25 @@ class MigrationMongoRepository @Inject() (config: AppConfig, mongoDbProvider: Mo
     collection.remove(query).map(_.ok)
   }
 
+  override def getMigrationCaseReports(statuses: Seq[MigrationStatus]): Source[MigrationCaseReport, NotUsed] = {
+    val projection = Some(Json.obj("_id" -> 0))
+    val selector   = byStatuses(statuses)
+
+    collection
+      .find[JsObject, JsObject](selector, projection)
+      .sort(Json.obj("case.reference" -> 1))
+      .cursor[MigrationCaseReport](ReadPreference.primary)
+      .documentSource()
+      .mapMaterializedValue(_ => NotUsed.notUsed)
+  }
+
   private def byReference(reference: String): JsObject =
     Json.obj("case.reference" -> reference)
 
   private def byStatus(status: MigrationStatus): JsObject =
     Json.obj("status" -> status)
+
+  private def byStatuses(status: Seq[MigrationStatus]): JsObject =
+    Json.obj("status" -> Json.obj("$in" -> List(status)))
 
 }

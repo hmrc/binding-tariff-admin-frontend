@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito
 import org.scalatest.BeforeAndAfterEach
@@ -106,6 +108,20 @@ class DataMigrationStateControllerSpec extends ControllerSpec with BeforeAndAfte
       val result: Result = await(controller.delete(Some("other"))(newFakeGETRequestWithCSRF))
       status(result)     shouldBe SEE_OTHER
       locationOf(result) shouldBe Some("/binding-tariff-admin/state")
+    }
+  }
+
+  "GET /downloadReport" should {
+    "return 200" in {
+      val reportContents: ByteString = ByteString("this is the report")
+      given(migrationService.generateReport) willReturn Source.single(reportContents)
+
+      val result = await(controller.downloadReport(newFakeGETRequestWithCSRF))
+
+      status(result) shouldBe OK
+
+      val outputBody = await(result.body.consumeData)
+      outputBody shouldBe reportContents
     }
   }
 

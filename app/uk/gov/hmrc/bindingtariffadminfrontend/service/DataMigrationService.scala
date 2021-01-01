@@ -16,18 +16,16 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.service
 
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
-
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.pattern.after
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
+import akka.util.ByteString
 import cats.syntax.all._
-import javax.inject.Inject
 import play.api.Logger
 import play.api.libs.Files.TemporaryFile
+import play.api.libs.json.Json
 import uk.gov.hmrc.bindingtariffadminfrontend.connector._
 import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
@@ -37,11 +35,15 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.{MigrationRepository, UploadRepository}
 import uk.gov.hmrc.http.HeaderCarrier
 
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.sequence
 import scala.concurrent.duration.{FiniteDuration, _}
-import scala.util.{Random, Success}
+import scala.util.Random
 
 class DataMigrationService @Inject() (
   migrationRepository: MigrationRepository,
@@ -315,6 +317,14 @@ class DataMigrationService @Inject() (
       Future.successful(Seq.empty)
     }
   }
+
+  def generateReport: Source[ByteString, NotUsed] =
+    migrationRepository
+      .getMigrationCaseReports(Seq(MigrationStatus.PARTIAL_SUCCESS, MigrationStatus.FAILED))
+      .map(Json.toJson(_))
+      .map(Json.prettyPrint)
+      .intersperse("[\n", ",\n", "\n]")
+      .map(ByteString(_))
 
   private def withFailure[T](
     subject: T,

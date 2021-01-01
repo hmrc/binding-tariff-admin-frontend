@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,9 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.service
 
-import java.time.Instant
-import java.util.concurrent.TimeUnit
-
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.Source
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Sink, Source}
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.{any, anyString, refEq}
 import org.mockito.BDDMockito.given
@@ -42,6 +40,8 @@ import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 import uk.gov.hmrc.lock.LockRepository
 
+import java.time.Instant
+import java.util.concurrent.TimeUnit
 import scala.collection.JavaConverters
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -58,8 +58,9 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
   private val appConfig                   = mock[AppConfig]
   private val lockRepository              = mock[LockRepository]
 
-  private def migrationLock = new MigrationLock(lockRepository, appConfig)
-  private def actorSystem   = ActorSystem.create("testActorSystem")
+  private def migrationLock                    = new MigrationLock(lockRepository, appConfig)
+  private def actorSystem                      = ActorSystem.create("testActorSystem")
+  implicit val materializer: ActorMaterializer = ActorMaterializer.create(actorSystem)
 
   private def withService(test: DataMigrationService => Any) =
     test(
@@ -664,6 +665,53 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
 
       verify(uploadRepository).getByFileNames(refEq(List("att-name-1", "att-name-2")))
       verify(fileConnector).find(refEq(FileSearch(ids = Some(Set("up-id-1")))), any[Pagination])(any[HeaderCarrier])
+    }
+  }
+
+  "Service generateReport" should {
+    val migrationCaseReports = List(
+      MigrationCaseReport(
+        caseReference       = "01",
+        migratedAttachments = Nil,
+        status              = MigrationStatus.PARTIAL_SUCCESS,
+        message             = Seq("Failed to migrate 1/1 attachments", "Failed to migrate file [01-1.png] because [Not Found]")
+      ),
+      MigrationCaseReport(
+        caseReference = "02",
+        migratedAttachments = Seq(
+          MigratedAttachment(
+            public      = true,
+            name        = "01-01.png",
+            operator    = Some(Operator("pid", Some("name"))),
+            timestamp   = Instant.ofEpochSecond(1610326800), // Monday, 11 January 2021 01:00:00
+            description = Some("description")
+          )
+        ),
+        status  = MigrationStatus.PARTIAL_SUCCESS,
+        message = Seq("Failed to migrate 1/2 attachments", "Failed to migrate file [01-2.png] because [Not Found]")
+      ),
+      MigrationCaseReport(
+        caseReference       = "03",
+        migratedAttachments = Nil,
+        status              = MigrationStatus.FAILED,
+        message             = Seq("Some failure")
+      )
+    )
+
+    "Generate a JSON report with the partial successes and failures" in withService { service =>
+      given(migrationRepository.getMigrationCaseReports(Seq(MigrationStatus.PARTIAL_SUCCESS, MigrationStatus.FAILED))) willReturn Source(
+        migrationCaseReports
+      )
+
+      val reportJson = await(
+        service.generateReport
+          .runWith(Sink.seq)
+      ).map(_.utf8String)
+        .mkString("\n")
+
+      reportJson should include("\"caseReference\" : \"01\"")
+      reportJson should include("\"caseReference\" : \"02\"")
+      reportJson should include("\"caseReference\" : \"03\"")
     }
   }
 

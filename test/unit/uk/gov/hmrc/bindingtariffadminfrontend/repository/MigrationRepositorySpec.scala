@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.repository
 
+import akka.actor.ActorSystem
+import akka.stream.{ActorMaterializer, Materializer}
 import org.scalatest.concurrent.Eventually
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -43,6 +45,9 @@ class MigrationRepositorySpec
   private val mongoDbProvider: MongoDbProvider = new MongoDbProvider {
     override val mongo: () => DB = self.mongo
   }
+
+  val actorSystem: ActorSystem                 = ActorSystem.create("testActorSystem")
+  implicit val materializer: ActorMaterializer = ActorMaterializer.create(actorSystem)
 
   private val config     = mock[AppConfig]
   private val repository = new MigrationMongoRepository(config, mongoDbProvider)

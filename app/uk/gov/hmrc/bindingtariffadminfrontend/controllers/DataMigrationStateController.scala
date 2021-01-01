@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.controllers
 
-import javax.inject.{Inject, Singleton}
+import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
@@ -25,7 +25,9 @@ import uk.gov.hmrc.bindingtariffadminfrontend.service.DataMigrationService
 import uk.gov.hmrc.bindingtariffadminfrontend.views.html.data_migration_state
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future.successful
 
 @Singleton
 class DataMigrationStateController @Inject() (
@@ -48,6 +50,16 @@ class DataMigrationStateController @Inject() (
   def delete(status: Option[String]): Action[AnyContent] = authenticatedAction.async {
     val statusFilter = status.flatMap(MigrationStatus(_))
     service.clear(statusFilter).map(_ => Redirect(routes.DataMigrationStateController.get()))
+  }
+
+  def downloadReport: Action[AnyContent] = authenticatedAction.async {
+    successful(
+      Ok.chunked(service.generateReport)
+        .withHeaders(
+          "Content-Type"        -> "application/json",
+          "Content-Disposition" -> s"attachment; filename=Data-Migration-Report-${DateTime.now().toString("ddMMyyyyHHmmss")}.json"
+        )
+    )
   }
 
 }

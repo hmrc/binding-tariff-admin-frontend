@@ -170,7 +170,7 @@ class MigrationMongoRepository @Inject() (config: AppConfig, mongoDbProvider: Mo
   private def byStatus(status: MigrationStatus): JsObject =
     Json.obj("status" -> status)
 
-  private def byStatuses(status: Seq[MigrationStatus]): JsObject =
-    Json.obj("status" -> Json.obj("$in" -> List(status)))
+  private def byStatuses(statuses: Seq[MigrationStatus]): JsObject =
+    Json.obj("status" -> Json.obj("$in" -> statuses))
 
 }

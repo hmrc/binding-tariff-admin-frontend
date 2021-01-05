@@ -24,8 +24,10 @@ import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.UploadRepository
 import uk.gov.hmrc.http.HeaderCarrier
-
 import javax.inject.Inject
+
+import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationJob.MigrationJob
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -100,6 +102,13 @@ class AdminMonitorService @Inject() (
         bindingTariffClassificationConnector.runDaysElapsed
       case ScheduledJob.REFERRED_DAYS_ELAPSED =>
         bindingTariffClassificationConnector.runReferredDaysElapsed
+      case _ => Future.failed(new IllegalArgumentException(s"Invalid Job [${job.toString}]"))
+    }
+
+  def runMigrationJob(job: MigrationJob)(implicit hc: HeaderCarrier): Future[Unit] =
+    job match {
+      case MigrationJob.AMEND_DATE_OF_EXTRACT =>
+        bindingTariffClassificationConnector.runAmendDateOfExtractMigration
       case _ => Future.failed(new IllegalArgumentException(s"Invalid Job [${job.toString}]"))
     }
 

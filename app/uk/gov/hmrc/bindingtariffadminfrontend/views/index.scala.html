@@ -73,6 +73,10 @@
    <a id="index-scheduler" href="@routes.SchedulerController.get()">Run a Scheduled Job</a>
   </li>
 
+  <li>
+    <a id="index-migration-jobs" href="@routes.MigrationJobController.get()">Run a Migration Job</a>
+  </li>
+
   @if(appConfig.resetMigrationPermitted){
    <li>
     <a id="index-reset_migration" href="@routes.ResetController.resetMigration()">Reset Migrated Cases</a>

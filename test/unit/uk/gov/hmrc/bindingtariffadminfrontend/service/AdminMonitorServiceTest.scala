@@ -111,6 +111,13 @@ class AdminMonitorServiceTest extends UnitSpec with MockitoSugar with BeforeAndA
     }
   }
 
+  "Run Migration Job" should {
+    "Delegate to connector" in {
+      given(btcConnector.runAmendDateOfExtractMigration(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      await(service.runMigrationJob(MigrationJob.AMEND_DATE_OF_EXTRACT)) shouldBe (): Unit
+    }
+  }
+
   override protected def afterEach(): Unit = {
     super.afterEach()
     reset(btcConnector, fileConnector, uploadRepository)

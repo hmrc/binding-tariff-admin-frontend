@@ -413,4 +413,24 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
     }
   }
 
+  "Connector Run Amend Date of Extract Migration" should {
+    "PUT to the Case Store" in {
+      stubFor(
+        put(urlEqualTo("/migrations/amend-date-of-extract"))
+          .willReturn(
+            aResponse()
+              .withHeader("Content-Type", "text/html")
+              .withStatus(Status.NO_CONTENT)
+          )
+      )
+
+      await(connector.runAmendDateOfExtractMigration)
+
+      verify(
+        putRequestedFor(urlEqualTo("/migrations/amend-date-of-extract"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
+  }
+
 }

@@ -43,6 +43,9 @@ GET        /search                               @uk.gov.hmrc.bindingtariffadmin
 GET        /scheduler                            @uk.gov.hmrc.bindingtariffadminfrontend.controllers.SchedulerController.get()
 POST       /scheduler/:job                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.SchedulerController.post(job: uk.gov.hmrc.bindingtariffadminfrontend.model.ScheduledJob.ScheduledJob)
 
+GET        /migration-job                        @uk.gov.hmrc.bindingtariffadminfrontend.controllers.MigrationJobController.get()
+POST       /migration-job/:job                   @uk.gov.hmrc.bindingtariffadminfrontend.controllers.MigrationJobController.post(job: uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationJob.MigrationJob)
+
 GET        /state                                @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.get(page: Int ?= 1, status: Seq[String] ?= Seq.empty)
 GET        /download-migration-report            @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.downloadReport
 POST       /state                                @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationStateController.delete(status: Option[String])

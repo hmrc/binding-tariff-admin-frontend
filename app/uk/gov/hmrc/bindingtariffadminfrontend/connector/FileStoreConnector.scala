@@ -17,16 +17,26 @@
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
 import javax.inject.{Inject, Singleton}
+
+import akka.stream.Materializer
+import akka.stream.scaladsl.Source
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadRequest, UploadTemplate}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class FileStoreConnector @Inject() (configuration: AppConfig, http: AuthenticatedHttpClient) {
+class FileStoreConnector @Inject() (configuration: AppConfig, http: AuthenticatedHttpClient)(
+  implicit mat: Materializer
+) {
+
+  implicit val ec: ExecutionContext = mat.executionContext
+
+  private lazy val ParamLength = 42 // A 36-char UUID plus &id= and some wiggle room
+  private lazy val BatchSize =
+    ((configuration.maxUriLength - configuration.filestoreUrl.length) / ParamLength).intValue()
 
   def delete()(implicit hc: HeaderCarrier): Future[Unit] =
     http.DELETE[HttpResponse](s"${configuration.filestoreUrl}/file").map(_ => ())
@@ -37,14 +47,29 @@ class FileStoreConnector @Inject() (configuration: AppConfig, http: Authenticate
   def find(id: String)(implicit hc: HeaderCarrier): Future[Option[FileUploaded]] =
     http.GET[Option[FileUploaded]](s"${configuration.filestoreUrl}/file/$id")
 
-  def find(search: FileSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[FileUploaded]] = {
-    val queryParams = FileSearch.bindable.unbind("", search) + "&" + Pagination.bindable.unbind("", pagination)
-    http.GET[Paged[FileUploaded]](s"${configuration.filestoreUrl}/file?$queryParams")
-  }
+  def find(search: FileSearch, pagination: Pagination)(implicit hc: HeaderCarrier): Future[Paged[FileUploaded]] =
+    if (search.ids.exists(_.nonEmpty) && pagination.equals(Pagination.max)) {
+      Source(search.ids.get)
+        .grouped(BatchSize)
+        .mapAsyncUnordered(Runtime.getRuntime.availableProcessors()) { idBatch =>
+          http.GET[Paged[FileUploaded]](findQueryUri(search.copy(ids = Some(idBatch.toSet)), Pagination.max))
+        }
+        .runFold(Seq.empty[FileUploaded]) {
+          case (acc, next) => acc ++ next.results
+        }
+        .map(results => Paged(results = results, pagination = Pagination.max, resultCount = results.size))
+    } else {
+      http.GET[Paged[FileUploaded]](findQueryUri(search, pagination))
+    }
 
   def initiate(file: UploadRequest)(implicit hc: HeaderCarrier): Future[UploadTemplate] =
     http.POST[UploadRequest, UploadTemplate](s"${configuration.filestoreUrl}/file", file)
 
   def publish(id: String)(implicit hc: HeaderCarrier): Future[FileUploaded] =
     http.POSTEmpty[FileUploaded](s"${configuration.filestoreUrl}/file/$id/publish")
+
+  private def findQueryUri(search: FileSearch, pagination: Pagination): String = {
+    val queryParams = FileSearch.bindable.unbind("", search) + "&" + Pagination.bindable.unbind("", pagination)
+    s"${configuration.filestoreUrl}/file?$queryParams"
+  }
 }

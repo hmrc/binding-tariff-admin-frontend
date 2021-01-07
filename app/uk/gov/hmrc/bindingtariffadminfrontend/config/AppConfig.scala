@@ -54,4 +54,6 @@ class AppConfig @Inject() (val configuration: Configuration) extends ServicesCon
       case Array(username, hash) => Credentials(username.trim, hash.trim)
     })
 
+  lazy val maxUriLength: Long = configuration.underlying.getBytes("akka.http.parsing.max-uri-length")
+
 }

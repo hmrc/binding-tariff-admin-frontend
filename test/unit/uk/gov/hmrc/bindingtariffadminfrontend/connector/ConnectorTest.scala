@@ -40,6 +40,7 @@ trait ConnectorTest extends BaseSpec with WiremockTestServer with BeforeAndAfter
     when(mockAppConfig.filestoreUrl) thenReturn getUrl
     when(mockAppConfig.classificationBackendUrl) thenReturn getUrl
     when(mockAppConfig.dataMigrationUrl) thenReturn getUrl
+    when(mockAppConfig.maxUriLength) thenReturn 2048L
   }
 
 }

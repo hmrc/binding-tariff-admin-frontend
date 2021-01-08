@@ -63,13 +63,15 @@ class SearchController @Inject() (
             .map(_.id)
             .toSet
 
-          fileSearch = FileSearch(ids = Some(attachmentIds ++ agentLetterIds))
-          files: Paged[FileUploaded] <- if (cases.nonEmpty) monitorService.getFiles(fileSearch, Pagination.max)
-                                       else Future.successful(Paged.empty[FileUploaded])
+          fileIds: Set[String] = attachmentIds ++ agentLetterIds
+          files: Paged[FileUploaded] <- if (fileIds.nonEmpty) {
+                                         monitorService.getFiles(FileSearch(ids = Some(fileIds)), Pagination.max)
+                                       } else Future.successful(Paged.empty[FileUploaded])
 
           eventSearch = EventSearch(Some(cases.results.map(_.reference).toSet))
-          events: Paged[Event] <- if (cases.nonEmpty) monitorService.getEvents(eventSearch, Pagination.max)
-                                 else Future.successful(Paged.empty[Event])
+          events: Paged[Event] <- if (cases.nonEmpty) {
+                                   monitorService.getEvents(eventSearch, Pagination.max)
+                                 } else Future.successful(Paged.empty[Event])
         } yield Ok(search(form.fill(query), pagination, cases.map(_.anonymize), files.results, events.results))
     )
   }

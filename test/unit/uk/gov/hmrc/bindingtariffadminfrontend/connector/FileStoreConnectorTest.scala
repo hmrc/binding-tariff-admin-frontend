@@ -152,6 +152,32 @@ class FileStoreConnectorTest extends ConnectorTest {
           .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }
+
+    "use multiple requests to the File Store" in {
+      val batchSize  = 48
+      val numBatches = 5
+      val ids        = (1 to batchSize * numBatches).map(_ => UUID.randomUUID().toString).toSet
+
+      stubFor(
+        get(urlMatching(s"/file\\?(&?id=[a-f0-9-]+)+&page=1&page_size=2147483647"))
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+              .withBody(fromResource("filestore-search_response.json"))
+          )
+      )
+
+      await(
+        connector.find(FileSearch(ids = Some(ids)), Pagination.max).results shouldBe (1 to numBatches).map(_ =>
+          FileUploaded(
+            id        = "id",
+            fileName  = "file-name.txt",
+            mimeType  = "text/plain",
+            published = true
+          )
+        )
+      )
+    }
   }
 
   "Connector Publish" should {

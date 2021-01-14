@@ -102,6 +102,8 @@ class AdminMonitorService @Inject() (
         bindingTariffClassificationConnector.runDaysElapsed
       case ScheduledJob.REFERRED_DAYS_ELAPSED =>
         bindingTariffClassificationConnector.runReferredDaysElapsed
+      case ScheduledJob.FILESTORE_CLEANUP =>
+        bindingTariffClassificationConnector.runFileStoreCleanup
       case _ => Future.failed(new IllegalArgumentException(s"Invalid Job [${job.toString}]"))
     }
 

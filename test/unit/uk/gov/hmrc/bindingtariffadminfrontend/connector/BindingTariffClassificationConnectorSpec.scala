@@ -413,6 +413,26 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
     }
   }
 
+  "Connector Run File Store Cleanup" should {
+    "PUT to the Case Store" in {
+      stubFor(
+        put(urlEqualTo("/scheduler/filestore-cleanup"))
+          .willReturn(
+            aResponse()
+              .withHeader("Content-Type", "text/html")
+              .withStatus(Status.NO_CONTENT)
+          )
+      )
+
+      await(connector.runFileStoreCleanup)
+
+      verify(
+        putRequestedFor(urlEqualTo("/scheduler/filestore-cleanup"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
+  }
+
   "Connector Run Amend Date of Extract Migration" should {
     "PUT to the Case Store" in {
       stubFor(

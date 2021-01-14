@@ -95,6 +95,11 @@ class BindingTariffClassificationConnector @Inject() (configuration: AppConfig, 
     client.PUT[String, HttpResponse](url = url, body = "").map(_ => ())
   }
 
+  def runFileStoreCleanup(implicit hc: HeaderCarrier): Future[Unit] = {
+    val url = s"${configuration.classificationBackendUrl}/scheduler/filestore-cleanup"
+    client.PUT[String, HttpResponse](url = url, body = "").map(_ => ())
+  }
+
   def runAmendDateOfExtractMigration(implicit hc: HeaderCarrier): Future[Unit] = {
     val url = s"${configuration.classificationBackendUrl}/migrations/amend-date-of-extract"
     client.PUT[String, HttpResponse](url = url, body = "").map(_ => ())

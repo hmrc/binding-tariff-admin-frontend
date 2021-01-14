@@ -26,6 +26,7 @@ object ScheduledJob extends Enumeration {
   type ScheduledJob = Value
   val DAYS_ELAPSED          = Value
   val REFERRED_DAYS_ELAPSED = Value
+  val FILESTORE_CLEANUP     = Value
 
   def apply(string: String): Option[ScheduledJob] =
     values.find(_.toString == string)

@@ -111,6 +111,13 @@ class AdminMonitorServiceTest extends UnitSpec with MockitoSugar with BeforeAndA
     }
   }
 
+  "Run File Store Cleanup" should {
+    "Delegate to connector" in {
+      given(btcConnector.runFileStoreCleanup(any[HeaderCarrier])) willReturn Future.successful((): Unit)
+      await(service.runScheduledJob(ScheduledJob.FILESTORE_CLEANUP)) shouldBe (): Unit
+    }
+  }
+
   "Run Migration Job" should {
     "Delegate to connector" in {
       given(btcConnector.runAmendDateOfExtractMigration(any[HeaderCarrier])) willReturn Future.successful((): Unit)

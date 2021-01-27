@@ -30,7 +30,7 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
 
   private val connector = new BindingTariffClassificationConnector(mockAppConfig, authenticatedHttpClient)
 
-  "Connector 'Create Case'" should {
+  "Connector 'Upsert Case'" should {
     val request     = Cases.btiCaseExample
     val requestJSON = Json.toJson(request).toString()
 
@@ -71,6 +71,53 @@ class BindingTariffClassificationConnectorSpec extends ConnectorTest {
 
       verify(
         putRequestedFor(urlEqualTo(s"/cases/${request.reference}"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
+  }
+
+  "Connector 'Update Case'" should {
+    val requestReference = "reference"
+    val request          = CaseUpdate(Some(LiabilityUpdate(traderName = SetValue("new name"))))
+    val requestJSON      = Json.toJson(request)(CaseUpdate.REST.formatCaseUpdate).toString()
+
+    "Update a case" in {
+      val response     = Some(Cases.btiCaseExample)
+      val responseJSON = Json.toJson(response).toString()
+
+      stubFor(
+        post(urlEqualTo(s"/cases/$requestReference"))
+          .withRequestBody(equalToJson(requestJSON))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_OK)
+              .withBody(responseJSON)
+          )
+      )
+
+      await(connector.updateCase(requestReference, request)) shouldBe response
+
+      verify(
+        postRequestedFor(urlEqualTo(s"/cases/$requestReference"))
+          .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
+      )
+    }
+
+    "propagate errors" in {
+      stubFor(
+        post(urlEqualTo(s"/cases/$requestReference"))
+          .willReturn(
+            aResponse()
+              .withStatus(HttpStatus.SC_BAD_GATEWAY)
+          )
+      )
+
+      intercept[Upstream5xxResponse] {
+        await(connector.updateCase(requestReference, request))
+      }
+
+      verify(
+        postRequestedFor(urlEqualTo(s"/cases/$requestReference"))
           .withHeader("X-Api-Token", equalTo(realConfig.apiToken))
       )
     }

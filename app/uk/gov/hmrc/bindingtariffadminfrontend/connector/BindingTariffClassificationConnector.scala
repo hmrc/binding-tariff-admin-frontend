@@ -16,10 +16,12 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.connector
 
-import com.google.inject.Inject
 import javax.inject.Singleton
+
+import com.google.inject.Inject
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Case, CaseSearch, Event, EventSearch}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.CaseUpdate.REST.formatCaseUpdate
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{Paged, Pagination}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
@@ -32,6 +34,11 @@ class BindingTariffClassificationConnector @Inject() (configuration: AppConfig, 
   def upsertCase(c: Case)(implicit hc: HeaderCarrier): Future[Case] = {
     val url = s"${configuration.classificationBackendUrl}/cases/${c.reference}"
     client.PUT[Case, Case](url = url, body = c)
+  }
+
+  def updateCase(reference: String, c: CaseUpdate)(implicit hc: HeaderCarrier): Future[Option[Case]] = {
+    val url = s"${configuration.classificationBackendUrl}/cases/$reference"
+    client.POST[CaseUpdate, Option[Case]](url = url, body = c)
   }
 
   def createEvent(ref: String, event: Event)(implicit hc: HeaderCarrier): Future[Event] = {

@@ -7,6 +7,9 @@ GET        /                                     @uk.gov.hmrc.bindingtariffadmin
 GET        /case-migration                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.CaseMigrationUploadController.get
 POST       /case-migration                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.CaseMigrationUploadController.post
 
+GET        /case-update                          @uk.gov.hmrc.bindingtariffadminfrontend.controllers.CaseUpdateUploadController.get
+POST       /case-update/:caseUpdateTarget        @uk.gov.hmrc.bindingtariffadminfrontend.controllers.CaseUpdateUploadController.post(caseUpdateTarget: uk.gov.hmrc.bindingtariffadminfrontend.model.CaseUpdateTarget.CaseUpdateTarget)
+
 GET        /anonymise-data                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.getAnonymiseData
 POST       /anonymise-data                       @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.anonymiseData
 GET        /check-status                         @uk.gov.hmrc.bindingtariffadminfrontend.controllers.DataMigrationJsonController.checkStatus

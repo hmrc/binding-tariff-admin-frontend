@@ -16,6 +16,11 @@
 
 package uk.gov.hmrc.bindingtariffadminfrontend.service
 
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.pattern.after
@@ -28,17 +33,14 @@ import play.api.libs.Files.TemporaryFile
 import play.api.libs.json.Json
 import uk.gov.hmrc.bindingtariffadminfrontend.connector._
 import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
+import uk.gov.hmrc.bindingtariffadminfrontend.model.CaseUpdateTarget.CaseUpdateTarget
 import uk.gov.hmrc.bindingtariffadminfrontend.model.MigrationStatus.MigrationStatus
-import uk.gov.hmrc.bindingtariffadminfrontend.model.classification.{Attachment, Case, CaseSearch, Sample}
+import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded}
 import uk.gov.hmrc.bindingtariffadminfrontend.model.{MigrationStatus, _}
 import uk.gov.hmrc.bindingtariffadminfrontend.repository.{MigrationRepository, UploadRepository}
 import uk.gov.hmrc.http.HeaderCarrier
 
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.Future.sequence
@@ -132,6 +134,32 @@ class DataMigrationService @Inject() (
     }
   }
 
+  def prepareCaseUpdates(
+    cases: Source[MigratableCase, _],
+    priority: Boolean = false,
+    caseUpdateTarget: CaseUpdateTarget
+  )(
+    implicit hc: HeaderCarrier
+  ): Future[Boolean] = {
+    val groupSize  = 5000
+    val delay      = 60.seconds
+    val maxRetries = 10
+
+    withMigrationLock(attemptNumber = 0, baseDelay = 1.second, delayCap = delay, maxRetries = maxRetries) {
+      cases
+        .collect {
+          case c => CaseUpdates.createMigration(c, caseUpdateTarget)
+        }
+        .collect {
+          case Some(update) => update
+        }
+        .grouped(groupSize)
+        .mapAsync(1)(prepareMigrationGroup(_, priority))
+        .takeWhile(identity)
+        .runWith(Sink.fold(true)(_ && _))
+    }
+  }
+
   def getNextMigration: Future[Option[Migration]] =
     migrationRepository.get(MigrationStatus.UNPROCESSED)
 
@@ -148,16 +176,47 @@ class DataMigrationService @Inject() (
       _        <- upscanS3Connector.upload(template, file, upload)
     } yield ()
 
-  def process(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] = {
-    Logger.info(s"Case Migration with reference [${migration.`case`.reference}]: Starting")
+  def process(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] =
+    if (migration.isCaseUpdate) {
+      Logger.info(s"Case Update for reference [${migration.`case`.reference}]: Starting")
 
-    checkIfExists(migration).flatMap {
-      case updatedMigration if updatedMigration.status != MigrationStatus.UNPROCESSED =>
-        Future.successful(updatedMigration)
-      case updatedMigration =>
-        attemptMigration(updatedMigration)
+      checkIfUpdateIsRequired(migration).flatMap {
+        case updatedMigration if updatedMigration.status != MigrationStatus.UNPROCESSED =>
+          Future.successful(updatedMigration)
+        case updatedMigration =>
+          attemptUpdate(updatedMigration)
+      }
+    } else {
+      Logger.info(s"Case Migration with reference [${migration.`case`.reference}]: Starting")
+
+      checkIfExists(migration).flatMap {
+        case updatedMigration if updatedMigration.status != MigrationStatus.UNPROCESSED =>
+          Future.successful(updatedMigration)
+        case updatedMigration =>
+          attemptMigration(updatedMigration)
+      }
     }
-  }
+
+  def attemptUpdate(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] =
+    for {
+      updatedCase <- caseConnector.updateCase(migration.`case`.reference, migration.caseUpdate.get)
+      status = if (updatedCase.isDefined) MigrationStatus.SUCCESS else MigrationStatus.FAILED
+    } yield migration.copy(status = status)
+
+  private def checkIfUpdateIsRequired(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] =
+    caseConnector.getCase(migration.`case`.reference).map { maybeCase =>
+      maybeCase
+        .map { currentCase =>
+          if (CaseUpdates.isUpdateRequired(currentCase, migration.caseUpdateTarget.get)) {
+            migration
+          } else {
+            migration.appendMessage("Update is not required").copy(status = MigrationStatus.SKIPPED)
+          }
+        }
+        .getOrElse {
+          migration.appendMessage("Unable to find case to update").copy(status = MigrationStatus.FAILED)
+        }
+    }
 
   def attemptMigration(migration: Migration)(implicit hc: HeaderCarrier): Future[Migration] =
     for {

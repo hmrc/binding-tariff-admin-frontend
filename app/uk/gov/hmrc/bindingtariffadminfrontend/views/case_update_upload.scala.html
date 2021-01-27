@@ -1,0 +1,62 @@
+@*
+ * Copyright 2021 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
+@import uk.gov.hmrc.bindingtariffadminfrontend.controllers.routes
+@import uk.gov.hmrc.bindingtariffadminfrontend.model.{AuthenticatedRequest, CaseUpdateTarget}
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.components.{error_summary, input_checkbox, input_file, submit_button}
+@import uk.gov.hmrc.bindingtariffadminfrontend.views.html.main_template
+@import uk.gov.hmrc.play.views.html.helpers
+
+@(form: Form[_])(implicit request: AuthenticatedRequest[_], messages: Messages, appConfig: AppConfig)
+
+@main_template(title = "Binding Tariff Admin", bodyClasses = None) {
+
+<a href="@routes.IndexController.get()" class="link-back">Back to Index</a>
+
+<h1 id="case_update_upload-heading" class="heading-xlarge">Case update</h1>
+
+<p>
+    Note that this is currently hard-coded to update the traderName field for liabilities only.<br>
+    All other fields in the case JSON are ignored.
+</p>
+
+@helpers.form(action = routes.CaseUpdateUploadController.post(CaseUpdateTarget.LIABILITIES_APPLICATION_TRADERNAME), 'enctype -> "multipart/form-data", 'autoComplete -> "off") {
+
+  @error_summary(form.errors)
+
+  @input_file(
+   field = form("file"),
+   label = "Upload a Liabilities JSON File",
+   accept = Some(".json,.zip")
+  )
+
+  @if(request.operator == "test") {
+   @input_checkbox(
+    field = form("priority"),
+    label = "Update Synchronously",
+    value = "true"
+   )
+  }
+
+  <div>
+   @submit_button(label = "Upload")
+   <a id="case_update_upload-continue" class="button button-info" href="@routes.DataMigrationStateController.get()">Continue to Update Progress</a>
+  </div>
+
+
+ }
+}

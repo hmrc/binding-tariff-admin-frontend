@@ -31,7 +31,7 @@ import play.api.libs.Files.TemporaryFile
 import uk.gov.hmrc.bindingtariffadminfrontend.config.AppConfig
 import uk.gov.hmrc.bindingtariffadminfrontend.connector._
 import uk.gov.hmrc.bindingtariffadminfrontend.lock.MigrationLock
-import uk.gov.hmrc.bindingtariffadminfrontend.model.Cases.btiApplicationExample
+import uk.gov.hmrc.bindingtariffadminfrontend.model.Cases._
 import uk.gov.hmrc.bindingtariffadminfrontend.model._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.classification._
 import uk.gov.hmrc.bindingtariffadminfrontend.model.filestore.{FileSearch, FileUploaded, UploadTemplate}
@@ -39,9 +39,11 @@ import uk.gov.hmrc.bindingtariffadminfrontend.repository.{MigrationRepository, U
 import uk.gov.hmrc.bindingtariffadminfrontend.util.UnitSpec
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 import uk.gov.hmrc.lock.LockRepository
-
 import java.time.Instant
 import java.util.concurrent.TimeUnit
+
+import uk.gov.hmrc.bindingtariffadminfrontend.model.CaseUpdateTarget.CaseUpdateTarget
+
 import scala.collection.JavaConverters
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -232,6 +234,45 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     }
   }
 
+  "Service 'Prepare Case Updates'" should {
+
+    val liabilityMigration = Migration(
+      `case`           = migratableLiabilityCase.copy(
+        application = migratableLiabilityCase.application.asInstanceOf[LiabilityOrder].copy(traderName = "updated name")),
+      status           = MigrationStatus.UNPROCESSED,
+      message          = Seq.empty,
+      caseUpdate       = Some(CaseUpdate(Some(LiabilityUpdate(traderName = SetValue("updated name"))))),
+      caseUpdateTarget = Some(CaseUpdateTarget.LIABILITIES_APPLICATION_TRADERNAME)
+    )
+
+    "Delegate to Repository" in withService { service =>
+      given(migrationRepository.delete(any[Seq[Migration]])) willReturn Future.successful(true)
+      given(migrationRepository.insert(any[Seq[Migration]])) willReturn Future.successful(true)
+
+      await(service.prepareCaseUpdates(Source(List(liabilityMigration.`case`)), false, CaseUpdateTarget.LIABILITIES_APPLICATION_TRADERNAME)) shouldBe true
+
+      theMigrationsCreated shouldBe Seq(
+        liabilityMigration
+      )
+
+      theMigrationsDeleted shouldBe Seq(
+        liabilityMigration
+      )
+    }
+
+    def theMigrationsCreated: Seq[Migration] = {
+      val captor: ArgumentCaptor[Seq[Migration]] = ArgumentCaptor.forClass(classOf[Seq[Migration]])
+      verify(migrationRepository).insert(captor.capture())
+      captor.getValue.toList
+    }
+
+    def theMigrationsDeleted: Seq[Migration] = {
+      val captor: ArgumentCaptor[Seq[Migration]] = ArgumentCaptor.forClass(classOf[Seq[Migration]])
+      verify(migrationRepository).delete(captor.capture())
+      captor.getValue
+    }
+  }
+
   "Service 'Update'" should {
     val migration        = mock[Migration]
     val migrationUpdated = mock[Migration]
@@ -317,6 +358,9 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       Set("keyword1", "keyword2"),
       dateOfExtract = Some(extractDate)
     )
+    val liabilityCaseWithBlankTraderName =
+      Cases.liabilityCaseExample.copy(application = liabilityApplicationExample.copy(traderName = ""))
+
     val aCaseWithAttachments = Case(
       "1",
       CaseStatus.OPEN,
@@ -338,6 +382,13 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
     val anUnprocessedHistoricMigration        = Migration(migratableCase.copy(dateOfExtract = Some(Instant.EPOCH)))
     val anUnprocessedMigrationWithAttachments = Migration(migratableCaseWithAttachments)
     val anUnprocessedMigrationWithEvents      = Migration(migratableCaseWithEvents)
+    val liabilityMigration = Migration(
+      `case`           = migratableLiabilityCase,
+      status           = MigrationStatus.UNPROCESSED,
+      message          = Seq.empty,
+      caseUpdate       = Some(CaseUpdate(Some(LiabilityUpdate(traderName = SetValue("trader name"))))),
+      caseUpdateTarget = Some(CaseUpdateTarget.LIABILITIES_APPLICATION_TRADERNAME)
+    )
 
     "Migrate new Case" in withService { service =>
       givenTheCaseDoesNotAlreadyExist()
@@ -493,8 +544,41 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       }.getMessage shouldBe "Upsert Error"
     }
 
+    "Update an migrated case if isCaseUpdate returns true" in withService { service =>
+      givenTheLiabilityCaseExists()
+
+      val migrated: Migration = await(service.process(liabilityMigration))
+      migrated.`case`.application.asInstanceOf[LiabilityOrder].traderName shouldBe "Trader"
+    }
+
+    "Not update an migrated case if caseUpdate is None and isCaseUpdate returns false" in withService { service =>
+      givenTheLiabilityCaseExists2()
+
+      val migrated: Migration = await(service.process(liabilityMigration.copy(caseUpdate = None, status = MigrationStatus.SUCCESS)))
+      migrated.`case`.application.asInstanceOf[LiabilityOrder].traderName shouldBe "Trader"
+    }
+
+    "Not update an migrated case if caseUpdateTarget is None isCaseUpdate returns false" in withService { service =>
+      givenTheLiabilityCaseExists2()
+
+      val migrated: Migration = await(service.process(liabilityMigration.copy(caseUpdateTarget = None, status = MigrationStatus.SUCCESS)))
+      migrated.`case`.application.asInstanceOf[LiabilityOrder].traderName shouldBe "Trader"
+    }
+
     def givenTheCaseExists(): Unit =
       given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(Some(aCase))
+
+    def givenTheLiabilityCaseExists(): Unit = {
+      given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn
+        Future.successful(Some(Cases.liabilityCaseExample.copy(application = Cases.liabilityApplicationExample.copy(traderName = ""))))
+      given(caseConnector.updateCase(any[String], any[CaseUpdate])(any[HeaderCarrier])) willReturn
+        Future.successful(Some(Cases.liabilityCaseExample))
+    }
+
+    def givenTheLiabilityCaseExists2(): Unit = {
+      given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn
+        Future.successful(Some(Cases.liabilityCaseExample.copy(application = Cases.liabilityApplicationExample.copy(traderName = ""))))
+    }
 
     def givenTheCaseExistsFromHistoricExtract(): Unit =
       given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn Future.successful(
@@ -554,6 +638,11 @@ class DataMigrationServiceTest extends UnitSpec with MockitoSugar with BeforeAnd
       given(caseConnector.getEvents(any[String], any[Pagination])(any[HeaderCarrier])) willReturn Future.failed(
         new NotFoundException("events not found")
       )
+    }
+
+    def givenTheCaseExistAndisCaseUpdateTrue() = {
+      given(caseConnector.getCase(any[String])(any[HeaderCarrier])) willReturn
+        Future.successful(Some(liabilityCaseWithBlankTraderName))
     }
 
     def theCaseCreated: Case = {

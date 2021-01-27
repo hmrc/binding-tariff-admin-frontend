@@ -48,6 +48,22 @@ object Cases {
     false,
     false
   )
+  val liabilityApplicationExample = LiabilityOrder(
+    contact              = contactExample,
+    goodName             = Some("Laptop"),
+    status               = LiabilityStatus.NON_LIVE,
+    traderName           = "Trader",
+    entryDate            = None,
+    entryNumber          = None,
+    traderCommodityCode  = None,
+    officerCommodityCode = None,
+    btiReference         = None,
+    repaymentClaim       = None,
+    dateOfReceipt        = None,
+    traderContactDetails = None,
+    agentName            = None,
+    port                 = None
+  )
   val decision = Decision(
     "AD12324FR",
     Some(Instant.now()),
@@ -85,6 +101,22 @@ object Cases {
     Set("k1", "k2")
   )
 
+  val liabilityCaseExample = Case(
+    "1",
+    CaseStatus.OPEN,
+    Instant.now(),
+    0,
+    0,
+    None,
+    None,
+    None,
+    None,
+    liabilityApplicationExample,
+    Some(decision),
+    Seq.empty,
+    Set("k1", "k2")
+  )
+
   val migratedAttachment = MigratedAttachment(
     public    = true,
     name      = "name",
@@ -102,6 +134,23 @@ object Cases {
     None,
     None,
     btiApplicationExample,
+    Some(migratableDecision),
+    Seq.empty,
+    Seq.empty,
+    Set("k1", "k2")
+  )
+
+  val migratableLiabilityCase = MigratableCase(
+    "1",
+    CaseStatus.OPEN,
+    Instant.now(),
+    0,
+    Some(0),
+    None,
+    None,
+    None,
+    None,
+    liabilityApplicationExample,
     Some(migratableDecision),
     Seq.empty,
     Seq.empty,
